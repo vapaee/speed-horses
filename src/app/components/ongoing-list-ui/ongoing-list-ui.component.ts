@@ -16,11 +16,8 @@ import { CommonModule } from '@angular/common';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subject, takeUntil } from 'rxjs';
 import { HorseRaceService } from '@app/game/horse-race.service';
-import {
-    RaceHorse,
-    RaceHorsesList,
-    SLOT_COLOR_MAP
-} from '@app/game/horse-race.abstract';
+import { RaceHorse, RaceHorsesList } from '@app/game/horse-race.abstract';
+import { SlotColor } from '@app/game/color-database';
 import { RaceHorseUiComponent } from '@app/components/ongoing-horse-ui/ongoing-horse-ui.component';
 import { BREAKPOINT } from 'src/types';
 
@@ -39,6 +36,7 @@ export class OngoingListUiComponent implements AfterViewInit, OnDestroy {
 
     horsesList: RaceHorse[] = [];
     isMobileView = false;
+    slotColorMap: Record<number, SlotColor> = {};
 
     private lastListInstance?: RaceHorsesList;
     private destroy$ = new Subject<void>();
@@ -62,6 +60,8 @@ export class OngoingListUiComponent implements AfterViewInit, OnDestroy {
     ngOnChanges(changes: SimpleChanges): void {
         if ('raceId' in changes && this.raceId != null) {
             try {
+                this.slotColorMap = this.horseRaceService.getSlotColorMap(this.raceId);
+                
                 this.horseRaceService
                     .manager.getHorsesList$(this.raceId)
                     .pipe(takeUntil(this.destroy$))
@@ -157,6 +157,6 @@ export class OngoingListUiComponent implements AfterViewInit, OnDestroy {
 
 
     getColor(slot: number): string {
-        return SLOT_COLOR_MAP[slot] ?? 'black';
+        return this.slotColorMap[slot]?.color ?? 'black';
     }
 }
