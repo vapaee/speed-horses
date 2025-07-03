@@ -52,7 +52,7 @@ La única manera válida de otorgar puntos no asignados a un caballo es a travé
 
 ## Contrato de Carrera (Race)
 
-Las carreras son simulaciones deterministas controladas por contratos inteligentes. Cada carrera se define por un tiempo de inicio y una longitud en metros (que determina su duración). A medida que los usuarios inscriben sus caballos, también proporcionan *seeds* que se utilizarán como fuente de aleatoriedad pseudoaleatoria para determinar el desarrollo de la carrera.
+Las carreras son simulaciones deterministas controladas por este contrato inteligente. Cada carrera se define por un tiempo de inicio y una longitud en metros (que determina su duración). A medida que los usuarios inscriben sus caballos, también proporcionan *seeds* que se utilizarán como fuente de aleatoriedad pseudoaleatoria para determinar el desarrollo de la carrera.
 
 ### Etapas de la Carrera
 
