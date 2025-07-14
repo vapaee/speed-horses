@@ -1,23 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-/// @title Horse NFT contract
-/// @notice Implements horse NFTs with stats and cooldown management
-/// @dev All constants used in uppercase are expected to be defined
-///      in an external file and imported here.
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
+import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { UD60x18, ud } from '@prb/math/src/UD60x18.sol';
+import './Constants.sol';
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import { UD60x18, ud } from "@prb/math/src/UD60x18.sol";
+contract Horses is
+    ERC721,
+    ERC721Enumerable,
+    ERC721URIStorage,
+    ReentrancyGuard
+{
+    // --------------------------------------------------
+    // Data structures and storage
+    // --------------------------------------------------
 
-/// @notice Interface for external constants
-import "./Constants.sol";
-
-contract Horses is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard {
-    /// @dev Struct holding performance stats for a horse
+    /// @notice Performance attributes for each horse
     struct PerformanceStats {
         uint256 acceleration;
         uint256 stamina;
@@ -28,77 +30,71 @@ contract Horses is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard {
         uint256 straightBonus;
     }
 
-    /// @dev Struct holding cooldown improving stats
+    /// @notice Cooldown reduction attributes for each horse
     struct CooldownStats {
         uint256 raceCooldownStat;
         uint256 feedCooldownStat;
     }
 
-    // ------------------------------------------------------------------
-    // Storage mappings
-    // ------------------------------------------------------------------
-
-    /// @notice Stats for each horse id
     mapping(uint256 => PerformanceStats) public performance;
-    /// @notice Cooldown improving stats for each horse id
-    mapping(uint256 => CooldownStats) public cooldownStats;
+    mapping(uint256 => CooldownStats)  public cooldownStats;
+    mapping(uint256 => uint256)        public restFinish;
+    mapping(uint256 => uint256)        public feedFinish;
+    mapping(uint256 => uint256)        public pointsUnassigned;
+    mapping(uint256 => uint256)        public pointsAssigned;
 
-    /// @notice timestamp when horse can race again
-    mapping(uint256 => uint256) public restFinish;
-    /// @notice timestamp when horse can transfer or race again after feeding
-    mapping(uint256 => uint256) public feedFinish;
-
-    /// @notice points not yet assigned to stats for each horse
-    mapping(uint256 => uint256) public pointsUnassigned;
-    /// @notice points already assigned to stats for each horse
-    mapping(uint256 => uint256) public pointsAssigned;
-
-    /// @notice address of the race contract allowed to grant rewards
     address public raceContract;
-    /// @notice token used to pay for stat assignment
     IERC20 public immutable hayToken;
 
-    /// ------------------------------------------------------------------
-    /// Modifiers
-    /// ------------------------------------------------------------------
+    // --------------------------------------------------
+    // Modifiers
+    // --------------------------------------------------
 
+    /// @notice Restricts calls to the configured race contract
     modifier onlyRaceContract() {
-        require(msg.sender == raceContract, "not race contract");
+        require(msg.sender == raceContract, 'not race contract');
         _;
     }
 
-    modifier onlyWhenNotCoolingForRegistration(uint256 horseId) {
-        require(canRegister(horseId), "horse cooling for race");
-        _;
-    }
-
+    /// @notice Ensures a horse is not cooling before transfer
     modifier onlyWhenNotCoolingForTransfer(uint256 horseId) {
-        require(canTransfer(horseId), "horse cooling for feed");
+        require(canTransfer(horseId), 'horse cooling for feed');
         _;
     }
 
-    /// ------------------------------------------------------------------
-    /// Constructor
-    /// ------------------------------------------------------------------
+    // --------------------------------------------------
+    // Constructor and configuration
+    // --------------------------------------------------
 
-    constructor(address _hayToken) ERC721("Horse", "HORSE") {
+    /// @notice Initializes the NFT and sets the HAY token address
+    constructor(address _hayToken) ERC721('Horse', 'HORSE') {
         hayToken = IERC20(_hayToken);
     }
 
-    /// ------------------------------------------------------------------
-    /// Minting
-    /// ------------------------------------------------------------------
-
-    function mint(address to, uint256 tokenId, string memory tokenURI) external {
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, tokenURI);
+    /// @notice Sets the race contract that is allowed to award points
+    function setRaceContract(address _raceContract) external {
+        raceContract = _raceContract;
     }
 
-    /// ------------------------------------------------------------------
-    /// Horse advance logic
-    /// ------------------------------------------------------------------
+    // --------------------------------------------------
+    // Minting
+    // --------------------------------------------------
 
-    /// @notice Calculate the distance advanced by a horse in one tick
+    /// @notice Mints a new horse NFT and sets its metadata URI
+    function mint(
+        address to,
+        uint256 tokenId,
+        string memory uri
+    ) external {
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, uri);
+    }
+
+    // --------------------------------------------------
+    // External and public logic
+    // --------------------------------------------------
+
+    /// @notice Calculates the distance advanced by a horse in one tick
     function advanceHorse(
         uint256 id,
         bytes32 rand,
@@ -106,104 +102,47 @@ contract Horses is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard {
         uint256 length,
         uint256 tick
     ) public view returns (uint256) {
-        PerformanceStats memory stats = performance[id];
+        PerformanceStats memory s = performance[id];
 
-        // level calculation for each stat
-        uint256 minSpeedLevel = levelProp(stats.minSpeed);
-        uint256 luckLevel = levelProp(stats.luck);
-        uint256 curveLevel = levelProp(stats.curveBonus);
-        uint256 straightLevel = levelProp(stats.straightBonus);
-        uint256 maxSpeedLevel = levelProp(stats.maxSpeed);
-        uint256 staminaLevel = levelProp(stats.stamina);
-        uint256 accelerationLevel = levelProp(stats.acceleration);
+        uint256 base      = levelProp(s.minSpeed) * MIN_SPEED_BASE_VALUE;
+        uint256 luckR     = uint256(keccak256(abi.encodePacked(rand, LUCK_ENUM))) % 100;
+        uint256 luckBonus = luckR * LUCK_SPEED_PER_LEVEL * (levelProp(s.luck) + LUCK_MIN_POINTS);
 
-        uint256 minSpeedBonus = minSpeedLevel * MIN_SPEED_BASE_VALUE;
+        uint256 sectionBonus = _sectionBonus(
+            rand,
+            isRect,
+            levelProp(s.curveBonus),
+            levelProp(s.straightBonus)
+        );
 
-        // luck bonus
-        uint256 randomLuck = uint256(keccak256(abi.encodePacked(rand, LUCK_ENUM)));
-        uint256 percentLuck = randomLuck % 100;
-        uint256 luckBonus = percentLuck * LUCK_SPEED_PER_LEVEL * (luckLevel + LUCK_MIN_POINTS);
-
-        // curve or straight bonus depending on section
-        uint256 curveBonusValue = 0;
-        uint256 straightBonusValue = 0;
-        if (!isRect) {
-            uint256 randomCurve = uint256(
-                keccak256(abi.encodePacked(rand, CURVE_ENUM))
-            );
-            uint256 percentCurve = randomCurve % 100;
-            curveBonusValue = percentCurve * CURVE_SPEED_PER_LEVEL * (curveLevel + CURVE_MIN_POINTS);
-        } else {
-            uint256 randomStraight = uint256(
-                keccak256(abi.encodePacked(rand, STRAIGHT_ENUM))
-            );
-            uint256 percentStraight = randomStraight % 100;
-            straightBonusValue = percentStraight * STRAIGHT_SPEED_PER_LEVEL * (straightLevel + STRAIGHT_MIN_POINTS);
+        uint256 advance = base + luckBonus + sectionBonus;
+        uint256 cap     = (MAX_SPEED_EXTRA_POINTS + levelProp(s.maxSpeed)) * MAX_SPEED_ADVANCE_PER_LEVEL;
+        if (advance > cap) {
+            advance = cap;
         }
 
-        // calculate advance before max speed check
-        uint256 calculatedAdvance = minSpeedBonus + luckBonus + curveBonusValue + straightBonusValue;
+        advance = _applyStamina(advance, length, tick, levelProp(s.stamina));
+        advance = _applyAcceleration(advance, tick, levelProp(s.acceleration));
 
-        // apply max speed cap
-        uint256 maxSpeedThreshold = (MAX_SPEED_EXTRA_POINTS + maxSpeedLevel) * MAX_SPEED_ADVANCE_PER_LEVEL;
-        if (calculatedAdvance > maxSpeedThreshold) {
-            calculatedAdvance = maxSpeedThreshold;
-        }
-
-        // stamina effect
-        uint256 distancePerTick = length / TOTAL_RACE_ITERATIONS;
-        uint256 currentDistance = distancePerTick * tick;
-        uint256 extraLength = STAMINA_METERS_PER_LEVEL * staminaLevel;
-        uint256 threshold = MIN_DISTANCE_RESISTANCE + extraLength;
-        uint256 finalPercent = 100;
-        if (threshold < currentDistance) {
-            uint256 afterThresholdTicks = (currentDistance - threshold) / distancePerTick;
-            if (afterThresholdTicks * 2 >= 20) {
-                finalPercent = 80;
-            } else {
-                uint256 reduction = afterThresholdTicks * 2;
-                if (reduction > 20) reduction = 20;
-                finalPercent = 100 - reduction;
-            }
-        }
-
-        calculatedAdvance = (calculatedAdvance * finalPercent) / 100;
-
-        // acceleration effect
-        uint256 speedUpRange = TOTAL_ACCELERATION - min(MAX_ACCELERATION, accelerationLevel);
-        uint256 percentageGainPerTick = 100 / speedUpRange;
-        uint256 finalPercentage = percentageGainPerTick * tick;
-        if (finalPercentage > 100) finalPercentage = 100;
-        calculatedAdvance = (calculatedAdvance * finalPercentage) / 100;
-
-        return calculatedAdvance;
+        return advance;
     }
 
-    /// ------------------------------------------------------------------
-    /// Rewards after race
-    /// ------------------------------------------------------------------
-
-    /// @notice Called by race contract to award points and set cooldown
+    /// @notice Awards unassigned points after a race and sets race cooldown
     function setRacePrize(
         uint256 id,
-        uint256 /*position*/,
-        uint256 points
+        uint256 /*pos*/,
+        uint256 pts
     ) external onlyRaceContract {
-        pointsUnassigned[id] += points;
-
-        uint256 restDelay = _inverseRaceCooldown(levelProp(cooldownStats[id].raceCooldownStat));
+        pointsUnassigned[id] += pts;
+        uint256 delay = _inverseRaceCooldown(levelProp(cooldownStats[id].raceCooldownStat));
         if (restFinish[id] >= block.timestamp) {
-            restFinish[id] += restDelay;
+            restFinish[id] += delay;
         } else {
-            restFinish[id] = block.timestamp + restDelay;
+            restFinish[id] = block.timestamp + delay;
         }
     }
 
-    /// ------------------------------------------------------------------
-    /// Assign points
-    /// ------------------------------------------------------------------
-
-    /// @notice Assign unassigned points to performance or cooldown stats
+    /// @notice Assigns earned points to performance and cooldown stats
     function assignPoints(
         uint256 horseId,
         uint256 acceleration,
@@ -216,110 +155,247 @@ contract Horses is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard {
         uint256 raceCooldownStatPoints,
         uint256 feedCooldownStatPoints
     ) external nonReentrant {
-        uint256 totalPoints =
-            acceleration +
-            stamina +
-            minSpeed +
-            maxSpeed +
-            luck +
-            curveBonus +
-            straightBonus +
-            raceCooldownStatPoints +
-            feedCooldownStatPoints;
-        require(pointsUnassigned[horseId] >= totalPoints, "not enough points");
+        // 1) Sum and validate total points
+        uint256 total = _sumPoints(
+            acceleration,
+            stamina,
+            minSpeed,
+            maxSpeed,
+            luck,
+            curveBonus,
+            straightBonus,
+            raceCooldownStatPoints,
+            feedCooldownStatPoints
+        );
+        require(pointsUnassigned[horseId] >= total, 'not enough points');
 
-        uint256 cost = totalPoints * PRICE_PER_POINT;
+        // 2) Transfer HAY token cost and update counters
+        uint256 cost = total * PRICE_PER_POINT;
         hayToken.transferFrom(msg.sender, address(this), cost);
+        pointsUnassigned[horseId] -= total;
+        pointsAssigned[horseId]   += total;
 
-        pointsUnassigned[horseId] -= totalPoints;
-        pointsAssigned[horseId] += totalPoints;
+        // 3) Update performance stats
+        _applyPerformance(
+            horseId,
+            acceleration,
+            stamina,
+            minSpeed,
+            maxSpeed,
+            luck,
+            curveBonus,
+            straightBonus
+        );
 
-        PerformanceStats storage perf = performance[horseId];
-        perf.acceleration += acceleration;
-        perf.stamina += stamina;
-        perf.minSpeed += minSpeed;
-        perf.maxSpeed += maxSpeed;
-        perf.luck += luck;
-        perf.curveBonus += curveBonus;
-        perf.straightBonus += straightBonus;
-
-        cooldownStats[horseId].raceCooldownStat += raceCooldownStatPoints;
-        cooldownStats[horseId].feedCooldownStat += feedCooldownStatPoints;
-
-        uint256 feedDelay = _inverseFeedCooldown(levelProp(cooldownStats[horseId].feedCooldownStat));
-        if (feedFinish[horseId] >= block.timestamp) {
-            feedFinish[horseId] += feedDelay;
-        } else {
-            feedFinish[horseId] = block.timestamp + feedDelay;
-        }
+        // 4) Update cooldown stats and feed finish timestamp
+        _applyCooldown(
+            horseId,
+            raceCooldownStatPoints,
+            feedCooldownStatPoints
+        );
     }
 
-    /// ------------------------------------------------------------------
-    /// Cooldown helpers
-    /// ------------------------------------------------------------------
-
+    /// @notice Checks if a horse can enter a race
     function canRegister(uint256 id) public view returns (bool) {
         return block.timestamp >= restFinish[id] && block.timestamp >= feedFinish[id];
     }
 
+    /// @notice Checks if a horse can be transferred (not feeding)
     function canTransfer(uint256 id) public view returns (bool) {
         return block.timestamp >= feedFinish[id];
     }
 
-    /// ------------------------------------------------------------------
-    /// Level calculation utilities
-    /// ------------------------------------------------------------------
-
+    /// @notice Computes the overall level based on assigned + unassigned points
     function level(uint256 horseId) public view returns (uint256) {
-        uint256 total = pointsAssigned[horseId] + pointsUnassigned[horseId];
-        return floorLog2(total);
+        uint256 tot = pointsAssigned[horseId] + pointsUnassigned[horseId];
+        return floorLog2(tot);
     }
 
-    function levelProp(uint256 points) public pure returns (uint256 result) {
-        if (points == 0) return 0;
-        UD60x18 x = ud(points * 1e18);
-        UD60x18 res = x.log2();
-        result = res.intoUint256();
+    /// @notice Computes the level of a single stat using log2
+    function levelProp(uint256 pts) public pure returns (uint256) {
+        if (pts == 0) return 0;
+        UD60x18 x = ud(pts * 1e18);
+        return x.log2().intoUint256();
     }
 
-    function floorLog2(uint256 x) internal pure returns (uint256) {
-        uint256 res;
+    /// @dev Helper to compute floor(log2(x))
+    function floorLog2(uint256 x) internal pure returns (uint256 r) {
         while (x > 1) {
             x >>= 1;
-            res++;
+            r++;
         }
-        return res;
     }
 
-    /// ------------------------------------------------------------------
-    /// Internal cooldown calculation
-    /// ------------------------------------------------------------------
+    // --------------------------------------------------
+    // Internal helper functions
+    // --------------------------------------------------
 
-    function _inverseRaceCooldown(uint256 levelVal) internal pure returns (uint256) {
-        return BASE_RACE_COOLDOWN / (levelVal + 1);
+    /// @dev Computes bonus for curve or straight section
+    function _sectionBonus(
+        bytes32 rand,
+        bool isRect,
+        uint256 curveLevel,
+        uint256 straightLevel
+    ) internal pure returns (uint256) {
+        if (!isRect) {
+            uint256 r = uint256(keccak256(abi.encodePacked(rand, CURVE_ENUM))) % 100;
+            return r * CURVE_SPEED_PER_LEVEL * (curveLevel + CURVE_MIN_POINTS);
+        } else {
+            uint256 r = uint256(keccak256(abi.encodePacked(rand, STRAIGHT_ENUM))) % 100;
+            return r * STRAIGHT_SPEED_PER_LEVEL * (straightLevel + STRAIGHT_MIN_POINTS);
+        }
     }
 
-    function _inverseFeedCooldown(uint256 levelVal) internal pure returns (uint256) {
-        return BASE_FEED_COOLDOWN / (levelVal + 1);
+    /// @dev Applies stamina reduction effect to the advance value
+    function _applyStamina(
+        uint256 advance,
+        uint256 length,
+        uint256 tick,
+        uint256 staminaLevel
+    ) internal pure returns (uint256) {
+        uint256 perTick   = length / TOTAL_RACE_ITERATIONS;
+        uint256 currDist  = perTick * tick;
+        uint256 threshold = MIN_DISTANCE_RESISTANCE + STAMINA_METERS_PER_LEVEL * staminaLevel;
+        if (currDist <= threshold) {
+            return advance;
+        }
+        uint256 _after        = (currDist - threshold) / perTick;
+        uint256 reductionPct  = _after * 2;
+        if (reductionPct > 20) reductionPct = 20;
+        uint256 pct = 100 - reductionPct;
+        return (advance * pct) / 100;
     }
 
-    /// ------------------------------------------------------------------
-    /// Overrides to include cooldown checks
-    /// ------------------------------------------------------------------
+    /// @dev Applies acceleration ramp-up effect to the advance value
+    function _applyAcceleration(
+        uint256 advance,
+        uint256 tick,
+        uint256 accelLevel
+    ) internal pure returns (uint256) {
+        uint256 range = TOTAL_ACCELERATION - min(MAX_ACCELERATION, accelLevel);
+        uint256 gain  = 100 / range;
+        uint256 pct   = gain * tick;
+        if (pct > 100) pct = 100;
+        return (advance * pct) / 100;
+    }
 
+    /// @dev Sums nine point allocations
+    function _sumPoints(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f,
+        uint256 g,
+        uint256 h,
+        uint256 i
+    ) internal pure returns (uint256) {
+        return _sum5(a, b, c, d, e) + _sum5(f, g, h, i, 0);
+    }
+
+    /// @dev Sums five values
+    function _sum5(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e
+    ) internal pure returns (uint256) {
+        return a + b + c + d + e;
+    }
+
+    /// @dev Updates performance stats in storage
+    function _applyPerformance(
+        uint256 horseId,
+        uint256 acceleration,
+        uint256 stamina,
+        uint256 minSpeed,
+        uint256 maxSpeed,
+        uint256 luck,
+        uint256 curveBonus,
+        uint256 straightBonus
+    ) internal {
+        PerformanceStats storage ps = performance[horseId];
+        ps.acceleration  += acceleration;
+        ps.stamina       += stamina;
+        ps.minSpeed      += minSpeed;
+        ps.maxSpeed      += maxSpeed;
+        ps.luck          += luck;
+        ps.curveBonus    += curveBonus;
+        ps.straightBonus += straightBonus;
+    }
+
+    /// @dev Updates cooldown stats and adjusts feedFinish timestamp
+    function _applyCooldown(
+        uint256 horseId,
+        uint256 racePoints,
+        uint256 feedPoints
+    ) internal {
+        CooldownStats storage cs = cooldownStats[horseId];
+        cs.raceCooldownStat += racePoints;
+        cs.feedCooldownStat += feedPoints;
+
+        uint256 delay = _inverseFeedCooldown(levelProp(cs.feedCooldownStat));
+        if (feedFinish[horseId] >= block.timestamp) {
+            feedFinish[horseId] += delay;
+        } else {
+            feedFinish[horseId] = block.timestamp + delay;
+        }
+    }
+
+    /// @dev Calculates inverse race cooldown based on level
+    function _inverseRaceCooldown(uint256 lv) internal pure returns (uint256) {
+        return BASE_RACE_COOLDOWN / (lv + 1);
+    }
+
+    /// @dev Calculates inverse feed cooldown based on level
+    function _inverseFeedCooldown(uint256 lv) internal pure returns (uint256) {
+        return BASE_FEED_COOLDOWN / (lv + 1);
+    }
+
+    /// @dev Returns the minimum of two values
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
+    }
+
+    // --------------------------------------------------
+    // Overrides for cooldown enforcement and multiple inheritance
+    // --------------------------------------------------
+
+    /// @notice Overrides transfer logic to enforce feed cooldown
     function _update(
-        address from,
         address to,
         uint256 tokenId,
         address auth
-    ) internal override(ERC721, ERC721Enumerable, ERC721URIStorage) onlyWhenNotCoolingForTransfer(tokenId) {
-        super._update(from, to, tokenId, auth);
+    )
+        internal
+        override(ERC721, ERC721Enumerable)
+        onlyWhenNotCoolingForTransfer(tokenId)
+        returns (address)
+    {
+        return super._update(to, tokenId, auth);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        super._burn(tokenId);
+    /// @notice Resolves balance tracking conflict between ERC721 and Enumerable
+    function _increaseBalance(address account, uint128 value)
+        internal
+        override(ERC721, ERC721Enumerable)
+    {
+        super._increaseBalance(account, value);
     }
 
+    /// @notice Resolves metadata URI conflict between ERC721 and URIStorage
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
+
+    /// @notice Resolves multiple supportsInterface implementations
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -328,10 +404,4 @@ contract Horses is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard {
     {
         return super.supportsInterface(interfaceId);
     }
-
-    // Helper to get min of two values
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
 }
-
