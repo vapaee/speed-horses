@@ -158,7 +158,7 @@ class StadiumShape {
 
         // top semicircle
         graphics.beginPath();
-        graphics.arc(cx, topY, R, 0, Math.PI, false);
+        graphics.arc(cx, topY, R, Math.PI, 2*Math.PI, false);
         graphics.strokePath();
 
         // left straight
@@ -169,7 +169,7 @@ class StadiumShape {
 
         // bottom semicircle
         graphics.beginPath();
-        graphics.arc(cx, bottomY, R, Math.PI, 2 * Math.PI, false);
+        graphics.arc(cx, bottomY, R, 0, Math.PI, false);
         graphics.strokePath();
 
         // right straight
@@ -203,7 +203,7 @@ class StadiumShape {
 
         // segment 1: top semicircle (counterclockwise)
         if (s <= Math.PI * R) {
-            const θ = s / R;  // 0 → π
+            const θ = 2*Math.PI - s / R;  // 2π → π
             return {
                 x: cx + R * Math.cos(θ),
                 y: topY + R * Math.sin(θ)
@@ -219,7 +219,7 @@ class StadiumShape {
 
         // segment 3: bottom semicircle (counterclockwise)
         if (s <= Math.PI * R) {
-            const θ = Math.PI + s / R;  // π → 2π
+            const θ = Math.PI - s / R;  // π → 0
             return {
                 x: cx + R * Math.cos(θ),
                 y: bottomY + R * Math.sin(θ)
