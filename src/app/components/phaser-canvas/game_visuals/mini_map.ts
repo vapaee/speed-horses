@@ -16,8 +16,8 @@ export class MiniMapLayer {
 
     private readonly baseWidth    = 100;
     private readonly baseHeight   = 200;
-    private readonly trackSpacing = 1;
-    private readonly startOffset = 2/12;  // adjust if you want a different 0-pos
+    private readonly trackSpacing = 0;
+    private readonly startOffset  = 2/12;  // adjust if you want a different 0-pos
 
     constructor(
         private raceId : number,
@@ -32,13 +32,13 @@ export class MiniMapLayer {
                 this.horsesList = list;
             })
         );
-        
+
         try {
             this.slotColorMap = this.raceSvc.manager.getSlotColorMap(this.raceId);
         } catch (e) {
             console.error('Failed to get slot color map', this.raceId, e);
         }
-        
+
         this.scene.events.once('shutdown', () => this.destroy());
     }
 
@@ -100,7 +100,7 @@ export class MiniMapLayer {
 
             // use the exact HSL—no extra lightness adjust
             const hsl = this.slotColorMap[idx]?.color ?? 'hsl(0,0%,0%)';
-            const color = this.hslStringToPhaserColor(hsl, 0);            
+            const color = this.hslStringToPhaserColor(hsl, 0);
 
             let dot = this.dots.get(idx);
             if (!dot) {
@@ -111,7 +111,8 @@ export class MiniMapLayer {
                 this.dots.set(idx, dot);
             } else {
                 dot.setPosition(x, y)
-                    .setFillStyle(color);
+                    .setFillStyle(color)
+                    .setDepth(80 + h.position!);
             }
         });
     }
