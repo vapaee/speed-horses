@@ -156,26 +156,26 @@ class StadiumShape {
         const xLeft   = cx - R;
         const xRight  = cx + R;
 
-        // right straight
+        // top semicircle
         graphics.beginPath();
-        graphics.moveTo(xRight, topY);
-        graphics.lineTo(xRight, bottomY);
-        graphics.strokePath();
-
-        // bottom semicircle (0 → π)
-        graphics.beginPath();
-        graphics.arc(cx, bottomY, R, 0, Math.PI, false);
+        graphics.arc(cx, topY, R, 0, Math.PI, false);
         graphics.strokePath();
 
         // left straight
         graphics.beginPath();
-        graphics.moveTo(xLeft, bottomY);
-        graphics.lineTo(xLeft, topY);
+        graphics.moveTo(xLeft, topY);
+        graphics.lineTo(xLeft, bottomY);
         graphics.strokePath();
 
-        // top semicircle (π → 2π)
+        // bottom semicircle
         graphics.beginPath();
-        graphics.arc(cx, topY, R, Math.PI, 2 * Math.PI, false);
+        graphics.arc(cx, bottomY, R, Math.PI, 2 * Math.PI, false);
+        graphics.strokePath();
+
+        // right straight
+        graphics.beginPath();
+        graphics.moveTo(xRight, bottomY);
+        graphics.lineTo(xRight, topY);
         graphics.strokePath();
     }
 
@@ -201,15 +201,25 @@ class StadiumShape {
         const xLeft   = cx - R;
         const xRight  = cx + R;
 
-        // segment 1: right straight
+        // segment 1: top semicircle (counterclockwise)
+        if (s <= Math.PI * R) {
+            const θ = s / R;  // 0 → π
+            return {
+                x: cx + R * Math.cos(θ),
+                y: topY + R * Math.sin(θ)
+            };
+        }
+        s -= Math.PI * R;
+
+        // segment 2: left straight (going down)
         if (s <= L) {
-            return { x: xRight, y: topY + s };
+            return { x: xLeft, y: topY + s };
         }
         s -= L;
 
-        // segment 2: bottom semicircle
+        // segment 3: bottom semicircle (counterclockwise)
         if (s <= Math.PI * R) {
-            const θ = s / R;  // 0 → π
+            const θ = Math.PI + s / R;  // π → 2π
             return {
                 x: cx + R * Math.cos(θ),
                 y: bottomY + R * Math.sin(θ)
@@ -217,17 +227,7 @@ class StadiumShape {
         }
         s -= Math.PI * R;
 
-        // segment 3: left straight (going up)
-        if (s <= L) {
-            return { x: xLeft, y: bottomY - s };
-        }
-        s -= L;
-
-        // segment 4: top semicircle
-        const θ = s / R + Math.PI;  // π → 2π
-        return {
-            x: cx + R * Math.cos(θ),
-            y: topY + R * Math.sin(θ)
-        };
+        // segment 4: right straight (going up)
+        return { x: xRight, y: bottomY - s };
     }
 }
