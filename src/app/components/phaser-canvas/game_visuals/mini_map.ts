@@ -16,8 +16,8 @@ export class MiniMapLayer {
 
     private readonly baseWidth    = 100;
     private readonly baseHeight   = 200;
-    private readonly trackSpacing = 1;
-    private readonly startOffset = 2/12;  // adjust if you want a different 0-pos
+    private readonly trackSpacing = 0;
+    private readonly startOffset  = 2/12;  // adjust if you want a different 0-pos
 
     constructor(
         private raceId : number,
@@ -32,13 +32,13 @@ export class MiniMapLayer {
                 this.horsesList = list;
             })
         );
-        
+
         try {
             this.slotColorMap = this.raceSvc.manager.getSlotColorMap(this.raceId);
         } catch (e) {
             console.error('Failed to get slot color map', this.raceId, e);
         }
-        
+
         this.scene.events.once('shutdown', () => this.destroy());
     }
 
@@ -69,12 +69,14 @@ export class MiniMapLayer {
         const tickLen = 6;
         for (let i = 0; i < 4; i++) {
             // sample that one point at t=0
-            const { x, y } = this.shape.pointOnTrack(i, 0);
+            const { x, y, angle } = this.shape.pointOnTrack(i, 0);
             // compute a small perpendicular
-            const dx = tickLen;
+            // TODO: use angle to rotate the line
+            const dx = tickLen * Math.cos(angle);
+            const dy = tickLen * Math.sin(angle);
             this.graphics.beginPath();
-            this.graphics.moveTo(x - dx, y);
-            this.graphics.lineTo(x + dx, y);
+            this.graphics.moveTo(x - dx, y - dy);
+            this.graphics.lineTo(x + dx, y + dy);
             this.graphics.strokePath();
         }
 
@@ -100,7 +102,7 @@ export class MiniMapLayer {
 
             // use the exact HSL—no extra lightness adjust
             const hsl = this.slotColorMap[idx]?.color ?? 'hsl(0,0%,0%)';
-            const color = this.hslStringToPhaserColor(hsl, 0);            
+            const color = this.hslStringToPhaserColor(hsl, 0);
 
             let dot = this.dots.get(idx);
             if (!dot) {
@@ -111,7 +113,8 @@ export class MiniMapLayer {
                 this.dots.set(idx, dot);
             } else {
                 dot.setPosition(x, y)
-                    .setFillStyle(color);
+                    .setFillStyle(color)
+                    .setDepth(80 + h.position!);
             }
         });
     }
@@ -140,7 +143,7 @@ class StadiumShape {
         private baseWidth: number,
         private baseHeight: number,
         private trackSpacing: number,
-        private startOffset = 2/12  // fraction of perimeter to shift t=0
+        private startOffset: number
     ) {}
 
     /** Draw one track’s outline into `graphics` */
@@ -155,26 +158,26 @@ class StadiumShape {
         const xLeft   = cx - R;
         const xRight  = cx + R;
 
-        // right straight
+        // top semicircle
         graphics.beginPath();
-        graphics.moveTo(xRight, topY);
-        graphics.lineTo(xRight, bottomY);
-        graphics.strokePath();
-
-        // bottom semicircle (0 → π)
-        graphics.beginPath();
-        graphics.arc(cx, bottomY, R, 0, Math.PI, false);
+        graphics.arc(cx, topY, R, Math.PI, 2*Math.PI, false);
         graphics.strokePath();
 
         // left straight
         graphics.beginPath();
-        graphics.moveTo(xLeft, bottomY);
-        graphics.lineTo(xLeft, topY);
+        graphics.moveTo(xLeft, topY);
+        graphics.lineTo(xLeft, bottomY);
         graphics.strokePath();
 
-        // top semicircle (π → 2π)
+        // bottom semicircle
         graphics.beginPath();
-        graphics.arc(cx, topY, R, Math.PI, 2 * Math.PI, false);
+        graphics.arc(cx, bottomY, R, 0, Math.PI, false);
+        graphics.strokePath();
+
+        // right straight
+        graphics.beginPath();
+        graphics.moveTo(xRight, bottomY);
+        graphics.lineTo(xRight, topY);
         graphics.strokePath();
     }
 
@@ -182,7 +185,7 @@ class StadiumShape {
      * Given a track index and normalized t∈[0,1],
      * returns the {x,y} along that perimeter.
      */
-    pointOnTrack(trackIndex: number, t: number): { x: number; y: number } {
+    pointOnTrack(trackIndex: number, t: number): { x: number; y: number, angle: number } {
         const w = this.baseWidth - trackIndex * this.trackSpacing * 2;
         const h = this.baseHeight - trackIndex * this.trackSpacing * 2;
         const R = w / 2;
@@ -200,33 +203,35 @@ class StadiumShape {
         const xLeft   = cx - R;
         const xRight  = cx + R;
 
-        // segment 1: right straight
-        if (s <= L) {
-            return { x: xRight, y: topY + s };
-        }
-        s -= L;
-
-        // segment 2: bottom semicircle
+        // segment 1: top semicircle (counterclockwise)
         if (s <= Math.PI * R) {
-            const θ = s / R;  // 0 → π
+            const θ = 2*Math.PI - s / R;  // 2π → π
             return {
                 x: cx + R * Math.cos(θ),
-                y: bottomY + R * Math.sin(θ)
+                y: topY + R * Math.sin(θ),
+                angle: θ
             };
         }
         s -= Math.PI * R;
 
-        // segment 3: left straight (going up)
+        // segment 2: left straight (going down)
         if (s <= L) {
-            return { x: xLeft, y: bottomY - s };
+            return { x: xLeft, y: topY + s, angle: Math.PI };
         }
         s -= L;
 
-        // segment 4: top semicircle
-        const θ = s / R + Math.PI;  // π → 2π
-        return {
-            x: cx + R * Math.cos(θ),
-            y: topY + R * Math.sin(θ)
-        };
+        // segment 3: bottom semicircle (counterclockwise)
+        if (s <= Math.PI * R) {
+            const θ = Math.PI - s / R;  // π → 0
+            return {
+                x: cx + R * Math.cos(θ),
+                y: bottomY + R * Math.sin(θ),
+                angle: θ
+            };
+        }
+        s -= Math.PI * R;
+
+        // segment 4: right straight (going up)
+        return { x: xRight, y: bottomY - s, angle: 0  };
     }
 }

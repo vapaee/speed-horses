@@ -41,7 +41,7 @@ export class PhaserCanvasComponent implements OnInit, OnDestroy {
     placementFollow = 0;
     horseFollow = 0;
     followHorse = false;
-    isMuted = false;
+    isMuted = true;
 
     private game?: Phaser.Game;
 
