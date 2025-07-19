@@ -69,12 +69,14 @@ export class MiniMapLayer {
         const tickLen = 6;
         for (let i = 0; i < 4; i++) {
             // sample that one point at t=0
-            const { x, y } = this.shape.pointOnTrack(i, 0);
+            const { x, y, angle } = this.shape.pointOnTrack(i, 0);
             // compute a small perpendicular
-            const dx = tickLen;
+            // TODO: use angle to rotate the line
+            const dx = tickLen * Math.cos(angle);
+            const dy = tickLen * Math.sin(angle);
             this.graphics.beginPath();
-            this.graphics.moveTo(x - dx, y);
-            this.graphics.lineTo(x + dx, y);
+            this.graphics.moveTo(x - dx, y - dy);
+            this.graphics.lineTo(x + dx, y + dy);
             this.graphics.strokePath();
         }
 
@@ -141,7 +143,7 @@ class StadiumShape {
         private baseWidth: number,
         private baseHeight: number,
         private trackSpacing: number,
-        private startOffset = 2/12  // fraction of perimeter to shift t=0
+        private startOffset: number
     ) {}
 
     /** Draw one track’s outline into `graphics` */
@@ -183,7 +185,7 @@ class StadiumShape {
      * Given a track index and normalized t∈[0,1],
      * returns the {x,y} along that perimeter.
      */
-    pointOnTrack(trackIndex: number, t: number): { x: number; y: number } {
+    pointOnTrack(trackIndex: number, t: number): { x: number; y: number, angle: number } {
         const w = this.baseWidth - trackIndex * this.trackSpacing * 2;
         const h = this.baseHeight - trackIndex * this.trackSpacing * 2;
         const R = w / 2;
@@ -206,14 +208,15 @@ class StadiumShape {
             const θ = 2*Math.PI - s / R;  // 2π → π
             return {
                 x: cx + R * Math.cos(θ),
-                y: topY + R * Math.sin(θ)
+                y: topY + R * Math.sin(θ),
+                angle: θ
             };
         }
         s -= Math.PI * R;
 
         // segment 2: left straight (going down)
         if (s <= L) {
-            return { x: xLeft, y: topY + s };
+            return { x: xLeft, y: topY + s, angle: Math.PI };
         }
         s -= L;
 
@@ -222,12 +225,13 @@ class StadiumShape {
             const θ = Math.PI - s / R;  // π → 0
             return {
                 x: cx + R * Math.cos(θ),
-                y: bottomY + R * Math.sin(θ)
+                y: bottomY + R * Math.sin(θ),
+                angle: θ
             };
         }
         s -= Math.PI * R;
 
         // segment 4: right straight (going up)
-        return { x: xRight, y: bottomY - s };
+        return { x: xRight, y: bottomY - s, angle: 0  };
     }
 }

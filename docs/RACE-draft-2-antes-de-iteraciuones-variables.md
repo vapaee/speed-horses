@@ -37,6 +37,7 @@ Cuando un caballo es retirado de la última carrera de un fixture, este último 
       uint256 startTime;           // momento de comienzo de la carrera.
       uint256 iteratios;           // cantidad de iteraciones que llevará completar la carrera (depende de su longitud)
       // datos dinámicos que se iran actualizando tras cada iteracción
+      bytes32 lastSeed;            // El resultado de esta carrera fue calculado con este seed como el último de la cola de seeds
       bytes32[] seeds;             // Semillas correspondientes a tiempo pasado
       // Datos finales que se escribirán una única vez
       uint256[] positions;         // es el resultado de la carrera. Enm el índice 0 está el id del ganador.
@@ -59,6 +60,7 @@ Cuando un caballo es retirado de la última carrera de un fixture, este último 
 
 * **Creación de un Fixture**: `createNextFixture()`
   Se ejecuta cuando el un caballo de la última carrera del fixture actual es retirado. Esta función decide el startTime del siguiente Fixture basándose en la cantidad de caballos que esperan. Actualiza la variable `current = startTime` para finalmente ejecutar `regenerateFixture(current)` para generar la primer versión del fixture.
+  TODO: FALTA RESOLVER EL LARGO DE LA CARRERA.
 
 * **Regenerar Fixture**: `regenerateFixture(uint256 fixtureId)`
   función que regenera el current fixture, barriendo los postrgados primero y los registrados después para ubicar a los caballos en carreras con otrs caballos de nivel similar hasta completar el máximo de carreras o procesar todos los caballos en espera.
@@ -74,15 +76,11 @@ Cuando un caballo es retirado de la última carrera de un fixture, este último 
 
 ### Definición
 
-* **Simulación y ejecución de las carreras**
-
 Dado que estamos representando el tiempo de forma discreta dividiendo el tiempo total de la carrera en `race.iteratios` partes, en cada iteración lo que estamos averiguando es el avance de los caballos para ese tramo de tiempo. Existen dos funciones de sólo lectura que se pueden ejecutar en cualquier momento para simular la carrera con el pool de semillas en ese momento y una tercera que efectivamnte corre la carrera y guarda el avance hasta el momento.
 
 Antes de comenzar la carrera, éstas pueden ser simuladas de dos formas. Una es usando la última semilla para la primera iteración y la segunda forma es pasando por parámetro el índice de la semilla que se quiere usar como arranque. Luego, en ambas funciones, para sucesivas iteraciones se calcula el índice de la siguiente semilla a partir de la semilla de la iteración anterior. Es decir, que la elección de la primera semilla determinará el desarrollo de toda la carrera.
 
-Luego, existe la función para efectivamente correr la carrera, la cual sólo se puede ejecutar una vez iniciada la carrera (block.timestamp > race.startTime). Esta función lo que hace es verificar cuanto tiempo ha pasado desde la última ejecución y calculando cuantos "ticks" corresponden a tiempo pasado y que no hayan sido procesados y almacenados aun. Para eso, simulará la carrera desde el último punto registrado hasta al momento actual, tomando semillas del pool en el estado en que se encuentre. Esto modificará la lista de `race.seeds` agregando las semillas que hayan sido usadas para la simulación y no hayan sido registradas aun. En posteriores ejecuciones de las funciones de sólo lectura que simulan la carrera, se tomará en cuenta el historial de la carrera `race.seeds` para las primeras iteraciones para luego completar con semillas tomadas de calcular el siguiente índice a partir de la última semilla usada. Esto provocará que cada semilla que pueda ingresar durante el desarrollo de la carrera, sólo afecte las iteraciones futuras manteniendo inmutable las iteraciones pasadas.
-
-* **Pista y sus tramos**
+Luego, existe la función para efectivamente correr la carrera, la cual sólo se puede ejecutar una vez iniciada la carrera (block.timestamp > race.startTime). A diferencia de las funciones de simulación, esta función tendrá un comportamiento diferente cada vez que se ejecute. La primera vez que sea ejecutada, no habrá un historial para reproducir, por lo que tomará la última semilla del pool para iniciar la primer iteración de la carrera y a partir de ahi continuará idéntico a las funciones de simulación con la particularidad de que las semillas que sean usadas en iteraciones correspondientes a tiempo pasado, serán recordadas en el historial de la carrera (race.seeds) para poder reproducirlas en futuras ejecuciones. Luego, cuando esta función de correr la carrera sea ejecutada nuevamente, se encontrará con que el historial de la carrera no está vacío y por tanto en vez de tomar el último seed del pool, tomará en orden todos los seeds del historial para reproducir el progreso de la carrera hasta el momento y una vez procesado ese historial, entonces se calculará el índice del siguiente seed a utilizar del pool para las iteraciones correspondientes a tiempo futuro. Esto provocará que cada semilla que pueda ingresar durante el desarrollo de la carrera, sólo afecte las iteraciones futuras manteniendo inmutable las iteraciones pasadas.
 
 La estructura geométrica de la pista sobre la cual van a correr los caballos es similar a una pista de atletismo; es decir, un rectángulo (cuyo bounding box tiene un largo de 4R) con semicírculos en los extremos (cuyo radio es R). Es decir que las rectas miden 2R mientras que la curva mide PI*R. El punto cero (y final) de la carrera se encuentra al comienzo de la primera curva (o final de la segunda recta) en sentido antihorario. Dado que los caballos se mueven de forma distinta si están en una curva o en una recta, es necesario saber en qué punto de la carrera se encuentran para determinar si corresponde a una recta o a una curva.
 
