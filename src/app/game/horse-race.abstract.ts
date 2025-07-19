@@ -1,13 +1,7 @@
 // src/app/game/horse-race.abstract.ts
 import { BehaviorSubject, interval, Subscription } from 'rxjs';
 import { Horse } from './horses-database';
-
-export const SLOT_COLOR_MAP: Record<number, string> = {
-    0: 'hsl(0,70%,30%)',     // RED
-    1: 'hsl(90,70%,30%)',    // GREEN
-    2: 'hsl(300,70%,30%)', // MAGENTA
-    3: 'hsl(180,70%,30%)'    // CYAN
-};
+import { ALL_COLORS, SlotColor } from './color-database';
 
 export interface RaceHorse {
     slot:             number;
@@ -155,6 +149,7 @@ export class HorseRace {
     readonly id: number;
     readonly winningDistance: number;
     completed = false;
+    private slotColorMap: Record<number, SlotColor> = {};
 
     private readonly tickSpeed:    number;
     private readonly preDuration:  number;
@@ -198,6 +193,7 @@ export class HorseRace {
         this.stopRace();
         console.log(`race ${this.id} started`);
         this._list$.next(new RaceHorsesList(this.allHorses, this.count));
+        this.slotColorMap = this.generateSlotColorMap(this.count);
         this._state$.next('pre');
         this.preTimer.start(
             this.preDuration,
@@ -244,5 +240,20 @@ export class HorseRace {
         this.raceSub?.unsubscribe();
         this.preTimer.stop();
         this.postTimer.stop();
+    }
+
+    getSlotColorMap(): Record<number, SlotColor> {
+        return this.slotColorMap;
+    }
+
+    private generateSlotColorMap(count: number): Record<number, SlotColor> {
+        const shuffled = [...ALL_COLORS];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return Object.fromEntries(
+            shuffled.slice(0, count).map((c, i) => [i, c])
+        );
     }
 }

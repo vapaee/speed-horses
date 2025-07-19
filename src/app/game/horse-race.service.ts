@@ -6,6 +6,7 @@ import {
     RaceHorsesList,
     HorseRaceState
 } from './horse-race.abstract';
+import { SlotColor } from './color-database';
 import {
     Subject,
     Observable,
@@ -64,6 +65,10 @@ class RaceManager {
     }
     getRaceId(id: number): number {
         return this.getHorseRaceById(id).id;
+    }
+
+    getSlotColorMap(id: number): Record<number, SlotColor> {
+        return this.getHorseRaceById(id).getSlotColorMap();
     }
 
     /** Return all IDs in creation order */
@@ -151,6 +156,10 @@ export class HorseRaceService implements OnDestroy {
         ).subscribe(() => {
             this.createRaceday();
         });
+    }
+
+    getSlotColorMap(raceId: number): Record<number, SlotColor> {
+        return this.manager.getSlotColorMap(raceId);
     }
 
     ngOnDestroy(): void {

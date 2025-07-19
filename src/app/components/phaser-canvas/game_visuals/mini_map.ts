@@ -1,7 +1,8 @@
 // src/app/components/phaser-canvas/game_visuals/mini_map.ts
 import Phaser from 'phaser';
 import type { HorseRaceService } from '@app/game/horse-race.service';
-import { SLOT_COLOR_MAP, RaceHorsesList } from '@app/game/horse-race.abstract';
+import { RaceHorsesList } from '@app/game/horse-race.abstract';
+import { SlotColor } from '@app/game/color-database';
 import { Subscription } from 'rxjs';
 
 export class MiniMapLayer {
@@ -11,6 +12,7 @@ export class MiniMapLayer {
     private sub = new Subscription();
     private center!: { x: number; y: number };
     private shape!: StadiumShape;
+    private slotColorMap: Record<number, SlotColor> = {};
 
     private readonly baseWidth    = 100;
     private readonly baseHeight   = 200;
@@ -30,6 +32,13 @@ export class MiniMapLayer {
                 this.horsesList = list;
             })
         );
+        
+        try {
+            this.slotColorMap = this.raceSvc.manager.getSlotColorMap(this.raceId);
+        } catch (e) {
+            console.error('Failed to get slot color map', this.raceId, e);
+        }
+        
         this.scene.events.once('shutdown', () => this.destroy());
     }
 
@@ -90,10 +99,8 @@ export class MiniMapLayer {
             const { x, y } = this.shape.pointOnTrack(ringIndex, t);
 
             // use the exact HSL—no extra lightness adjust
-            const color = this.hslStringToPhaserColor(
-                SLOT_COLOR_MAP[idx],
-                0
-            );
+            const hsl = this.slotColorMap[idx]?.color ?? 'hsl(0,0%,0%)';
+            const color = this.hslStringToPhaserColor(hsl, 0);            
 
             let dot = this.dots.get(idx);
             if (!dot) {
