@@ -5,7 +5,7 @@ pragma solidity ^0.8.20;
 // This file contains placeholder values for common constants used across
 // contracts. Real values should be provided in the final system.
 // --------------------------------------------------------------------------
-
+// TODO: los valores no deberían estr expresados en ether. Son simples valores numéricos.
 uint256 constant MIN_SPEED_BASE_VALUE        = 1 ether;
 uint256 constant LUCK_ENUM                   = 1;
 uint256 constant LUCK_SPEED_PER_LEVEL        = 1 ether;

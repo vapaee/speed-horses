@@ -21,6 +21,7 @@ contract Horses is
 
     /// @notice Performance attributes for each horse
     struct PerformanceStats {
+        uint256 power;
         uint256 acceleration;
         uint256 stamina;
         uint256 minSpeed;
@@ -88,6 +89,9 @@ contract Horses is
     ) external {
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
+
+        // TODO: sacar esto de acá
+        performance[tokenId] = PerformanceStats(tokenId, tokenId, tokenId, tokenId, tokenId, tokenId, tokenId);
     }
 
     // --------------------------------------------------
@@ -104,18 +108,12 @@ contract Horses is
     ) public view returns (uint256) {
         PerformanceStats memory s = performance[id];
 
-        uint256 base      = levelProp(s.minSpeed) * MIN_SPEED_BASE_VALUE;
-        uint256 luckR     = uint256(keccak256(abi.encodePacked(rand, LUCK_ENUM))) % 100;
-        uint256 luckBonus = luckR * LUCK_SPEED_PER_LEVEL * (levelProp(s.luck) + LUCK_MIN_POINTS);
+        uint256 base = computeBase(id, rand);
+        uint256 luck = computeLuck(id, rand);
 
-        uint256 sectionBonus = _sectionBonus(
-            rand,
-            isRect,
-            levelProp(s.curveBonus),
-            levelProp(s.straightBonus)
-        );
+        uint256 section = computeSection(id, rand, isRect);
 
-        uint256 advance = base + luckBonus + sectionBonus;
+        uint256 advance = base + luck + section;
         uint256 cap     = (MAX_SPEED_EXTRA_POINTS + levelProp(s.maxSpeed)) * MAX_SPEED_ADVANCE_PER_LEVEL;
         if (advance > cap) {
             advance = cap;
@@ -125,6 +123,44 @@ contract Horses is
         advance = _applyAcceleration(advance, tick, levelProp(s.acceleration));
 
         return advance;
+    }
+
+    function computeBase(
+        uint256 id,
+        bytes32 rand
+    ) public view returns (uint256 base) {
+        PerformanceStats memory s = performance[id];
+        uint256 lvl = levelProp(s.minSpeed + 2);
+        uint256 luckR = uint256(keccak256(abi.encodePacked(rand, id, "base"))) % 30;
+        base = lvl * (luckR + 50);
+    }
+
+    function computeLuck(
+        uint256 id,
+        bytes32 rand
+    ) public view returns (uint256 luck) {
+        PerformanceStats memory s = performance[id];
+        uint256 luckR = uint256(keccak256(abi.encodePacked(rand, id, "luck"))) % 160;
+        luck = luckR * levelProp(s.luck + 1);
+        return luck;
+    }
+
+    /// @dev Computes bonus for curve or straight section
+    function computeSection(
+        uint256 id,
+        bytes32 rand,
+        bool isRect
+    ) public view returns (uint256) {
+        PerformanceStats memory s = performance[id];
+        if (!isRect) {
+            uint256 lvl = levelProp(s.curveBonus);
+            uint256 r = uint256(keccak256(abi.encodePacked(rand, id, "curve"))) % 100;
+            return r * lvl;
+        } else {
+            uint256 lvl = levelProp(s.straightBonus);
+            uint256 r = uint256(keccak256(abi.encodePacked(rand, id, "straight"))) % 100;
+            return r * lvl;
+        }
     }
 
     /// @notice Awards unassigned points after a race and sets race cooldown
@@ -145,6 +181,7 @@ contract Horses is
     /// @notice Assigns earned points to performance and cooldown stats
     function assignPoints(
         uint256 horseId,
+        uint256 power,
         uint256 acceleration,
         uint256 stamina,
         uint256 minSpeed,
@@ -214,6 +251,7 @@ contract Horses is
     /// @notice Computes the level of a single stat using log2
     function levelProp(uint256 pts) public pure returns (uint256) {
         if (pts == 0) return 0;
+        if (pts == 1) return 5e17;
         UD60x18 x = ud(pts * 1e18);
         return x.log2().intoUint256();
     }
@@ -230,22 +268,6 @@ contract Horses is
     // Internal helper functions
     // --------------------------------------------------
 
-    /// @dev Computes bonus for curve or straight section
-    function _sectionBonus(
-        bytes32 rand,
-        bool isRect,
-        uint256 curveLevel,
-        uint256 straightLevel
-    ) internal pure returns (uint256) {
-        if (!isRect) {
-            uint256 r = uint256(keccak256(abi.encodePacked(rand, CURVE_ENUM))) % 100;
-            return r * CURVE_SPEED_PER_LEVEL * (curveLevel + CURVE_MIN_POINTS);
-        } else {
-            uint256 r = uint256(keccak256(abi.encodePacked(rand, STRAIGHT_ENUM))) % 100;
-            return r * STRAIGHT_SPEED_PER_LEVEL * (straightLevel + STRAIGHT_MIN_POINTS);
-        }
-    }
-
     /// @dev Applies stamina reduction effect to the advance value
     function _applyStamina(
         uint256 advance,
@@ -253,17 +275,25 @@ contract Horses is
         uint256 tick,
         uint256 staminaLevel
     ) internal pure returns (uint256) {
+        // TODO: perTick debería ser fijo (25 metros por tick)
         uint256 perTick   = length / TOTAL_RACE_ITERATIONS;
         uint256 currDist  = perTick * tick;
         uint256 threshold = MIN_DISTANCE_RESISTANCE + STAMINA_METERS_PER_LEVEL * staminaLevel;
+        // threshold representa el punto a partir del cual la resistencia comienza a afectar
         if (currDist <= threshold) {
+            // Si no llega a ese punto, no hay reducción
             return advance;
         }
+        // _after representa la cantidad de ticks que superan el threshold
         uint256 _after        = (currDist - threshold) / perTick;
+        // TODO: el multiplicador 2 debería ser una constante configurable
         uint256 reductionPct  = _after * 2;
+        // La reducción máxima es del 20% (2 * 10%)
         if (reductionPct > 20) reductionPct = 20;
         uint256 pct = 100 - reductionPct;
+        // TODO: averiguar si no hay pérdida de precisión al dividir por 100
         return (advance * pct) / 100;
+
     }
 
     /// @dev Applies acceleration ramp-up effect to the advance value
@@ -405,3 +435,4 @@ contract Horses is
         return super.supportsInterface(interfaceId);
     }
 }
+
