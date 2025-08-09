@@ -14,6 +14,7 @@ interface ISpeedHorses {
 contract HorseMinter {
     IHorseStats public horseStats;
     ISpeedHorses public speedHorses;
+    string public version = "HorseMinter-v1.0.0";
 
     uint256 public constant BASE_CREATION_COST = 600 ether; // en TLOS
     uint256 public constant RANDOMIZE_COST = 100 ether;     // en TLOS
