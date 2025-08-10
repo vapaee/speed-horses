@@ -2,35 +2,56 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-import { PerformanceStats } from "./PerformanceStats.sol";
+import { PerformanceStats, CoolDownStats } from "./StatsStructs.sol";
 
 using Strings for uint256;
 
 contract HorseStats {
     string public version = "HorseStats-v1.0.0";
 
+    // ---------------------------------------------------------------------
+    // Contract References
+    // ---------------------------------------------------------------------
+    address public admin;
+    address public racingFixture;
+    address public hayToken;
+    address public horseMinter;
+
+    // ---------------------------------------------------------------------
+    // Constants
+    // ---------------------------------------------------------------------
+    uint256 constant BASE_RESTING_COOLDOWN          = 2 days;
+    uint256 constant BASE_FEEDING_COOLDOWN          = 2 days;
+    uint256 constant FEEDING_COST_PER_POIONT        = 10 ether; // 10 HAY tokens per point
+
+    // ---------------------------------------------------------------------
+    // Structs and Mappings
+    // ---------------------------------------------------------------------
     struct HorseData {
         uint256 color;
         uint256 version;
         PerformanceStats baseStats;
         PerformanceStats assignedStats;
+        PerformanceStats levelStats; // cached levels for each stat
+        CoolDownStats coolDownStats;
         uint256 totalPoints;
         uint256 unassignedPoints;
         uint256 restFinish;
         uint256 feedFinish;
     }
 
-    address public admin;
-    address public racingFixture;
-    address public hayToken;
-    address public horseMinter;
-
     mapping(uint256 => HorseData) public horses;
     mapping(uint256 => uint256) public latestVersionPerColor;
-
-    uint256 public costPerPoint = 1 ether; // HAY token, asumir 18 decimales
-
     mapping(uint256 => string) public colorNames;
+
+    // ---------------------------------------------------------------------
+    // Events
+    // ---------------------------------------------------------------------
+    event HorseCreated(uint256 indexed horseId, uint256 color, PerformanceStats baseStats);
+    event ColorNameSet(uint256 indexed colorId, string name);
+    event HorseStatsUpdated(uint256 indexed horseId, PerformanceStats stats);
+    event HorseWonPrize(uint256 indexed horseId, uint256 points);
+
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Not admin");
@@ -65,6 +86,7 @@ contract HorseStats {
 
     function setColorName(uint256 colorId, string calldata name) external onlyAdmin {
         colorNames[colorId] = name;
+        emit ColorNameSet(colorId, name);
     }
 
     function createHorse(
@@ -82,17 +104,26 @@ contract HorseStats {
             version: nextVersion,
             baseStats: baseStats,
             assignedStats: PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0),
+            levelStats: PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0),
             totalPoints: 0,
             unassignedPoints: 0,
             restFinish: 0,
             feedFinish: 0
         });
+
+        _setPropertyLevels(horseId);
+
+        emit HorseCreated(horseId, color, baseStats);
     }
 
     function setRacePrize(uint256 horseId, uint256 points) external onlyRacingFixture {
         require(horses[horseId].version != 0, 'Horse not found');
         horses[horseId].totalPoints += points;
         horses[horseId].unassignedPoints += points;
+
+        _startResting(horseId);
+
+        emit HorseWonPrize(horseId, points);
     }
 
     function _sum5(
@@ -115,21 +146,21 @@ contract HorseStats {
         uint256 luck,
         uint256 curveBonus,
         uint256 straightBonus,
-        uint256 raceCooldownStatPoints,
-        uint256 feedCooldownStatPoints
+        uint256 resting,
+        uint256 feeding,
     ) external {
         HorseData storage h = horses[horseId];
         require(h.version != 0, 'Horse not found');
 
         uint256 part1 = _sum5(power, acceleration, stamina, minSpeed, maxSpeed);
-        uint256 part2 = _sum5(luck, curveBonus, straightBonus, raceCooldownStatPoints, feedCooldownStatPoints);
+        uint256 part2 = _sum5(luck, curveBonus, straightBonus, resting, feeding);
         uint256 totalToAssign = part1 + part2;
 
         require(h.unassignedPoints >= totalToAssign, 'Not enough unassigned points');
 
         // Cobro en HAY tokens
         require(hayToken != address(0), 'HAY token not set');
-        IERC20(hayToken).transferFrom(msg.sender, address(this), totalToAssign * costPerPoint);
+        IERC20(hayToken).transferFrom(msg.sender, address(this), totalToAssign * FEEDING_COST_PER_POIONT);
 
         h.assignedStats.power += power;
         h.assignedStats.acceleration += acceleration;
@@ -140,76 +171,177 @@ contract HorseStats {
         h.assignedStats.curveBonus += curveBonus;
         h.assignedStats.straightBonus += straightBonus;
 
-        // TODO: revisar cuanto tiempo de alimentación debe tener el caballo
-        h.feedFinish = block.timestamp + (feedCooldownStatPoints * 1 hours);
+        _setPropertyLevels(horseId);
+
+        h.coolDownStats.resting += resting;
+        h.coolDownStats.feeding += feeding;
 
         h.unassignedPoints -= totalToAssign;
+        h.totalPoints += totalToAssign;
+
+        // Actualizar tiempos de alimentación
+        _startFeeding(horseId);
+
+        emit HorseStatsUpdated(horseId, h.assignedStats);
+    }
+
+    function _setPropertyLevels(uint256 horseId) public {
+        HorseData storage h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        h.levelStats.power         = getPower(horseId);
+        h.levelStats.acceleration  = getAcceleration(horseId);
+        h.levelStats.stamina       = getStamina(horseId);
+        h.levelStats.minSpeed      = getMinSpeed(horseId);
+        h.levelStats.maxSpeed      = getMaxSpeed(horseId);
+        h.levelStats.luck          = getLuck(horseId);
+        h.levelStats.curveBonus    = getCurveBonus(horseId);
+        h.levelStats.straightBonus = getStraightBonus(horseId);
+    }
+
+    function _startFeeding(uint256 horseId) public {
+        HorseData storage h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        uint256 lv = getFeedingCoolDown(horseId);
+        uint256 delay = BASE_FEEDING_COOLDOWN / (lv + 1);
+        if (h.feedFinish >= block.timestamp) {
+            h.feedFinish += delay;
+        } else {
+            h.feedFinish = block.timestamp + delay;
+        }
+    }
+
+    function _startResting(uint256 horseId) public {
+        HorseData storage h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        uint256 lv = getRestingCoolDown(horseId);
+        uint256 delay = BASE_RESTING_COOLDOWN / (lv + 1);
+        if (h.restFinish >= block.timestamp) {
+            h.restFinish += delay;
+        } else {
+            h.restFinish = block.timestamp + delay;
+        }
     }
 
     // --------------------------------------------------------
     // Getters
     // --------------------------------------------------------
 
-
-    function hasFinishedResting(uint256 horseId) external view returns (bool) {
+    function hasFinishedResting(uint256 horseId) public view returns (bool) {
         return block.timestamp >= horses[horseId].restFinish;
     }
 
-    function hasFinishedFeeding(uint256 horseId) external view returns (bool) {
+    function hasFinishedFeeding(uint256 horseId) public view returns (bool) {
         return block.timestamp >= horses[horseId].feedFinish;
     }
 
-    function getAssignedStats(uint256 horseId) external view returns (PerformanceStats memory) {
+    function getAssignedStats(uint256 horseId) public view returns (PerformanceStats memory) {
         return horses[horseId].assignedStats;
     }
 
-    function getBaseStats(uint256 horseId) external view returns (PerformanceStats memory) {
+    function getBaseStats(uint256 horseId) public view returns (PerformanceStats memory) {
         return horses[horseId].baseStats;
     }
 
-    function getColorVersion(uint256 horseId) external view returns (uint256, uint256) {
+    function getColorVersion(uint256 horseId) public view returns (uint256, uint256) {
         HorseData memory h = horses[horseId];
         return (h.color, h.version);
     }
 
-    function getTotalPoints(uint256 horseId) external view returns (uint256) {
+    function getTotalPoints(uint256 horseId) public view returns (uint256) {
         require(h.version != 0, 'Horse not found');
         return horses[horseId].totalPoints;
     }
 
-    function getUnassignedPoints(uint256 horseId) external view returns (uint256) {
+    function getUnassignedPoints(uint256 horseId) public view returns (uint256) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         return h.unassignedPoints;
     }
 
-    function getLevel(uint256 horseId) external view returns (uint256 level) {
+    function getLevel(uint256 horseId) public view returns (uint256 level) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         // TODO: Expresar la siguiente utilizando la biblioteca UFix6Lib
-        // level = floor(getPower(horseId) * horses[horseId].totalPoints / log2(horses[horseId].totalPoints));
+        // level = floor(h.levelStats.power * h.totalPoints / log2(h.totalPoints));
     }
 
-    // TODO: esta función debería devolver un UFix6
-    function getPower(uint256 horseId) external view returns (uint256 power) {
+    function getPower(uint256 horseId) public view returns (uint256 power) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
-        // TODO: Expresar la siguiente utilizando la biblioteca UFix6Lib
-        // power =  1 + log2(h.assignedStats.power) * 0.1;
+        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
+        // power = 1 + log2(h.assignedStats.power + h.baseStats.power) * 0.1;
     }
 
+    function getAcceleration(uint256 horseId) public pure returns (uint256 acceleration) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        uint256 value = h.baseStats.acceleration + h.assignedStats.acceleration;
+        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
+        // acceleration = h.levelStats.power * value / log2(value)
+    }
 
-    // --------------------------------------------------------
-    // Auxiliary functions
-    // --------------------------------------------------------
+    function getStamina(uint256 horseId) public pure returns (uint256 stamina) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        uint256 value = h.baseStats.stamina + h.assignedStats.stamina;
+        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
+        // stamina = h.levelStats.power * value / log2(value)
+    }
 
-    function floorLog2(uint256 x) internal pure returns (uint256 r) {
-        require(x > 0, "Input must be greater than 0");
-        r = 0;
-        while (x > 1) {
-            x >>= 1; // Divide by 2
-            r++;
-        }
+    function getMinSpeed(uint256 horseId) public pure returns (uint256 minSpeed) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        uint256 value = h.baseStats.minSpeed + h.assignedStats.minSpeed;
+        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
+        // minSpeed = h.levelStats.power * value / log2(value)
+    }
+
+    function getMaxSpeed(uint256 horseId) public pure returns (uint256 maxSpeed) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        uint256 value = h.baseStats.maxSpeed + h.assignedStats.maxSpeed;
+        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
+        // maxSpeed = h.levelStats.power * value / log2(value)
+    }
+
+    function getLuck(uint256 horseId) public pure returns (uint256 luck) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        uint256 value = h.baseStats.luck + h.assignedStats.luck;
+        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
+        // luck = h.levelStats.power * value / log2(value)
+    }
+
+    function getCurveBonus(uint256 horseId) public pure returns (uint256 curveBonus) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        uint256 value = h.baseStats.curveBonus + h.assignedStats.curveBonus;
+        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
+        // curveBonus = h.levelStats.power * value / log2(value)
+    }
+
+    function getStraightBonus(uint256 horseId) public pure returns (uint256 straightBonus) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        uint256 value = h.baseStats.straightBonus + h.assignedStats.straightBonus;
+        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
+        // straightBonus = h.levelStats.power * value / log2(value)
+    }
+
+    function getRestingCoolDown(uint256 horseId) public pure returns (uint256 resting) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        uint256 value = h.coolDownStats.resting;
+        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
+        // resting = h.levelStats.power * value / log2(value)
+    }
+
+    function getFeedingCoolDown(uint256 horseId) public pure returns (uint256 feeding) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        uint256 value = h.coolDownStats.feeding;
+        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
+        // feeding = h.levelStats.power * value / log2(value)
     }
 
     // --------------------------------------------------------

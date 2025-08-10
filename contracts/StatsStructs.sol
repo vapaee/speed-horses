@@ -11,3 +11,9 @@ struct PerformanceStats {
     uint256 curveBonus;
     uint256 straightBonus;
 }
+
+/// @notice Cooldown reduction attributes for each horse
+struct CooldownStats {
+    uint256 resting;
+    uint256 feeding;
+}
