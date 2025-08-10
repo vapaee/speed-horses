@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+interface IHorses {
+    function level(uint256 horseId) external view returns (uint256);
+    function pointsAssigned(uint256 horseId) external view returns (uint256);
+    function pointsUnassigned(uint256 horseId) external view returns (uint256);
+    function ownerOf(uint256 horseId) external view returns (address);
+}
+
 /// @title FixtureManager
 /// @notice Manages race fixtures and horse registrations.
 /// @dev This is a simplified implementation based on the provided specification.
@@ -17,8 +24,13 @@ contract FixtureManager {
     uint256 public constant FIXTURE_MIN_TIME_DISTANCE = 30 minutes;
     uint256 public constant FIXTURE_MAX_TIME_DISTANCE = 8 hours;
     uint256 public constant TIME_BETWEEN_RACES = 3 minutes;
-    uint256 public constant MAX_RACE_PARTICIPANTS = 8;
-    uint256 public constant MIN_RACE_PARTICIPANTS = 2;
+    uint256 public constant TOTAL_TRACK_LENGTH = 1200;
+    uint256 public constant MAX_HORSES_PER_RACE = 6;
+    uint256 public constant MIN_HORSES_PER_RACE = 3;
+    uint256 public constant MAX_HORSE_LEVEL_TRACK_MODIFIER = 10;
+    uint256 public constant MAX_RACE_PARTICIPANTS = MAX_FIXTURE_RACES * MAX_HORSES_PER_RACE;
+    uint256 public constant MIN_RACE_PARTICIPANTS = MIN_HORSES_PER_RACE;
+    uint256 public constant RACE_HORSE_INSCRIPTION_COST_PER_LEVEL = 100 ether;
 
     // ---------------------------------------------------------------------
     // Structs
@@ -73,22 +85,22 @@ contract FixtureManager {
     // Horse registration
     // ---------------------------------------------------------------------
 
-    /// @notice Registers a horse for the next available race.
+    /// @notice Registers a horse for the next available fixture.
     /// @param horseId Id of the horse
-    /// @param level Level of the horse
-    /// @param points Total points of the horse
-    /// @param veteran True if the horse is veteran, false if rookie
+    // TODO: INVÁLIDO
     function registerHorse(
-        uint256 horseId,
-        uint256 level,
-        uint256 points,
-        bool veteran
+        uint256 horseId
     ) external {
-        require(horseId != 0, "Invalid horseId");
-        horseInfo[horseId] = HorseInfo(level, points, veteran);
+        uint256 level = horses.level(horseId);
+        uint256 cost = level * RACE_HORSE_INSCRIPTION_COST_PER_LEVEL;
+        hayToken.transferFrom(msg.sender, address(this), cost);
         registered.push(horseId);
-
         emit HorseRegistered(horseId);
+
+        if (totalHorses(fixtures[current]) < MAX_FIXTURE_HORSES && block.timestamp < fixtures[current].startTime - FIXTURE_CONFIRM_TIME) {
+            regenerateFixture(current);
+        }
+
 
         _tryGenerateFixture();
     }
@@ -163,20 +175,35 @@ contract FixtureManager {
 
     /// @dev Calculates the next start time for a fixture based on the number of
     ///      horses waiting. This is a naive approximation of the described
-    ///      behaviour.
+    ///      behavior.
     function _calculateNextStartTime() internal view returns (uint256) {
-        uint256 wait = FIXTURE_MAX_TIME_DISTANCE;
-        uint256 total = registered.length + postponed.length;
-        if (total > MAX_RACE_PARTICIPANTS) {
+        uint256 wait = 0;
+        uint256 totalHorsesWaiting = registered.length + postponed.length;
+        if (totalHorsesWaiting > MAX_RACE_PARTICIPANTS) {
             wait = FIXTURE_MIN_TIME_DISTANCE;
+        } else if (totalHorsesWaiting < MIN_RACE_PARTICIPANTS) {
+            wait = FIXTURE_MAX_TIME_DISTANCE;
+        } else {
+            // Minimun time to wait
+            uint256 minWait = FIXTURE_MIN_TIME_DISTANCE;
+            // Remaining waiting time that depends on waiting horses
+            uint256 diffWait = FIXTURE_MAX_TIME_DISTANCE - FIXTURE_MIN_TIME_DISTANCE;
+            // Maximum waiting horses that can race in next fixture
+            uint256 maxDifference = MAX_RACE_PARTICIPANTS - MIN_RACE_PARTICIPANTS;
+            // Actual waiting horses that decides how much time will be added
+            uint256 waitingHorses = totalHorsesWaiting - MIN_RACE_PARTICIPANTS;
+            uint256 proportionalWaiting = (maxDifference - waitingHorses) / maxDifference;
+            wait = minWait + diffWait * proportionalWaiting;
         }
         return block.timestamp + wait;
     }
 
     /// @dev Calculates race length based on level and number of participants.
     function _calculateRaceLength(uint256 level, uint256 participants) internal pure returns (uint256) {
-        uint256 base = 1000 + (level * 100);
-        return base + (participants * 50);
+        uint256 part1 = TOTAL_TRACK_LENGTH / 3;
+        uint256 part2 = (TOTAL_TRACK_LENGTH / 3) * (participants - MIN_HORSES_PER_RACE) / (MAX_HORSES_PER_RACE - MIN_HORSES_PER_RACE);
+        uint256 part3 = (TOTAL_TRACK_LENGTH / 3) * (min(MAX_HORSE_LEVEL_TRACK_MODIFIER, level) ) / MAX_HORSE_LEVEL_TRACK_MODIFIER;
+        return part1 + part2 + part3;
     }
 
     /// @dev Removes the first `count` elements from the registered array.

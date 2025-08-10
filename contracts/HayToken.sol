@@ -11,6 +11,6 @@ contract HayToken is ERC20, Ownable {
         ERC20('HAY Token', 'HAY')
         Ownable(msg.sender)
     {
-        _mint(msg.sender, 1_000_000 ether); // Mint inicial para pruebas
+
     }
 }

@@ -28,7 +28,6 @@ contract HorseStats {
     mapping(uint256 => HorseData) public horses;
     mapping(uint256 => uint256) public latestVersionPerColor;
 
-    // TODO: definir el costo en HAY token por cada opunto asignado
     uint256 public costPerPoint = 1 ether; // HAY token, asumir 18 decimales
 
     mapping(uint256 => string) public colorNames;
@@ -169,8 +168,48 @@ contract HorseStats {
     }
 
     function getColorVersion(uint256 horseId) external view returns (uint256, uint256) {
-        HorseData storage h = horses[horseId];
+        HorseData memory h = horses[horseId];
         return (h.color, h.version);
+    }
+
+    function getTotalPoints(uint256 horseId) external view returns (uint256) {
+        require(h.version != 0, 'Horse not found');
+        return horses[horseId].totalPoints;
+    }
+
+    function getUnassignedPoints(uint256 horseId) external view returns (uint256) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        return h.unassignedPoints;
+    }
+
+    function getLevel(uint256 horseId) external view returns (uint256 level) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        // TODO: Expresar la siguiente utilizando la biblioteca UFix6Lib
+        // level = floor(getPower(horseId) * horses[horseId].totalPoints / log2(horses[horseId].totalPoints));
+    }
+
+    // TODO: esta función debería devolver un UFix6
+    function getPower(uint256 horseId) external view returns (uint256 power) {
+        HorseData memory h = horses[horseId];
+        require(h.version != 0, 'Horse not found');
+        // TODO: Expresar la siguiente utilizando la biblioteca UFix6Lib
+        // power =  1 + log2(h.assignedStats.power) * 0.1;
+    }
+
+
+    // --------------------------------------------------------
+    // Auxiliary functions
+    // --------------------------------------------------------
+
+    function floorLog2(uint256 x) internal pure returns (uint256 r) {
+        require(x > 0, "Input must be greater than 0");
+        r = 0;
+        while (x > 1) {
+            x >>= 1; // Divide by 2
+            r++;
+        }
     }
 
     // --------------------------------------------------------

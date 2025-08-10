@@ -20,9 +20,11 @@ El intervalo entre carreras dentro de un mismo fixture es constante (`TIME_BETWE
 
 El contrato mantiene una lista de espera ilimitada de caballos registrados por orden de llegada, así como una lista prioritaria de caballos aplazados —es decir, aquellos que no pudieron competir en fixtures anteriores por falta de rivales adecuados—. Al momento de generar un nuevo fixture, se toman caballos de ambas listas, priorizando los aplazados, hasta completar las carreras necesarias.
 
-El algoritmo de generación de carreras dentro del fixture recorre los caballos candidatos, verificando si existe una carrera en la que puedan participar según su nivel. Si encuentra una carrera adecuada con cupo disponible, lo incorpora; si no, crea una nueva carrera con ese caballo como primer inscripto. Cuando una carrera alcanza el número máximo de participantes, se considera confirmada y se comienza una nueva con el mismo nivel. El proceso finaliza cuando se alcanza el número máximo de carreras permitidas en el fixture o se agotan los caballos elegibles. Las carreras que cumplen con el mínimo de participantes se ordenan por nivel y se incorporan al fixture. Los caballos que no logran formar una carrera válida son nuevamente aplazados y reciben un premio consuelo proporcional a su nivel.
+El algoritmo de generación de carreras dentro del fixture recorre los caballos candidatos, verificando si existe una carrera en la que puedan participar según su nivel. Si encuentra una carrera adecuada con cupo disponible, lo incorpora; si no, crea una nueva carrera con ese caballo como primer inscripto. Cuando una carrera alcanza el número máximo de participantes, se considera confirmada y, de ser necesario, se comienza una nueva con el mismo nivel. El proceso finaliza cuando se alcanza el número máximo de carreras permitidas en el fixture o se agotan los caballos elegibles. Las carreras que cumplen con el mínimo de participantes se ordenan por nivel y se incorporan al fixture. Los caballos que no logran formar una carrera válida son nuevamente aplazados y reciben un premio consuelo (expresado en token HAY) proporcional a su nivel.
 
-Cuando un caballo es retirado de la última carrera de un fixture, este se da por finalizado y se genera el siguiente fixture, calculando su fecha de inicio en función de la cantidad de caballos en espera. Desde entonces, por cada nueva inscripción, si aún hay cupo, se ejecuta nuevamente el algoritmo generador del fixture. Este ciclo continúa hasta que se alcanza el tiempo de confirmación, tras lo cual el fixture queda congelado y sólo se siguen acumulando inscripciones para la siguiente ronda.
+Después de terminada la última carrera, qualquier usuario puede ejecutar la función que da por finalizado el fixture para generar el siguiente fixture, calculando su fecha de inicio en función de la cantidad de caballos en espera. Desde entonces, por cada nueva inscripción, si aún hay cupo, se ejecuta nuevamente el algoritmo generador del fixture. Este ciclo continúa hasta que se alcanza el tiempo de confirmación, tras lo cual el fixture queda congelado y sólo se siguen acumulando inscripciones para la siguiente ronda.
+
+Si un caballo que corrió en la última carrera de un fixture, es retirado de la misma, se ejecutará automáticamente la función que dará por finalizado el fixture y generará el siguiente.
 
 ### Implementación
 
@@ -42,13 +44,14 @@ contract RaceManager {
         // datos dinámicos que se iran actualizando tras cada iteracción
         bytes32[] seeds;             // Semillas correspondientes a tiempo pasado
         // Datos finales que se escribirán una única vez
-        uint256[] positions;         // es el resultado de la carrera. Enm el índice 0 está el id del ganador.
+        uint256[] positions;         // es el resultado de la carrera. En el índice 0 está el id del ganador.
     }
 
     struct Fixture {
-        uint256 startTime;           // momento de comienzo de la primer carrera a la vez que sirve de ID para el fixture
+        uint256 startTime;           // momento (timestamp) de comienzo de la primer carrera a la vez que sirve de ID para el fixture
         uint256[] Race;              // carreras generadas. Las carreras de un fixture se identifican por su índice en esta lista
         uint256 currentRace;         // índice de la carrera siguiente o en curso.
+        uint256 prevFixture;         // referencia al Fixture anterior. Servirá para borrar datos de Fixtures pasados.
     }
 
     struct Postponed {
@@ -61,7 +64,7 @@ contract RaceManager {
     uint256[] registered;            // id de los caballos inscriptos
     
     mapping(uint256 => Fixture) public fixtures; // key is the startTime of the fixture
-    uint256 current;                 // id del fixture en el que trabajamos actualemnte. Puedes no haber empezado o estar en proceso.
+    uint256 currentFixture;          // id del fixture en el que trabajamos actualemnte. Puedes no haber empezado o estar en proceso.
 ```
 * **Creación de un Fixture**: `createNextFixture()`
   Se ejecuta cuando un caballo de la última carrera del fixture actual es retirado. Esta función decide el startTime del siguiente Fixture basándose en la cantidad de caballos que esperan. Actualiza la variable `current = startTime` para finalmente ejecutar `regenerateFixture(current)` para generar la primer versión del fixture.
