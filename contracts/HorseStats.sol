@@ -3,8 +3,10 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import { PerformanceStats, CoolDownStats } from "./StatsStructs.sol";
+import { UFix6, UFix6Lib } from "./UFix6Lib.sol";
 
 using Strings for uint256;
+using UFix6Lib for UFix6;
 
 contract HorseStats {
     string public version = "HorseStats-v1.0.0";
@@ -261,87 +263,121 @@ contract HorseStats {
     function getLevel(uint256 horseId) public view returns (uint256 level) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
-        // TODO: Expresar la siguiente utilizando la biblioteca UFix6Lib
         // level = floor(h.levelStats.power * h.totalPoints / log2(h.totalPoints));
+        UFix6 power = UFix6.wrap(h.levelStats.power);
+        UFix6 totalPoints = UFix6Lib.fromUint(h.totalPoints);
+        UFix6 logTotal = UFix6Lib.log2_uint(h.totalPoints);
+        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, totalPoints), logTotal);
+        level = UFix6Lib.toUint(result);
     }
 
     function getPower(uint256 horseId) public view returns (uint256 power) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
-        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
-        // power = 1 + log2(h.assignedStats.power + h.baseStats.power) * 0.1;
+        uint256 value = h.assignedStats.power + h.baseStats.power;
+        UFix6 logValue = UFix6Lib.log2_uint(value);
+        UFix6 scaled = UFix6Lib.mul(logValue, UFix6.wrap(100000));
+        UFix6 result = UFix6Lib.add(UFix6Lib.one(), scaled);
+        power = UFix6.unwrap(result);
     }
 
-    function getAcceleration(uint256 horseId) public pure returns (uint256 acceleration) {
+    function getAcceleration(uint256 horseId) public view returns (uint256 acceleration) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.acceleration + h.assignedStats.acceleration;
-        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
-        // acceleration = h.levelStats.power * value / log2(value)
+        UFix6 power = UFix6.wrap(h.levelStats.power);
+        UFix6 val = UFix6Lib.fromUint(value);
+        UFix6 logValue = UFix6Lib.log2_uint(value);
+        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, val), logValue);
+        acceleration = UFix6.unwrap(result);
     }
 
-    function getStamina(uint256 horseId) public pure returns (uint256 stamina) {
+    function getStamina(uint256 horseId) public view returns (uint256 stamina) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.stamina + h.assignedStats.stamina;
-        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
-        // stamina = h.levelStats.power * value / log2(value)
+        UFix6 power = UFix6.wrap(h.levelStats.power);
+        UFix6 val = UFix6Lib.fromUint(value);
+        UFix6 logValue = UFix6Lib.log2_uint(value);
+        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, val), logValue);
+        stamina = UFix6.unwrap(result);
     }
 
-    function getMinSpeed(uint256 horseId) public pure returns (uint256 minSpeed) {
+    function getMinSpeed(uint256 horseId) public view returns (uint256 minSpeed) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.minSpeed + h.assignedStats.minSpeed;
-        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
-        // minSpeed = h.levelStats.power * value / log2(value)
+        UFix6 power = UFix6.wrap(h.levelStats.power);
+        UFix6 val = UFix6Lib.fromUint(value);
+        UFix6 logValue = UFix6Lib.log2_uint(value);
+        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, val), logValue);
+        minSpeed = UFix6.unwrap(result);
     }
 
-    function getMaxSpeed(uint256 horseId) public pure returns (uint256 maxSpeed) {
+    function getMaxSpeed(uint256 horseId) public view returns (uint256 maxSpeed) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.maxSpeed + h.assignedStats.maxSpeed;
-        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
-        // maxSpeed = h.levelStats.power * value / log2(value)
+        UFix6 power = UFix6.wrap(h.levelStats.power);
+        UFix6 val = UFix6Lib.fromUint(value);
+        UFix6 logValue = UFix6Lib.log2_uint(value);
+        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, val), logValue);
+        maxSpeed = UFix6.unwrap(result);
     }
 
-    function getLuck(uint256 horseId) public pure returns (uint256 luck) {
+    function getLuck(uint256 horseId) public view returns (uint256 luck) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.luck + h.assignedStats.luck;
-        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
-        // luck = h.levelStats.power * value / log2(value)
+        UFix6 power = UFix6.wrap(h.levelStats.power);
+        UFix6 val = UFix6Lib.fromUint(value);
+        UFix6 logValue = UFix6Lib.log2_uint(value);
+        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, val), logValue);
+        luck = UFix6.unwrap(result);
     }
 
-    function getCurveBonus(uint256 horseId) public pure returns (uint256 curveBonus) {
+    function getCurveBonus(uint256 horseId) public view returns (uint256 curveBonus) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.curveBonus + h.assignedStats.curveBonus;
-        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
-        // curveBonus = h.levelStats.power * value / log2(value)
+        UFix6 power = UFix6.wrap(h.levelStats.power);
+        UFix6 val = UFix6Lib.fromUint(value);
+        UFix6 logValue = UFix6Lib.log2_uint(value);
+        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, val), logValue);
+        curveBonus = UFix6.unwrap(result);
     }
 
-    function getStraightBonus(uint256 horseId) public pure returns (uint256 straightBonus) {
+    function getStraightBonus(uint256 horseId) public view returns (uint256 straightBonus) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.straightBonus + h.assignedStats.straightBonus;
-        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
-        // straightBonus = h.levelStats.power * value / log2(value)
+        UFix6 power = UFix6.wrap(h.levelStats.power);
+        UFix6 val = UFix6Lib.fromUint(value);
+        UFix6 logValue = UFix6Lib.log2_uint(value);
+        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, val), logValue);
+        straightBonus = UFix6.unwrap(result);
     }
 
-    function getRestingCoolDown(uint256 horseId) public pure returns (uint256 resting) {
+    function getRestingCoolDown(uint256 horseId) public view returns (uint256 resting) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.coolDownStats.resting;
-        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
-        // resting = h.levelStats.power * value / log2(value)
+        UFix6 power = UFix6.wrap(h.levelStats.power);
+        UFix6 val = UFix6Lib.fromUint(value);
+        UFix6 logValue = UFix6Lib.log2_uint(value);
+        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, val), logValue);
+        resting = UFix6.unwrap(result);
     }
 
-    function getFeedingCoolDown(uint256 horseId) public pure returns (uint256 feeding) {
+    function getFeedingCoolDown(uint256 horseId) public view returns (uint256 feeding) {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.coolDownStats.feeding;
-        // TODO: Expresar el siguiente cálculo utilizando la biblioteca UFix6Lib pero devolviendo un uint256
-        // feeding = h.levelStats.power * value / log2(value)
+        UFix6 power = UFix6.wrap(h.levelStats.power);
+        UFix6 val = UFix6Lib.fromUint(value);
+        UFix6 logValue = UFix6Lib.log2_uint(value);
+        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, val), logValue);
+        feeding = UFix6.unwrap(result);
     }
 
     // --------------------------------------------------------
