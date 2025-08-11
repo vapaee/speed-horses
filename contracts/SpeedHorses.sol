@@ -41,6 +41,17 @@ contract SpeedHorses is ERC721, Ownable {
         require(horseStats != address(0), "horseStats not set");
         return StatsBase(horseStats).tokenURI(tokenId);
     }
+
+    function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
+        address from = _ownerOf(tokenId);
+        if (from != address(0) && to != address(0)) {
+            require(horseStats != address(0), "horseStats not set");
+            StatsBase stats = StatsBase(horseStats);
+            require(stats.hasFinishedResting(tokenId), "Horse still resting");
+            require(stats.hasFinishedFeeding(tokenId), "Horse still feeding");
+        }
+        return super._update(to, tokenId, auth);
+    }
 }
 
 
@@ -49,6 +60,11 @@ contract StatsBase {
     function tokenURI(uint256) external pure virtual returns (string memory) {
         return "";
     }
-    // TODO: agregar hasFinishedResting y hasFinishedFeeding.
-    // Luego modificar el transfer para verificar que el caballo ha terminado ambas tareas.
+    function hasFinishedResting(uint256) external pure virtual returns (bool) {
+        return true;
+    }
+
+    function hasFinishedFeeding(uint256) external pure virtual returns (bool) {
+        return true;
+    }
 }
