@@ -275,6 +275,7 @@ contract HorseStats {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.assignedStats.power + h.baseStats.power;
+        // power = 1 + log2(value) * 0.1;
         UFix6 logValue = UFix6Lib.log2_uint(value);
         UFix6 scaled = UFix6Lib.mul(logValue, UFix6.wrap(100000));
         UFix6 result = UFix6Lib.add(UFix6Lib.one(), scaled);
@@ -285,6 +286,7 @@ contract HorseStats {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.acceleration + h.assignedStats.acceleration;
+        // acceleration = h.levelStats.power * value / log2(value)
         UFix6 power = UFix6.wrap(h.levelStats.power);
         UFix6 val = UFix6Lib.fromUint(value);
         UFix6 logValue = UFix6Lib.log2_uint(value);
@@ -296,6 +298,7 @@ contract HorseStats {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.stamina + h.assignedStats.stamina;
+        // stamina = h.levelStats.power * value / log2(value)
         UFix6 power = UFix6.wrap(h.levelStats.power);
         UFix6 val = UFix6Lib.fromUint(value);
         UFix6 logValue = UFix6Lib.log2_uint(value);
@@ -307,6 +310,7 @@ contract HorseStats {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.minSpeed + h.assignedStats.minSpeed;
+        // minSpeed = h.levelStats.power * value / log2(value)
         UFix6 power = UFix6.wrap(h.levelStats.power);
         UFix6 val = UFix6Lib.fromUint(value);
         UFix6 logValue = UFix6Lib.log2_uint(value);
@@ -318,6 +322,7 @@ contract HorseStats {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.maxSpeed + h.assignedStats.maxSpeed;
+        // maxSpeed = h.levelStats.power * value / log2(value)
         UFix6 power = UFix6.wrap(h.levelStats.power);
         UFix6 val = UFix6Lib.fromUint(value);
         UFix6 logValue = UFix6Lib.log2_uint(value);
@@ -329,6 +334,7 @@ contract HorseStats {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.luck + h.assignedStats.luck;
+        // luck = h.levelStats.power * value / log2(value)
         UFix6 power = UFix6.wrap(h.levelStats.power);
         UFix6 val = UFix6Lib.fromUint(value);
         UFix6 logValue = UFix6Lib.log2_uint(value);
@@ -340,6 +346,7 @@ contract HorseStats {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.curveBonus + h.assignedStats.curveBonus;
+        // curveBonus = h.levelStats.power * value / log2(value)
         UFix6 power = UFix6.wrap(h.levelStats.power);
         UFix6 val = UFix6Lib.fromUint(value);
         UFix6 logValue = UFix6Lib.log2_uint(value);
@@ -351,6 +358,7 @@ contract HorseStats {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.baseStats.straightBonus + h.assignedStats.straightBonus;
+        // straightBonus = h.levelStats.power * value / log2(value)
         UFix6 power = UFix6.wrap(h.levelStats.power);
         UFix6 val = UFix6Lib.fromUint(value);
         UFix6 logValue = UFix6Lib.log2_uint(value);
@@ -362,6 +370,7 @@ contract HorseStats {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.coolDownStats.resting;
+        // resting = h.levelStats.power * value / log2(value)
         UFix6 power = UFix6.wrap(h.levelStats.power);
         UFix6 val = UFix6Lib.fromUint(value);
         UFix6 logValue = UFix6Lib.log2_uint(value);
@@ -373,6 +382,7 @@ contract HorseStats {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.coolDownStats.feeding;
+        // feeding = h.levelStats.power * value / log2(value)
         UFix6 power = UFix6.wrap(h.levelStats.power);
         UFix6 val = UFix6Lib.fromUint(value);
         UFix6 logValue = UFix6Lib.log2_uint(value);
