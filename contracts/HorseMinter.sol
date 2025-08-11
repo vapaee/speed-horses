@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import './PerformanceStats.sol';
+import { PerformanceStats, CooldownStats } from "./StatsStructs.sol";
 
 interface IHorseStats {
     function createHorse(uint256 horseId, uint256 color, PerformanceStats calldata baseStats) external;
@@ -12,20 +12,26 @@ interface ISpeedHorses {
 }
 
 contract HorseMinter {
-    IHorseStats public horseStats;
-    ISpeedHorses public speedHorses;
     string public version = "HorseMinter-v1.0.0";
 
+    // ---------------------------------------------------------------------
+    // Contract References
+    // ---------------------------------------------------------------------
+    address public admin;
+    IHorseStats public horseStats;
+    ISpeedHorses public speedHorses;
+
+    // ---------------------------------------------------------------------
+    // Constants
+    // ---------------------------------------------------------------------
     uint256 public constant BASE_CREATION_COST = 600 ether; // en TLOS
     uint256 public constant RANDOMIZE_COST = 100 ether;     // en TLOS
     uint256 public constant EXTRA_POINTS_COST = 200 ether;  // en TLOS
     uint256 public constant MAX_EXTRA_PACKAGES = 4;
-
     uint256 public constant BASE_INITIAL_POINTS = 60;
     uint256 public constant EXTRA_POINTS_PER_PACKAGE = 10;
 
     uint256 public nextHorseId;
-    address public admin;
 
     struct HorseBuild {
         uint256 color;

@@ -101,7 +101,7 @@ library UFix6Lib {
 
         // Fractional part via N iterations. N=20 gives ~1e-6 precision.
         uint256 fracScaled = 0;
-        uint256 add = SCALE >> 1; // SCALE/2
+        uint256 _add = SCALE >> 1; // SCALE/2
         for (uint256 i = 0; i < 20; i++) {
             // m = m^2
             // mScaled := (mScaled * mScaled) / SCALE, stays roughly in [1e6, 4e6)
@@ -110,10 +110,10 @@ library UFix6Lib {
             if (mScaled >= TWO_SCALE) {
                 // if m >= 2, divide by 2 and set this fractional bit
                 mScaled = mScaled / 2;
-                fracScaled += add;
+                fracScaled += _add;
             }
-            add >>= 1; // next bit weight: SCALE / 2^(i+2)
-            if (add == 0) { break; }
+            _add >>= 1; // next bit weight: SCALE / 2^(i+2)
+            if (_add == 0) { break; }
         }
 
         // total = n + frac (both in 1e6 scale)
@@ -138,6 +138,7 @@ library UFix6Lib {
     }
 }
 
+/*
 library LogMath {
     using UFix6Lib for UFix6;
 
@@ -155,6 +156,7 @@ library LogMath {
 }
 
 // ---------- Example usage ----------
+
 contract LogExample {
     using UFix6Lib for UFix6;
 
@@ -173,3 +175,4 @@ contract LogExample {
         resultInteger = r.toUint();                 // truncated integer part
     }
 }
+*/

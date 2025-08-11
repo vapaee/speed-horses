@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-import { PerformanceStats, CoolDownStats } from "./StatsStructs.sol";
+import { PerformanceStats, CooldownStats } from './StatsStructs.sol';
 import { UFix6, UFix6Lib } from "./UFix6Lib.sol";
 
 using Strings for uint256;
@@ -35,7 +35,7 @@ contract HorseStats {
         PerformanceStats baseStats;
         PerformanceStats assignedStats;
         PerformanceStats levelStats; // cached levels for each stat
-        CoolDownStats coolDownStats;
+        CooldownStats coolDownStats;
         uint256 totalPoints;
         uint256 unassignedPoints;
         uint256 restFinish;
@@ -91,11 +91,7 @@ contract HorseStats {
         emit ColorNameSet(colorId, name);
     }
 
-    function createHorse(
-        uint256 horseId,
-        uint256 color,
-        PerformanceStats calldata baseStats
-    ) external onlyHorseMinter {
+    function createHorse(uint256 horseId, uint256 color, PerformanceStats calldata baseStats) external onlyHorseMinter {
         require(horses[horseId].version == 0, 'Horse already exists');
 
         uint256 nextVersion = latestVersionPerColor[color] + 1;
@@ -107,6 +103,7 @@ contract HorseStats {
             baseStats: baseStats,
             assignedStats: PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0),
             levelStats: PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0),
+            coolDownStats: CooldownStats(0, 0),
             totalPoints: 0,
             unassignedPoints: 0,
             restFinish: 0,
@@ -149,7 +146,7 @@ contract HorseStats {
         uint256 curveBonus,
         uint256 straightBonus,
         uint256 resting,
-        uint256 feeding,
+        uint256 feeding
     ) external {
         HorseData storage h = horses[horseId];
         require(h.version != 0, 'Horse not found');
@@ -250,6 +247,7 @@ contract HorseStats {
     }
 
     function getTotalPoints(uint256 horseId) public view returns (uint256) {
+        HorseData storage h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         return horses[horseId].totalPoints;
     }
@@ -393,7 +391,6 @@ contract HorseStats {
     // --------------------------------------------------------
     // tokenURI returns directly an updated JSON string
     // --------------------------------------------------------
-
     function tokenURI(uint256 id) external view virtual returns (string memory) {
         HorseData storage h = horses[id];
         require(h.version != 0, "Horse not found");
@@ -456,8 +453,6 @@ contract HorseStats {
             '{"trait_type": "straightBonus", "value": ', straightBonusStr, '}'
         );
     }
-
-
 }
 
 interface IERC20 {

@@ -5,10 +5,14 @@ import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 contract SpeedHorses is ERC721, Ownable {
+    string public version = "SpeedHorses-v1.0.0";
+
+    // ---------------------------------------------------------------------
+    // Contract References
+    // ---------------------------------------------------------------------
     address public admin;
     address public horseMinter;
     address public horseStats;
-    string public version = "SpeedHorses-v1.0.0";
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Not admin");
