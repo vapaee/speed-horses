@@ -2,7 +2,8 @@
 pragma solidity ^0.8.20;
 
 interface IHorses {
-    function getLevel(uint256 horseId) public view returns (uint256 level);
+    function getLevel(uint256 horseId) external view returns (uint256 level);
+    function getTotalPoints(uint256 horseId) external view returns (uint256 points);
 }
 
 /// @title FixtureManager
@@ -97,12 +98,21 @@ contract FixtureManager {
     /// @param horseId Id of the horse
     function registerHorse(uint256 horseId) external {
         // Cobramos el costo de inscripción basado en el nivel del caballo
-        uint256 level = IHorses(horses).getLevel(horseId);
+        uint256 level = IHorses(horseStats).getLevel(horseId);
         uint256 cost = level * RACE_HORSE_INSCRIPTION_COST_PER_LEVEL;
         hayToken.transferFrom(msg.sender, address(this), cost);
 
-        registered.push(horseId);
-        // TODO: debemos ordenar los caballos por puntaje usando el método Buble Sort ()
+        uint256 points = IHorses(horseStats).getTotalPoints(horseId);
+        registered.push(Registred({horseId: horseId, points: points, price: 0}));
+
+        uint256 i = registered.length - 1;
+        while (i > 0 && registered[i].points > registered[i - 1].points) {
+            Registred memory tmp = registered[i - 1];
+            registered[i - 1] = registered[i];
+            registered[i] = tmp;
+            i--;
+        }
+
         emit HorseRegistered(horseId);
 
         _tryGenerateFixture();
