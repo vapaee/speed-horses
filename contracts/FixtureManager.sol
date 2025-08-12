@@ -47,7 +47,8 @@ contract FixtureManager {
         uint256 startTime;           // Momento de comienzo de la carrera
         uint256 iterations;          // Cantidad de iteraciones que llevará completar la carrera
         bytes32[] seeds;             // Semillas correspondientes a tiempo pasado
-        uint256[] positions;         // Resultado de la carrera
+        uint256[] positions;         // Resultado de la carrera (ordenado por posición)
+        bool finished;               // Si la carrera ya finalizó
     }
 
     struct Fixture {
@@ -56,18 +57,21 @@ contract FixtureManager {
         Race[] races;                // Carreras generadas
         uint256 currentRace;         // Índice de la carrera siguiente o en curso
         uint256 prevFixture;         // Referencia al Fixture anterior
+        bool confirmed;              // Si el fixture ya fue confirmado (no sufre cambios)
+        bool finished;               // Si el fixture ya finalizó
     }
 
     struct Registred {
         uint256 horseId;             // Id del caballo
         uint256 points;              // Puntos del caballo
-        uint256 price;               // Premio en HAY por postergación
+        uint256 prize;               // Premio en HAY por postergación
     }
 
     // ---------------------------------------------------------------------
     // State
     // ---------------------------------------------------------------------
-    Registred[] public registered;   // Caballos inscriptos (ordenados por puntaje)
+    Registred[] public horseList;                  // Caballos inscriptos (ordenados por puntaje)
+    mapping(uint256 => bool) public registered;    // Caballos inscriptos por ID
     mapping(uint256 => Fixture) public fixtures;   // Fixtures por startTime
     uint256 public currentFixture;                 // ID del fixture actual
 
@@ -102,17 +106,23 @@ contract FixtureManager {
         uint256 cost = level * RACE_HORSE_INSCRIPTION_COST_PER_LEVEL;
         hayToken.transferFrom(msg.sender, address(this), cost);
 
-        uint256 points = IHorses(horseStats).getTotalPoints(horseId);
-        registered.push(Registred({horseId: horseId, points: points, price: 0}));
+        // Verificamos si el caballo ya está registrado
+        require(!registered[horseId], "Horse already registered");
 
-        uint256 i = registered.length - 1;
-        while (i > 0 && registered[i].points > registered[i - 1].points) {
-            Registred memory tmp = registered[i - 1];
-            registered[i - 1] = registered[i];
-            registered[i] = tmp;
+        // Incluimos el caballo en la lista de inscriptos
+        uint256 points = IHorses(horseStats).getTotalPoints(horseId);
+        horseList.push(Registred({horseId: horseId, points: points, prize: 0}));
+
+        // Ordenamos el array de inscriptos por puntaje (buble sort simplificado)
+        uint256 i = horseList.length - 1;
+        while (i > 0 && horseList[i].points > horseList[i - 1].points) {
+            Registred memory tmp = horseList[i - 1];
+            horseList[i - 1] = horseList[i];
+            horseList[i] = tmp;
             i--;
         }
 
+        registered[horseId] = true;
         emit HorseRegistered(horseId);
 
         _tryGenerateFixture();
@@ -209,21 +219,12 @@ contract FixtureManager {
     }
 
     // ---------------------------------------------------------------------
-    // Fixture finalization
+    // Getters
     // ---------------------------------------------------------------------
 
-    /// @notice Finalizes the current fixture and prepares the next one.
-    // TODO: INVÁLIDO
-    function finalizeFixture() external {
-        Fixture storage f = fixtures[currentFixture];
-        require(f.startTime != 0, "No fixture in progress");
-        require(block.timestamp >= f.startTime + (f.races.length * TIME_BETWEEN_RACES), "Fixture not finished");
-
-        emit FixtureFinalized(f.startTime);
-
-        // Prepare next fixture
-        currentFixture = 0;
-        _tryGenerateFixture();
+    function isRegistered(uint256 horseId) external view returns (bool) {
+        return registered[horseId];
     }
+
 }
 
