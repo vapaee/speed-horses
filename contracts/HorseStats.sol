@@ -205,6 +205,10 @@ contract HorseStats {
     // Getters
     // --------------------------------------------------------
 
+    function isRegisteredForRacing(uint256 horseId) public view returns (bool) {
+        return IFixture(racingFixture).isRegistered(horseId);
+    }
+
     function hasFinishedResting(uint256 horseId) public view returns (bool) {
         return block.timestamp >= horses[horseId].restFinish;
     }
@@ -309,7 +313,7 @@ contract HorseStats {
         HorseData memory h = horses[horseId];
         require(h.version != 0, 'Horse not found');
         uint256 value = h.coolDownStats.resting;
-        resting = _computeCooldownStat(h.levelStats.power, value);
+        resting = _computeCooldownStat(value);
     }
 
     function _computePerformanceStat(uint256 powerLevel, uint256 value) internal pure returns (uint256) {
@@ -321,7 +325,7 @@ contract HorseStats {
         return UFix6.unwrap(result);
     }
 
-    function _computeCooldownStat(uint256 /*powerLevel*/, uint256 value) internal pure returns (uint256) {
+    function _computeCooldownStat(uint256 value) internal pure returns (uint256) {
         // result = BASE_RESTING_COOLDOWN * 16 / (value + 15)
         UFix6 base = UFix6Lib.fromUint(BASE_RESTING_COOLDOWN);
         UFix6 numerator = UFix6Lib.mulUint(base, 16); // BASE_RESTING_COOLDOWN * 16
@@ -399,4 +403,8 @@ contract HorseStats {
 
 interface IERC20 {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
+}
+
+interface IFixture {
+    function isRegistered(uint256 horseId) external view returns (bool)
 }

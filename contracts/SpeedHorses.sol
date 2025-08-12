@@ -52,7 +52,7 @@ contract SpeedHorses is ERC721, Ownable {
             require(horseStats != address(0), "horseStats not set");
             StatsBase stats = StatsBase(horseStats);
             require(stats.hasFinishedResting(tokenId), "Horse still resting");
-            require(stats.hasFinishedFeeding(tokenId), "Horse still feeding");
+            require(!stats.isRegisteredForRacing(tokenId), "Horse is registered for racing");
         }
         return super._update(to, tokenId, auth);
     }
@@ -64,11 +64,12 @@ contract StatsBase {
     function tokenURI(uint256) external pure virtual returns (string memory) {
         return "";
     }
-    function hasFinishedResting(uint256) external pure virtual returns (bool) {
+
+    function isRegisteredForRacing(uint256) external pure virtual returns (bool) {
         return true;
     }
 
-    function hasFinishedFeeding(uint256) external pure virtual returns (bool) {
+    function hasFinishedResting(uint256) external pure virtual returns (bool) {
         return true;
     }
 }

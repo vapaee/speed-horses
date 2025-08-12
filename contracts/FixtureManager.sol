@@ -23,8 +23,6 @@ contract FixtureManager {
     // ---------------------------------------------------------------------
     uint256 public constant MAX_FIXTURE_RACES = 8;
     uint256 public constant MIN_FIXTURE_RACES = 2;
-    uint256 public constant MAX_POINTS_DIFFERENCE_TOLERANCE = 20;
-    uint256 public constant MAX_LEVELS_DIFFERENCE_TOLERANCE = 2;
     uint256 public constant FIXTURE_CONFIRM_TIME = 30 minutes;
     uint256 public constant FIXTURE_MIN_TIME_DISTANCE = 30 minutes;
     uint256 public constant FIXTURE_MAX_TIME_DISTANCE = 8 hours;
@@ -61,7 +59,7 @@ contract FixtureManager {
         bool finished;               // Si el fixture ya finalizó
     }
 
-    struct Registred {
+    struct SignedHorse {
         uint256 horseId;             // Id del caballo
         uint256 points;              // Puntos del caballo
         uint256 prize;               // Premio en HAY por postergación
@@ -70,7 +68,8 @@ contract FixtureManager {
     // ---------------------------------------------------------------------
     // State
     // ---------------------------------------------------------------------
-    Registred[] public horseList;                  // Caballos inscriptos (ordenados por puntaje)
+    SignedHorse[] public horseList;                // Caballos inscriptos (ordenados por puntaje)
+    SignedHorse[] public pending;                  // Caballos aplazados (ordenados por puntaje)
     mapping(uint256 => bool) public registered;    // Caballos inscriptos por ID
     mapping(uint256 => Fixture) public fixtures;   // Fixtures por startTime
     uint256 public currentFixture;                 // ID del fixture actual
@@ -114,8 +113,10 @@ contract FixtureManager {
         horseList.push(Registred({horseId: horseId, points: points, prize: 0}));
 
         // Ordenamos el array de inscriptos por puntaje (buble sort simplificado)
+        // Este algoritmo es O(n^2) pero dado que la lista ya está ordenada es O(n)
+        // El peor caballo se encuentra al principio de la lista
         uint256 i = horseList.length - 1;
-        while (i > 0 && horseList[i].points > horseList[i - 1].points) {
+        while (i > 0 && horseList[i].points < horseList[i - 1].points) {
             Registred memory tmp = horseList[i - 1];
             horseList[i - 1] = horseList[i];
             horseList[i] = tmp;
@@ -166,9 +167,37 @@ contract FixtureManager {
         }
 
         // TODO: Crear las carreras dentro del fixture:
-        // Inicialización:
-
-
+        // -- Inicialización --
+        // Creamos una lista temporal de carreras
+        // variable horsesCount = 0 será el contador de caballos que efectivamente correrán
+        // variable currentRace = 0 será el índice de la carrera actual dentro de esa lista temporal
+        // variable worstHorseOnRace = horseList[0];
+        // agregamos el worstHorseOnRace a la carrera actual
+        // -- Procedimiento --
+        // Iteramos sobre todos los caballos registrados (a partir del segundo) y en cada iteración:
+        // - Si la carrera actual ya tiene exactamente MAX_HORSES_PER_RACE entonces:
+        //   - currentRace apunta a la siguiente carrera
+        //   - agregamos el caballo actual a la nueva carrera
+        //   - worstHorseOnRace pasa a ser el caballo actual
+        // - Si el caballo actual difiere del worstHorseOnRace en menos (o igual) de MAX_POINTS_DIFFERENCE_TOLERANCE entonces:
+        //   - agregamos el caballo a la carrera actual
+        // - Si el caballo actual difiere del worstHorseOnRace en más de MAX_POINTS_DIFFERENCE_TOLERANCE entonces:
+        //   - currentRace apunta a la siguiente carrera
+        //   - agregamos el caballo actual a la nueva carrera
+        //   - worstHorseOnRace pasa a ser el caballo actual
+        // -- Limpieza --
+        // - creamos una lista temporal de caballos que no correrán en este fixture
+        // - Iteramos sobre las carreras para verificar si tienen suficientes caballos (race.horses.length >= MIN_HORSES_PER_RACE)
+        //  - Si tienen suficientes caballos y todavía no alcanzamos el máximo de carreras (fixture.races.length >= MAX_FIXTURE_RACES),
+        //    - entonces agregamos la carrera al fixture
+        //    - incrementamos horsesCount con la cantidad de caballos de la carrera
+        //  - Si no tienen suficientes caballos o el fixture ya está lleno
+        //    - agregamos los caballos a la lista temporal de caballos que no correrán
+        //    - le asignamos un premio consuelo a cada caballo según su level
+        //    - descartamos la carrera
+        //  - Finalmente, actualizamos el fixture actual con las carreras generadas y el contador horsesCount
+        //  - Si horsesCount >= MAX_FIXTURE_PARTICIPANTS, entonces confirmamos el fixture y emitimos el evento FixtureConfirmed
+        //  - sustituimos la lista de pending por la lista de caballos que no correrán
 
     }
 
