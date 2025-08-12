@@ -169,10 +169,15 @@ contract FixtureManager {
         // TODO: Crear las carreras dentro del fixture:
         // -- Inicialización --
         // Creamos una lista temporal de carreras
+
         // variable horsesCount = 0 será el contador de caballos que efectivamente correrán
         // variable currentRace = 0 será el índice de la carrera actual dentro de esa lista temporal
         // variable worstHorseOnRace = horseList[0];
         // agregamos el worstHorseOnRace a la carrera actual
+        Race[] memory tempRaces;
+        uint256 horsesCount = 0;
+        uint256 raceIndex = 0;
+        SignedHorse memory worstHorseOnRace = horseList[0];
         // -- Procedimiento --
         // Iteramos sobre todos los caballos registrados (a partir del segundo) y en cada iteración:
         // - Si la carrera actual ya tiene exactamente MAX_HORSES_PER_RACE entonces:
@@ -185,6 +190,20 @@ contract FixtureManager {
         //   - currentRace apunta a la siguiente carrera
         //   - agregamos el caballo actual a la nueva carrera
         //   - worstHorseOnRace pasa a ser el caballo actual
+        for (uint256 i = 1; i < horseList.length; i++) {
+            SignedHorse memory currentHorse = horseList[i];
+            if (tempRaces[raceIndex].horses.length >= MAX_HORSES_PER_RACE) {
+                raceIndex++;
+                tempRaces[raceIndex].horses.push(currentHorse.horseId);
+                worstHorseOnRace = currentHorse;
+            } else if (currentHorse.points - worstHorseOnRace.points <= MAX_POINTS_DIFFERENCE_TOLERANCE) {
+                tempRaces[raceIndex].horses.push(currentHorse.horseId);
+            } else {
+                raceIndex++;
+                tempRaces[raceIndex].horses.push(currentHorse.horseId);
+                worstHorseOnRace = currentHorse;
+            }
+        }
         // -- Limpieza --
         // - creamos una lista temporal de caballos que no correrán en este fixture
         // - Iteramos sobre las carreras para verificar si tienen suficientes caballos (race.horses.length >= MIN_HORSES_PER_RACE)
@@ -198,6 +217,11 @@ contract FixtureManager {
         //  - Finalmente, actualizamos el fixture actual con las carreras generadas y el contador horsesCount
         //  - Si horsesCount >= MAX_FIXTURE_PARTICIPANTS, entonces confirmamos el fixture y emitimos el evento FixtureConfirmed
         //  - sustituimos la lista de pending por la lista de caballos que no correrán
+        SignedHorse[] memory notRacing;
+        Fixture storage f = fixtures[currentFixture];
+        for (uint256 j = 0; j <= raceIndex; j++) {
+            if (tempRaces[j].horses.length >= MIN_HORSES_PER_RACE && f.races.length < MAX_FIXTURE_RACES) {
+                
 
     }
 
