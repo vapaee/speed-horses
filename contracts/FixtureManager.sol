@@ -63,21 +63,13 @@ contract FixtureManager {
         uint256 price;               // Premio en HAY por postergación
     }
 
-    struct HorseInfo {
-        uint256 level;               // Nivel del caballo
-        uint256 points;              // Puntos del caballo
-        bool veteran;                // True si es veterano, false si es novato
-    }
-
     // ---------------------------------------------------------------------
     // State
     // ---------------------------------------------------------------------
-    Registred[] public registered;   // Caballos inscriptos por orden
-
+    Registred[] public registered;   // Caballos inscriptos (ordenados por puntaje)
     mapping(uint256 => Fixture) public fixtures;   // Fixtures por startTime
     uint256 public currentFixture;                 // ID del fixture actual
 
-    mapping(uint256 => HorseInfo) public horseInfo; // Datos de cada caballo
 
     // ---------------------------------------------------------------------
     // Events
@@ -104,10 +96,13 @@ contract FixtureManager {
     /// @notice Registers a horse for the next available fixture.
     /// @param horseId Id of the horse
     function registerHorse(uint256 horseId) external {
+        // Cobramos el costo de inscripción basado en el nivel del caballo
         uint256 level = IHorses(horses).getLevel(horseId);
         uint256 cost = level * RACE_HORSE_INSCRIPTION_COST_PER_LEVEL;
         hayToken.transferFrom(msg.sender, address(this), cost);
+
         registered.push(horseId);
+        // TODO: debemos ordenar los caballos por puntaje usando el método Buble Sort ()
         emit HorseRegistered(horseId);
 
         _tryGenerateFixture();

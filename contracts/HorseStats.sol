@@ -135,14 +135,6 @@ contract HorseStats {
         return a + b + c + d + e;
     }
 
-    function _computeStat(uint256 powerLevel, uint256 value) internal pure returns (uint256) {
-        UFix6 power = UFix6.wrap(powerLevel);
-        UFix6 val = UFix6Lib.fromUint(value);
-        UFix6 logValue = UFix6Lib.log2_uint(value);
-        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, val), logValue);
-        return UFix6.unwrap(result);
-    }
-
     function assignPoints(
         uint256 horseId,
         uint256 power,
@@ -358,6 +350,14 @@ contract HorseStats {
         uint256 value = h.coolDownStats.feeding;
         // feeding = h.levelStats.power * value / log2(value)
         feeding = _computeStat(h.levelStats.power, value);
+    }
+
+    function _computeStat(uint256 powerLevel, uint256 value) internal pure returns (uint256) {
+        UFix6 power = UFix6.wrap(powerLevel);
+        UFix6 val = UFix6Lib.fromUint(value);
+        UFix6 logValue = UFix6Lib.log2_uint(value);
+        UFix6 result = UFix6Lib.div(UFix6Lib.mul(power, val), logValue);
+        return UFix6.unwrap(result);
     }
 
     // --------------------------------------------------------
