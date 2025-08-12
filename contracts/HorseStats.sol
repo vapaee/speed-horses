@@ -321,9 +321,12 @@ contract HorseStats {
         return UFix6.unwrap(result);
     }
 
-    function _computeCooldownStat(uint256 value) internal pure returns (uint256) {
-        // TODO: Implementar lógica de reducción de cooldown usando UFix6
-        // result = BASE_RESTING_COOLDOWN * 16/(value + 15)
+    function _computeCooldownStat(uint256 /*powerLevel*/, uint256 value) internal pure returns (uint256) {
+        // result = BASE_RESTING_COOLDOWN * 16 / (value + 15)
+        UFix6 base = UFix6Lib.fromUint(BASE_RESTING_COOLDOWN);
+        UFix6 numerator = UFix6Lib.mulUint(base, 16); // BASE_RESTING_COOLDOWN * 16
+        UFix6 denominator = UFix6Lib.fromUint(value + 15);
+        UFix6 result = UFix6Lib.div(numerator, denominator);
         return UFix6.unwrap(result);
     }
 
