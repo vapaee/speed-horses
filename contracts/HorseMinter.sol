@@ -156,8 +156,8 @@ contract HorseMinter {
         horseStats = IHorseStats(_stats);
     }
 
-    function setSpeedHorses(address _speedHorses) external onlyAdmin {
-        speedHorses = ISpeedHorses(_speedHorses);
+    function setSpeedHorses(address _horses) external onlyAdmin {
+        speedHorses = ISpeedHorses(_horses);
     }
 
     function withdrawTLOS(address payable to, uint256 amount) external onlyAdmin {

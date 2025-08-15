@@ -15,7 +15,7 @@ contract HorseStats {
     // Contract References
     // ---------------------------------------------------------------------
     address public admin;
-    address public racingFixture;
+    address public fixtureManager;
     address public hayToken;
     address public horseMinter;
 
@@ -58,8 +58,8 @@ contract HorseStats {
         _;
     }
 
-    modifier onlyRacingFixture() {
-        require(msg.sender == racingFixture, "Not RacingFixture");
+    modifier onlyFixtureManager() {
+        require(msg.sender == fixtureManager, "Not FixtureManager");
         _;
     }
 
@@ -72,7 +72,7 @@ contract HorseStats {
         admin = msg.sender;
     }
 
-    function setRacingFixture(address _fixture) external onlyAdmin {
+    function setFixtureManager(address _fixture) external onlyAdmin {
         racingFixture = _fixture;
     }
 
@@ -104,7 +104,7 @@ contract HorseStats {
             coolDownStats: CooldownStats(0),
             totalPoints: 0,
             unassignedPoints: 0,
-            restFinish: 0,
+            restFinish: 0
         });
 
         _setPropertyLevels(horseId);
@@ -406,5 +406,5 @@ interface IERC20 {
 }
 
 interface IFixture {
-    function isRegistered(uint256 horseId) external view returns (bool)
+    function isRegistered(uint256 horseId) external view returns (bool);
 }

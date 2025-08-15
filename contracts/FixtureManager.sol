@@ -17,6 +17,7 @@ contract FixtureManager {
     // ---------------------------------------------------------------------
     address public admin;
     address public horseStats;
+    address public hayToken;
 
     // ---------------------------------------------------------------------
     // Constants
@@ -34,6 +35,8 @@ contract FixtureManager {
     uint256 public constant MAX_FIXTURE_PARTICIPANTS = MAX_FIXTURE_RACES * MAX_HORSES_PER_RACE;
     uint256 public constant MIN_FIXTURE_PARTICIPANTS = MIN_FIXTURE_RACES * MIN_HORSES_PER_RACE;
     uint256 public constant RACE_HORSE_INSCRIPTION_COST_PER_LEVEL = 100 ether;
+    uint256 public constant CONSOLATION_PRIZE_PER_LEVEL = 50 ether;
+    uint256 public constant MAX_POINTS_DIFFERENCE_TOLERANCE = 100;
 
     // ---------------------------------------------------------------------
     // Structs
@@ -85,12 +88,22 @@ contract FixtureManager {
     // ---------------------------------------------------------------------
     // Constructor
     // ---------------------------------------------------------------------
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Not admin");
+        _;
+    }
+
     constructor() {
         admin = msg.sender;
     }
 
     function setHorseStats(address _stats) external onlyAdmin {
         horseStats = _stats;
+    }
+
+    function setHayToken(address _token) external onlyAdmin {
+        hayToken = _token;
     }
 
     // ---------------------------------------------------------------------
@@ -103,21 +116,21 @@ contract FixtureManager {
         // Cobramos el costo de inscripción basado en el nivel del caballo
         uint256 level = IHorses(horseStats).getLevel(horseId);
         uint256 cost = level * RACE_HORSE_INSCRIPTION_COST_PER_LEVEL;
-        hayToken.transferFrom(msg.sender, address(this), cost);
+        IERC20(hayToken).transferFrom(msg.sender, address(this), cost);
 
         // Verificamos si el caballo ya está registrado
         require(!registered[horseId], "Horse already registered");
 
         // Incluimos el caballo en la lista de inscriptos
         uint256 points = IHorses(horseStats).getTotalPoints(horseId);
-        horseList.push(Registred({horseId: horseId, points: points, prize: 0}));
+        horseList.push(SignedHorse({horseId: horseId, points: points, prize: 0}));
 
         // Ordenamos el array de inscriptos por puntaje (buble sort simplificado)
         // Este algoritmo es O(n^2) pero dado que la lista ya está ordenada es O(n)
         // El peor caballo se encuentra al principio de la lista
         uint256 i = horseList.length - 1;
         while (i > 0 && horseList[i].points < horseList[i - 1].points) {
-            Registred memory tmp = horseList[i - 1];
+            SignedHorse memory tmp = horseList[i - 1];
             horseList[i - 1] = horseList[i];
             horseList[i] = tmp;
             i--;
@@ -156,7 +169,12 @@ contract FixtureManager {
 
         // Check if fixture is already confirmed
         if (block.timestamp >= f.startTime - FIXTURE_CONFIRM_TIME) {
-            // Fixture is already confirmed; do not modify
+            if (!f.confirmed) {
+                // Fixture is not confirmed yet, but time has passed
+                f.confirmed = true;
+                emit FixtureFinalized(f.startTime);
+            }
+            // Fixture is confirmed, no more modifications allowed
             return;
         }
 
@@ -175,7 +193,6 @@ contract FixtureManager {
         // variable worstHorseOnRace = horseList[0];
         // agregamos el worstHorseOnRace a la carrera actual
         Race[] memory tempRaces;
-        uint256 horsesCount = 0;
         uint256 raceIndex = 0;
         SignedHorse memory worstHorseOnRace = horseList[0];
         // -- Procedimiento --
@@ -192,15 +209,23 @@ contract FixtureManager {
         //   - worstHorseOnRace pasa a ser el caballo actual
         for (uint256 i = 1; i < horseList.length; i++) {
             SignedHorse memory currentHorse = horseList[i];
+            uint256 horseIndex = 0;
             if (tempRaces[raceIndex].horses.length >= MAX_HORSES_PER_RACE) {
+                // Carrera llena, pasamos a la siguiente
                 raceIndex++;
-                tempRaces[raceIndex].horses.push(currentHorse.horseId);
+                tempRaces[raceIndex].horses[0] = currentHorse.horseId;
+                horseIndex = 1;
                 worstHorseOnRace = currentHorse;
+                // TODO: remplazar la condición de diferir por una sonstante a diferir por un porcentaje
             } else if (currentHorse.points - worstHorseOnRace.points <= MAX_POINTS_DIFFERENCE_TOLERANCE) {
-                tempRaces[raceIndex].horses.push(currentHorse.horseId);
+                // Caballo dentro del rango de tolerancia, lo agregamos a la carrera actual
+                tempRaces[raceIndex].horses[horseIndex] = currentHorse.horseId;
+                horseIndex++;
             } else {
+                // Caballo fuera del rango de tolerancia, iniciamos una nueva carrera
                 raceIndex++;
-                tempRaces[raceIndex].horses.push(currentHorse.horseId);
+                tempRaces[raceIndex].horses[0] = currentHorse.horseId;
+                horseIndex = 1;
                 worstHorseOnRace = currentHorse;
             }
         }
@@ -218,11 +243,58 @@ contract FixtureManager {
         //  - Si horsesCount >= MAX_FIXTURE_PARTICIPANTS, entonces confirmamos el fixture y emitimos el evento FixtureConfirmed
         //  - sustituimos la lista de pending por la lista de caballos que no correrán
         SignedHorse[] memory notRacing;
-        Fixture storage f = fixtures[currentFixture];
+        uint256 notRacingIndex = 0;
+        uint256 fixtureRaceIndex = 0;
+        // Iteramos sobre las carreras temporales para agregarlas al fixture
         for (uint256 j = 0; j <= raceIndex; j++) {
+            // Verificamos si la situación de la carrera es válida
             if (tempRaces[j].horses.length >= MIN_HORSES_PER_RACE && f.races.length < MAX_FIXTURE_RACES) {
-                
-
+                // Carrera válida, la agregamos al fixture
+                uint256 level = 0;
+                for (uint256 k = 0; k < tempRaces[j].horses.length; k++) {
+                    uint256 horseId = tempRaces[j].horses[k];
+                    uint256 horseLevel = IHorses(horseStats).getLevel(horseId);
+                    if (horseLevel > level) {
+                        level = horseLevel;
+                    }
+                }
+                uint256 length = _calculateRaceLength(level, tempRaces[j].horses.length);
+                uint256 startTime = f.startTime + f.currentRace * TIME_BETWEEN_RACES;
+                Race storage currentRace = f.races[fixtureRaceIndex];
+                currentRace.horses = tempRaces[j].horses;
+                currentRace.length = length;
+                currentRace.level = level;
+                currentRace.startTime = startTime;
+                currentRace.iterations = 0; // TODO: resolver cómo calcular iteraciones
+                currentRace.finished = false;
+                fixtureRaceIndex++;
+                f.horsesCount += tempRaces[j].horses.length;
+            } else {
+                // Carrera inválida, los caballos no correrán
+                for (uint256 l = 0; l < tempRaces[j].horses.length; l++) {
+                    uint256 horseId = tempRaces[j].horses[l];
+                    uint256 horsePoints = IHorses(horseStats).getTotalPoints(horseId);
+                    uint256 level = IHorses(horseStats).getLevel(horseId);
+                    uint256 prize = level * CONSOLATION_PRIZE_PER_LEVEL;
+                    notRacing[notRacingIndex] = SignedHorse({
+                        horseId: horseId,
+                        points: horsePoints,
+                        prize: prize
+                    });
+                    notRacingIndex++;
+                }
+            }
+        }
+        if (f.horsesCount >= MAX_FIXTURE_PARTICIPANTS) {
+            // Fixture lleno, confirmamos
+            f.confirmed = true;
+            emit FixtureFinalized(f.startTime);
+        }
+        // Reemplazamos la lista de pending con los caballos que no correrán
+        delete pending;
+        for (uint256 m = 0; m < notRacingIndex; m++) {
+            pending.push(notRacing[m]);
+        }
     }
 
     /// @dev Calculates the next start time for a fixture based on the number of
@@ -230,7 +302,8 @@ contract FixtureManager {
     ///      behavior.
     function _calculateNextStartTime() internal view returns (uint256) {
         uint256 wait = 0;
-        uint256 totalHorsesWaiting = registered.length + postponed.length;
+        // TODO: verificar cual es la lista de caballos que esperan
+        uint256 totalHorsesWaiting = horseList.length + pending.length;
         if (totalHorsesWaiting > MAX_FIXTURE_PARTICIPANTS) {
             wait = FIXTURE_MIN_TIME_DISTANCE;
         } else if (totalHorsesWaiting < MIN_FIXTURE_PARTICIPANTS) {
@@ -254,12 +327,19 @@ contract FixtureManager {
     function _calculateRaceLength(uint256 level, uint256 participants) internal pure returns (uint256) {
         uint256 part1 = TOTAL_TRACK_LENGTH / 3;
         uint256 part2 = (TOTAL_TRACK_LENGTH / 3) * (participants - MIN_HORSES_PER_RACE) / (MAX_HORSES_PER_RACE - MIN_HORSES_PER_RACE);
-        uint256 part3 = (TOTAL_TRACK_LENGTH / 3) * (min(MAX_HORSE_LEVEL_TRACK_MODIFIER, level) ) / MAX_HORSE_LEVEL_TRACK_MODIFIER;
+        uint256 part3 = (TOTAL_TRACK_LENGTH / 3) * (_min(MAX_HORSE_LEVEL_TRACK_MODIFIER, level) ) / MAX_HORSE_LEVEL_TRACK_MODIFIER;
         return part1 + part2 + part3;
     }
 
+    /// @dev Calculates and returns the minimun between two values;
+    function _min(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a < b) return a;
+        return b;
+    }
+
     /// @dev Removes the first `count` elements from the registered array.
-    function _truncateRegistered(uint256 count) internal {
+    // TODO: verificar si es útil esta función
+    /*function _truncateRegistered(uint256 count) internal {
         if (count == 0) return;
         require(count <= registered.length, "Too many to remove");
 
@@ -269,7 +349,7 @@ contract FixtureManager {
         for (uint256 j = 0; j < count; j++) {
             registered.pop();
         }
-    }
+    }*/
 
     // ---------------------------------------------------------------------
     // Getters
@@ -281,3 +361,6 @@ contract FixtureManager {
 
 }
 
+interface IERC20 {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+}
