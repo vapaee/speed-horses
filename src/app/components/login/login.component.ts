@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DropDownComponent } from '@app/components/base-components/drop-down/drop-down.component';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { SessionService } from '@app/services/session-kit.service';
 import { LucideAngularModule, User } from 'lucide-angular';
-import { ExpandableManagerService } from '../base-components/expandable/expandable-manager.service';
 import { SharedModule } from '@app/shared/shared.module';
+import { Web3OctopusService } from '@app/services/web3-octopus.service';
+import { W3oSession, W3oContextFactory } from '@vapaee/w3o-core';
 
 @Component({
     selector: 'app-login',
@@ -22,22 +23,33 @@ import { SharedModule } from '@app/shared/shared.module';
 })
 export class LoginComponent {
     readonly UserIcon = User
+    private logger = new W3oContextFactory('LoginComponent');
 
     constructor(
         public sessionService: SessionService,
-        public expandibles: ExpandableManagerService,
+        private w3o: Web3OctopusService,
+        private router: Router,
     ) {}
 
     async login() {
-        try {
-            await this.sessionService.login();
-        } catch (error) {
-            console.error('Login failed:', error);
-        }
+        await this.w3o.octopus.auth.login();
     }
 
     async logout() {
-        await this.sessionService.logout();
-        this.expandibles.closeAll();
+        await this.w3o.octopus.auth.logout();
+        await this.router.navigate(['/']);
+    }
+
+    get sessions(): W3oSession[] {
+        return this.w3o.octopus.sessions.list;
+    }
+
+    selectSession(session: W3oSession) {
+        const context = this.logger.method('selectSession');
+        this.w3o.octopus.sessions.setCurrentSession(session.id, context);
+    }
+
+    shorten(address: string): string {
+        return address.length > 13 ? `${address.slice(0, 6)}...${address.slice(-4)}` : address;
     }
 }

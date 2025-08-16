@@ -1,6 +1,6 @@
 // src/app/app.config.ts
 import { ApplicationConfig, provideZoneChangeDetection, importProvidersFrom } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withHashLocation } from '@angular/router';
 import { withInterceptorsFromDi, provideHttpClient, HttpClient } from '@angular/common/http';
 import { routes } from './app.routes';
 import { StoreModule } from '@ngrx/store';
@@ -12,13 +12,13 @@ import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 
 // Factory function to create TranslateHttpLoader
 export function httpLoaderFactory(http: HttpClient) {
-    return new TranslateHttpLoader(http, '/assets/locals/', '.json');
+    return new TranslateHttpLoader(http, './assets/locals/', '.json');
 }
 
 export const appConfig: ApplicationConfig = {
     providers: [
         provideZoneChangeDetection({ eventCoalescing: true }),
-        provideRouter(routes),
+        provideRouter(routes, withHashLocation()),
         provideHttpClient(withInterceptorsFromDi()),
         importProvidersFrom(
             StoreModule.forRoot(

@@ -10,14 +10,14 @@
             <!-- Dropdown Button -->
             <button dropdown-button class="c-login__btn--active">
                 <lucide-icon [img]="UserIcon" size="18"></lucide-icon>
-                {{ session.actor }}
+                {{ shorten(session.address) }}
             </button>
 
             <!-- Dropdown Body -->
             <div dropdown-body class="c-login__menu-body">
-                <a class="c-login__menu-option" routerLink="/wallet">{{'PAGES.WALLET.NAME' | translate}}</a>
-                <a class="c-login__menu-option" routerLink="/accounts">{{'PAGES.ACCOUNTS.NAME' | translate}}</a>
-                <a class="c-login__menu-option" routerLink="/preferences">{{'PAGES.PREFERENCES.NAME' | translate}}</a>
+                <!--a class="c-login__menu-option" routerLink="/wallet">{{'PAGES.WALLET.NAME' | translate}}</a-->
+                <!--a class="c-login__menu-option" routerLink="/accounts">{{'PAGES.ACCOUNTS.NAME' | translate}}</a-->
+                <!--a class="c-login__menu-option" routerLink="/preferences">{{'PAGES.PREFERENCES.NAME' | translate}}</a-->
                 <hr class="c-login__menu-separator">
                 <a class="c-login__menu-option" (click)="logout()">{{'TYPES.BUTTON.LOGOUT' | translate}}</a>
             </div>

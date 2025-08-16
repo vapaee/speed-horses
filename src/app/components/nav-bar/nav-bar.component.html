@@ -3,11 +3,10 @@
 <ng-container *ngIf="!isMobileView; else mobileNav">
     <nav class="c-navbar">
         <div class="c-navbar__row">
-            <img src="assets/game-img/gold-horse.png" routerLink="/" width="50px">
+            <img  class="c-navbar__logo"src="assets/game-img/gold-horse.png" routerLink="/" width="50px">
 
-            <a class="c-navbar__button" routerLink="/races" routerLinkActive="active-link">{{ 'PAGES.RACES.NAME' | translate }}</a>
-            <a class="c-navbar__button" routerLink="/completed" routerLinkActive="active-link">{{ 'PAGES.COMPLETED.NAME' | translate }}</a>
-            <a class="c-navbar__button" routerLink="/bets" routerLinkActive="active-link">{{ 'PAGES.BETS.NAME' | translate }}</a>
+            <!--a class="c-navbar__button" routerLink="/accounts" routerLinkActive="active-link">{{ 'PAGES.ACCOUNTS.NAME' | translate }}</a-->
+            <!--a class="c-navbar__button" *ngIf="isLogged" routerLink="/wallet" routerLinkActive="active-link">{{ 'PAGES.WALLET.NAME' | translate }}</a-->
         </div>
 
         <div class="c-navbar__row">
@@ -16,7 +15,7 @@
                 <!-- Dropdown Button -->
                 <lucide-icon dropdown-button
                     [img]="GlobeIcon"
-                    class="c-navbar__icon lucide_icons"
+                    class="c-navbar__icon"
                 ></lucide-icon>
 
                 <!-- Dropdown Body -->
@@ -26,11 +25,6 @@
                 </div>
             </app-drop-down>
 
-            <lucide-icon
-                [img]="isDarkTheme ? SunIcon : MoonIcon"
-                class="c-navbar__icon lucide_icons"
-                (click)="toggleTheme()"
-            ></lucide-icon>
             <app-login></app-login>
         </div>
     </nav>
@@ -45,12 +39,8 @@
 
             <app-login></app-login>
 
-            <lucide-icon
-                [img]="isDarkTheme ? SunIcon : MoonIcon"
-                class="c-navbar__icon lucide_icons"
-                (click)="toggleTheme()"
-            ></lucide-icon>
-            <!-- <lucide-icon [img]="MenuIcon" class="c-navbar__icon c-navbar__icon--btn" (click)="toggleMobileSideMenu()"></lucide-icon> -->
+            <lucide-icon [img]="MenuIcon" class="c-navbar__icon c-navbar__icon--btn" (click)="toggleMobileSideMenu()"></lucide-icon>
         </div>
     </nav>
 </ng-template>
+<!-- -->

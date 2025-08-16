@@ -5,8 +5,8 @@ import { SideMenuMobileComponent } from '@app/components/side-menu-mobile/side-m
 import { RedirectService } from '@app/services/redirect.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { TranslateService } from '@ngx-translate/core';
-import { RacesMenuMobileComponent } from './components/races-menu-mobile/races-menu-mobile.component';
-import { HorseRaceService } from './game/horse-race.service';
+import { Web3OctopusService } from './services/web3-octopus.service';
+import { UserStateService } from './store/user/user.service';
 
 @Component({
     selector: 'app-root',
@@ -15,7 +15,6 @@ import { HorseRaceService } from './game/horse-race.service';
         RouterOutlet,
         NavBarComponent,
         SideMenuMobileComponent,
-        RacesMenuMobileComponent,
         SharedModule
     ],
     template: `
@@ -24,7 +23,6 @@ import { HorseRaceService } from './game/horse-race.service';
             <router-outlet></router-outlet>
         </div>
         <app-side-menu-mobile></app-side-menu-mobile>
-        <app-races-menu-mobile></app-races-menu-mobile>
     `,
     styleUrls: ['./app.component.scss']
 })
@@ -35,9 +33,13 @@ export class AppComponent {
     constructor(
         private redirectService: RedirectService, //Automatically sets redirection rules
         private translate: TranslateService,
-        private raceManagerService: HorseRaceService
+        private octopus: Web3OctopusService,
+        private user: UserStateService,
     ) {
         // Set default language
         this.translate.use('en');
+        this.user.setDark();
+        this.user.setHueTheme(40, 100);
+
     }
 }

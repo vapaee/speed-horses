@@ -2,7 +2,7 @@
     "PAGES": {
         "HOME": {
             "NAME": "Home",
-            "TITLE": "Home Landing",
+            "TITLE": "Speed Horses",
             "DESCRIPTION": "A horse race gambling game based on Telos EVM."
         },
         "RACES": {

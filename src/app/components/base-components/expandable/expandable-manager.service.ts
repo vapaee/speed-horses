@@ -59,9 +59,4 @@ export class ExpandableManagerService {
         this.state.next({});
     }
 
-    isAnyOpen(ids: string[]): boolean {
-        const state = this.state.getValue();
-        return ids.some(id => state[id]);
-    }
-
 }

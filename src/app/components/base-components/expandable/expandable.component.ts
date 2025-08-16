@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, HostBinding } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { ExpandableManagerService } from './expandable-manager.service';
@@ -13,9 +13,6 @@ import { ExpandableManagerService } from './expandable-manager.service';
 export class ExpandableComponent implements OnInit, OnDestroy {
     @Input() expandableId!: string;
     @Input() groupId?: string;
-    @Input() variant: number = 0;
-    @HostBinding('class') hostClass = '';
-
     @Output() open = new EventEmitter<void>();
     @Output() close = new EventEmitter<void>();
     @Output() toggle = new EventEmitter<boolean>();
@@ -26,8 +23,6 @@ export class ExpandableComponent implements OnInit, OnDestroy {
     constructor(private expandableManager: ExpandableManagerService) {}
 
     ngOnInit() {
-        this.hostClass = `expandable-variant-${this.variant}`;
-
         this.subscription = this.expandableManager.state$.subscribe(state => {
             // Determine the new open state from the manager state
             const newOpenState = !!state[this.expandableId];

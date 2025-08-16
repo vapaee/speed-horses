@@ -24,17 +24,11 @@
 
     &__button {
         @include hyperlink;
-        margin-left: 10px
     }
 
     &__icon {
         @include hyperlink;
-        @include icon;
-        color: var(--c-accent-0);
-        &:hover,
-        &:active {
-            color: var(--c-foreground-2);
-        }
+        @include icon
     }
 
     &__dropdown{

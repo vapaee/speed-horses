@@ -1,6 +1,6 @@
-// local-storage.service.ts
+// src/app/services/local-storage.service.ts
 import { Injectable, inject } from '@angular/core';
-import { UserState } from '@app/store/user/user.reducer';
+import { UserState } from '@app/store/user/user.types';
 import { Store } from '@ngrx/store';
 import { user } from '@app/store/user';
 
@@ -43,24 +43,21 @@ export class LocalStorageService {
         if (actor) {
             key = `preference-${actor}`;
         }
-
         const preferences = this.get<UserState>(key, null);
-
         if (preferences) {
             if (preferences.isDarkTheme) {
                 this.store.dispatch(user.actions.setDark());
             } else {
                 this.store.dispatch(user.actions.setLight());
             }
-
             if (typeof preferences.h0 === 'number' && typeof preferences.h1 === 'number') {
-                this.store.dispatch(user.actions.setHueTheme({ h0: preferences.h0, h1: preferences.h1 }));
+                this.store.dispatch(
+                    user.actions.setHueTheme({ h0: preferences.h0, h1: preferences.h1 })
+                );
             }
-
         } else {
-            // No preferences found at all — default preferences
+            // If no preferences exist, apply dark theme by default
             this.store.dispatch(user.actions.setDark());
-            this.store.dispatch(user.actions.setHueTheme({ h0: 40, h1: 100 }));
         }
     }
 }
