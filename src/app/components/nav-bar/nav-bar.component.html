@@ -1,68 +1,46 @@
-<nav>
-    <!-- Left side: DEX logo + Hamburger Icon (visible on small screens) -->
-    <div class="nav-left">
-        <a 
-            routerLink="/" 
-            routerLinkActive="active-link" 
-            [routerLinkActiveOptions]="{ exact: true }"
-        >
-        <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-            <linearGradient id="gradientStroke" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="var(--c3)" />
-                <stop offset="100%" stop-color="var(--cc3)" />
-            </linearGradient>
-            </defs>
-            <circle cx="50" cy="50" r="40" stroke="url(#gradientStroke)" stroke-width="12" fill="none" />
-        </svg>
+<!-- Normal Navbar -->
+<!-- [ngIf]="!isMobileView; else mobileNav" -->
+<ng-container *ngIf="!isMobileView; else mobileNav">
+    <nav class="c-navbar">
+        <div class="c-navbar__row">
+            <img  class="c-navbar__logo"src="assets/game-img/gold-horse.png" routerLink="/" width="50px">
 
-        </a>
-        <a 
-            class="hamburger" 
-            (click)="toggleMenu()" 
-            aria-label="Toggle navigation menu" 
-            [attr.aria-expanded]="isMenuOpen"
-            [attr.aria-controls]="menuId"
-        >
-            &#9776;
-        </a>
-
-        <!-- Center: Nav links (visible on large screens) -->
-        <div class="nav-center">
-            <a routerLink="/trade" routerLinkActive="active-link">Trade</a>
-            <a routerLink="/explore" routerLinkActive="active-link">Explore</a>
-            <a routerLink="/pool" routerLinkActive="active-link">Pool</a>
+            <!--a class="c-navbar__button" routerLink="/accounts" routerLinkActive="active-link">{{ 'PAGES.ACCOUNTS.NAME' | translate }}</a-->
+            <!--a class="c-navbar__button" *ngIf="isLogged" routerLink="/wallet" routerLinkActive="active-link">{{ 'PAGES.WALLET.NAME' | translate }}</a-->
         </div>
-    </div>
 
-    <!-- Right side: always visible -->
-    <div class="nav-right">
-        <a class="setting-icon" (click)="toggleSettings()"> &#9881; </a>
-        <a class="search-icon" (click)="toggleSearch()"> &#9906; </a>
-        <a class="btn" (click)="toggleWallet()">Wallet</a>
-    </div>
-</nav>
+        <div class="c-navbar__row">
 
-<!-- Window Container for Navigation Links (visible on small screens when hamburger is clicked) -->
-<app-window-container *ngIf="isMenuOpen" (close)="closeMenu()">
-    <div class="menu-links">
-        <a routerLink="/trade" routerLinkActive="active-link" (click)="closeMenu()">Trade</a>
-        <a routerLink="/explore" routerLinkActive="active-link" (click)="closeMenu()">Explore</a>
-        <a routerLink="/pool" routerLinkActive="active-link" (click)="closeMenu()">Pool</a>
-    </div>
-</app-window-container>
+            <app-drop-down>
+                <!-- Dropdown Button -->
+                <lucide-icon dropdown-button
+                    [img]="GlobeIcon"
+                    class="c-navbar__icon"
+                ></lucide-icon>
 
-<!-- Window Container for Settings -->
-<app-window-container *ngIf="isSettingsOpen" (close)="closeSettings()">
-    <app-user-preferences></app-user-preferences>
-</app-window-container>
+                <!-- Dropdown Body -->
+                <div dropdown-body class="c-navbar__dropdown">
+                    <a class="c-navbar__dropdown-option" (click)="setLang('en')">{{ 'PAGES.PREFERENCES.LANGUAGE.EN' | translate }}</a>
+                    <a class="c-navbar__dropdown-option" (click)="setLang('es')">{{ 'PAGES.PREFERENCES.LANGUAGE.ES' | translate }}</a>
+                </div>
+            </app-drop-down>
 
-<!-- Window Container for Search -->
-<app-window-container *ngIf="isSearchOpen" (close)="closeSearch()">
-    <p>Search component here</p>
-</app-window-container>
+            <app-login></app-login>
+        </div>
+    </nav>
+</ng-container>
 
-<!-- Window Container for My Wallet -->
-<app-window-container *ngIf="isWalletOpen" (close)="closeWallet()">
-    <p>My Wallet content here</p>
-</app-window-container>
+<!-- Mobile Navbar | whidth < 599px -->
+
+<ng-template #mobileNav>
+    <nav class="c-navbar">
+        <div class="c-navbar__row c-navbar__row--mobile">
+            <img src="assets/game-img/gold-horse.png" routerLink="/" width="40px">
+
+            <app-login></app-login>
+
+            <lucide-icon [img]="MenuIcon" class="c-navbar__icon c-navbar__icon--btn" (click)="toggleMobileSideMenu()"></lucide-icon>
+        </div>
+    </nav>
+</ng-template>
+<!-- -->

@@ -1,0 +1,22 @@
+{
+    "PAGES": {
+        "HOME": {
+            "NAME": "Inicio",
+            "TITLE": "Speed Horses",
+            "DESCRIPTION": "Apuesta en carreras de caballos en una emocionante experiencia de juego."
+        },
+        "PREFERENCES": {
+            "LANGUAGE": {
+                "TITLE": "Idioma",
+                "EN": "Inglés",
+                "ES": "Español"
+            }
+        }
+    },
+    "AUTH": {
+        "LOGIN": "Iniciar sesión",
+        "LOGOUT": "Cerrar sesión",
+        "LOGGED_IN": "Conectado como {{name}}"
+    },
+    "COMPONENTS": {}
+}

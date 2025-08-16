@@ -1,0 +1,22 @@
+{
+    "PAGES": {
+        "HOME": {
+            "NAME": "Home",
+            "TITLE": "Speed Horses",
+            "DESCRIPTION": "Bet on horse races in a thrilling gambling experience."
+        },
+        "PREFERENCES": {
+            "LANGUAGE": {
+                "TITLE": "Language",
+                "EN": "English",
+                "ES": "Spanish"
+            }
+        }
+    },
+    "AUTH": {
+        "LOGIN": "Login",
+        "LOGOUT": "Logout",
+        "LOGGED_IN": "Logged in as {{name}}"
+    },
+    "COMPONENTS": {}
+}
