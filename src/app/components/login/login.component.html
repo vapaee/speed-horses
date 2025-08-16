@@ -3,7 +3,7 @@
         class="c-login__btn"
         (click)="login()"
         *ngIf="!(sessionService.session$ | async)"
-    >{{'TYPES.BUTTON.LOGIN' | translate}}</button>
+    >{{'AUTH.LOGIN' | translate}}</button>
 
     <div class="c-login__menu" *ngIf="(sessionService.session$ | async) as session">
         <app-drop-down>
@@ -19,7 +19,7 @@
                 <!--a class="c-login__menu-option" routerLink="/accounts">{{'PAGES.ACCOUNTS.NAME' | translate}}</a-->
                 <!--a class="c-login__menu-option" routerLink="/preferences">{{'PAGES.PREFERENCES.NAME' | translate}}</a-->
                 <hr class="c-login__menu-separator">
-                <a class="c-login__menu-option" (click)="logout()">{{'TYPES.BUTTON.LOGOUT' | translate}}</a>
+                <a class="c-login__menu-option" (click)="logout()">{{'AUTH.LOGOUT' | translate}}</a>
             </div>
         </app-drop-down>
     </div>
