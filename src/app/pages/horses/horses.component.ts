@@ -1,75 +1,55 @@
-// src/app/pages/horses/horses.component.ts
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
 import { SharedModule } from '@app/shared/shared.module';
-import { TabsModule } from 'primeng/tabs';
-import { TradingPage } from '../trading/trading.component';
-import { ForgePage } from '../forge/forge.component';
-import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
+import { TabMenu } from 'primeng/tabmenu';
+import { MenuItem } from 'primeng/api';
 import { filter, Subscription } from 'rxjs';
 
 @Component({
     standalone: true,
     selector: 'app-horses',
-    imports: [
-        SharedModule,
-        TabsModule,
-        TradingPage,
-        ForgePage
-    ],
+    imports: [SharedModule, TabMenu, RouterOutlet],
     template: `
-        <p-tabs
-            [value]="activeTab"
-            (valueChange)="onTabChange($event)"
-            class="sh-tabs"
-        >
-            <p-tablist>
-                <p-tab value="forge">
-                    <i class="pi pi-sparkles"></i>
-                    <span>{{ 'PAGES.HORSES.FORGE.NAME' | translate }}</span>
-                </p-tab>
-                <p-tab value="trading">
-                    <i class="pi pi-wallet"></i>
-                    <span>{{ 'PAGES.HORSES.TRADING.NAME' | translate }}</span>
-                </p-tab>
-            </p-tablist>
+        <p-tabmenu
+            class="sh-tabs__bar"
+            [model]="items"
+            [activeItem]="activeItem"
+            (activeItemChange)="onActiveItemChange($event)">
+        </p-tabmenu>
 
-            <p-tabpanels>
-                <p-tabpanel value="forge">
-                    <app-forge></app-forge>
-                </p-tabpanel>
-                <p-tabpanel value="trading">
-                    <app-trading></app-trading>
-                </p-tabpanel>
-            </p-tabpanels>
-        </p-tabs>
+        <div class="sh-tabs__content">
+            <router-outlet></router-outlet>
+        </div>
     `,
     styleUrls: ['./horses.component.scss']
 })
 export class HorsesPage implements OnInit, OnDestroy {
-    // active tab id matches the route param (:tab)
-    activeTab: 'forge' | 'trading' = 'forge';
+    // Items with routerLink will navigate automatically
+    items: MenuItem[] = [];
+    activeItem?: MenuItem;
 
     private sub?: Subscription;
 
     constructor(
-        private router: Router,
-        private route: ActivatedRoute
+        private translate: TranslateService,
+        private router: Router
     ) {}
 
     ngOnInit(): void {
-        // Initialize from current route and keep in sync on navigation
+        this.buildItems();
+        // Keep active tab in sync with current URL (deep-link, back/forward)
         this.sub = this.router.events
             .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-            .subscribe(() => {
-                const tab = (this.route.snapshot.paramMap.get('tab') ?? 'forge') as 'forge' | 'trading';
-                if (tab !== this.activeTab) {
-                    this.activeTab = this.normalizeTab(tab);
-                }
-            });
+            .subscribe(() => this.syncActiveFromUrl());
+        // Initial sync (first load)
+        this.syncActiveFromUrl();
 
-        // Also handle first load (in case there is no NavigationEnd yet)
-        const initialTab = (this.route.snapshot.paramMap.get('tab') ?? 'forge') as 'forge' | 'trading';
-        this.activeTab = this.normalizeTab(initialTab);
+        // Optional: rebuild labels if language changes
+        this.translate.onLangChange.subscribe(() => {
+            this.buildItems();
+            this.syncActiveFromUrl();
+        });
     }
 
     ngOnDestroy(): void {
@@ -78,24 +58,28 @@ export class HorsesPage implements OnInit, OnDestroy {
         }
     }
 
-    onTabChange(next: string | number): void {
-        console.log('HorsesPage,onTabChange()', { next });
-        // Update URL when user changes tab
-        const normalized = this.normalizeTab(next as string);
-        if (normalized !== this.activeTab) {
-            this.activeTab = normalized;
-        }
-        this.router.navigate(['/horses', this.activeTab], {
-            replaceUrl: true // keep history clean; quítalo si quieres historizar
-        });
+    onActiveItemChange(item: MenuItem): void {
+        // No need to navigate manually; routerLink in item handles it.
+        // We only mirror the state locally.
+        this.activeItem = item;
     }
 
-    private normalizeTab(tab:  string): 'forge' | 'trading' {
-        // Fallback to 'forge' for any unknown value
-        if (tab === 'trading') {
-            return 'trading';
-        } else {
-            return 'forge';
-        }
+    private buildItems(): void {
+        // Use translate.instant for static labels of the tab bar
+        const forgeLabel = this.translate.instant('PAGES.HORSES.FORGE.NAME');
+        const tradingLabel = this.translate.instant('PAGES.HORSES.TRADING.NAME');
+
+        this.items = [
+            { label: forgeLabel, icon: 'pi pi-sparkles', routerLink: ['/horses', 'forge'] },
+            { label: tradingLabel, icon: 'pi pi-wallet', routerLink: ['/horses', 'trading'] }
+        ];
+    }
+
+    private syncActiveFromUrl(): void {
+        // Expect URLs like /horses/forge or /horses/trading
+        const segments = this.router.url.split('/'); // ['', 'horses', 'forge']
+        const tab = segments[2] || 'forge';
+        const index = tab === 'trading' ? 1 : 0;
+        this.activeItem = this.items[index];
     }
 }

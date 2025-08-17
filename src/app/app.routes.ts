@@ -1,16 +1,19 @@
 // src/app/app.routes.ts
 import { Routes } from '@angular/router';
-import { HomePage } from '@app/pages/home/home.component';
-import { FixtureComponent } from '@app/pages/fixture/fixture.component';
-import { HorsesPage } from '@app/pages/horses/horses.component';
-import { ShopPage } from '@app/pages/shop/shop.component';
-import { RefugePage } from '@app/pages/refuge/refuge.component';
 
 export const routes: Routes = [
-    { path: '', component: HomePage },
-    { path: 'fixture', component: FixtureComponent },
-    { path: 'horses', pathMatch: 'full', redirectTo: 'horses/forge' },
-    { path: 'horses/:tab', component: HorsesPage },
-    { path: 'shop', component: ShopPage },
-    { path: 'refuge', component: RefugePage },
+    { path: '', loadComponent: () => import('@app/pages/home/home.component').then(m => m.HomePage) },
+    { path: 'fixture', loadComponent: () => import('@app/pages/fixture/fixture.component').then(m => m.FixtureComponent) },
+    {
+        path: 'horses',
+        loadComponent: () => import('@app/pages/horses/horses.component').then(m => m.HorsesPage),
+        children: [
+            { path: '', pathMatch: 'full', redirectTo: 'forge' },
+            { path: 'forge', loadComponent: () => import('@app/pages/forge/forge.component').then(m => m.ForgePage) },
+            { path: 'trading', loadComponent: () => import('@app/pages/trading/trading.component').then(m => m.TradingPage) }
+        ]
+    },
+
+    { path: 'shop', loadComponent: () => import('@app/pages/shop/shop.component').then(m => m.ShopPage) },
+    { path: 'refuge', loadComponent: () => import('@app/pages/refuge/refuge.component').then(m => m.RefugePage) }
 ];
