@@ -15,9 +15,10 @@
 
             <!-- Dropdown Body -->
             <div dropdown-body class="c-login__menu-body">
-                <!--a class="c-login__menu-option" routerLink="/wallet">{{'PAGES.WALLET.NAME' | translate}}</a-->
-                <!--a class="c-login__menu-option" routerLink="/accounts">{{'PAGES.ACCOUNTS.NAME' | translate}}</a-->
-                <!--a class="c-login__menu-option" routerLink="/preferences">{{'PAGES.PREFERENCES.NAME' | translate}}</a-->
+                <a class="c-login__menu-option" routerLink="/fixture">{{ 'PAGES.FIXTURE.NAME' | translate }}</a>
+                <a class="c-login__menu-option" routerLink="/horses">{{ 'PAGES.HORSES.NAME' | translate }}</a>
+                <a class="c-login__menu-option" routerLink="/shop">{{ 'PAGES.SHOP.NAME' | translate }}</a>
+                <a class="c-login__menu-option" routerLink="/refuge">{{ 'PAGES.REFUGE.NAME' | translate }}</a>
                 <hr class="c-login__menu-separator">
                 <a class="c-login__menu-option" (click)="logout()">{{'AUTH.LOGOUT' | translate}}</a>
             </div>
