@@ -11,6 +11,25 @@
                 "EN": "English",
                 "ES": "Spanish"
             }
+        },
+        "FIXTURE": {
+            "NAME": "Fixture"
+        },
+        "HORSES": {
+            "NAME": "Horses",
+            "FORGE": { "NAME": "Foal Forge" },
+            "TRADING": { "NAME": "Trading Ground" }
+        },
+        "SHOP": {
+            "NAME": "Tack Shop",
+            "SHOES": { "NAME": "Horseshoes" },
+            "HORSE": { "NAME": "Horse Closet" },
+            "JOCKEY": { "NAME": "Jockey Outfit" }
+        },
+        "REFUGE": {
+            "NAME": "Rider's Refuge",
+            "PADDOCK": { "NAME": "The Paddock" },
+            "INVENTORY": { "NAME": "Inventory" }
         }
     },
     "AUTH": {

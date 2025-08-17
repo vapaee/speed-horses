@@ -10,7 +10,7 @@ import { LucideAngularModule } from 'lucide-angular';
     template: `
         <div class="p-home">
             <div class="p-home__header">
-                <img class="p-home__logo" src="assets/game-img/gold-horse.png" alt="vortdex" />
+                <img class="p-home__logo" src="assets/game-img/gold-horse.png" alt="speed horses" />
                 <div class="p-home__title">{{ 'PAGES.HOME.TITLE' | translate }}</div>
             </div>
             <p class="p-home__subtitle">{{ 'PAGES.HOME.DESCRIPTION' | translate }}</p>
@@ -18,6 +18,6 @@ import { LucideAngularModule } from 'lucide-angular';
     `,
     styleUrls: ['./home.component.scss']
 })
-export class HomeComponent {
+export class HomePage {
 
 }

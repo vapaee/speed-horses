@@ -7,7 +7,7 @@ import {
     EthereumTokensService
 } from "@vapaee/w3o-ethereum";
 
-export interface VortDEXw3oServices {
+export interface SpeedHorsesW3oServices {
     antelope: {
         tokens: AntelopeTokensService;
         resources: AntelopeResourcesService;

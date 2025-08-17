@@ -20,12 +20,12 @@ import {
     TelosEVMNetwork,
 } from '@vapaee/w3o-ethereum';
 
-import { VortDEXw3oServices } from '@app/types';
+import { SpeedHorsesW3oServices } from '@app/types';
 
 // declare the window.v3o object which is used to store the instance of Web3Octopus so any javascript code can access it through window.v3o
 declare global {
     interface Window {
-        w3o: Web3Octopus<VortDEXw3oServices>;
+        w3o: Web3Octopus<SpeedHorsesW3oServices>;
     }
 }
 
@@ -36,11 +36,11 @@ const logger = new W3oContextFactory('Web3OctopusService');
 })
 export class Web3OctopusService implements OnDestroy {
     private destroy$ = new Subject<void>();
-    public octopus!: Web3Octopus<VortDEXw3oServices>;
+    public octopus!: Web3Octopus<SpeedHorsesW3oServices>;
     constructor() {
         const context = logger.method('constructor');
         try {
-            const octopus = new Web3Octopus<VortDEXw3oServices>(context);
+            const octopus = new Web3Octopus<SpeedHorsesW3oServices>(context);
             this.octopus = octopus;
             window.w3o = octopus; // assign the instance to the window object so it can be accessed from anywhere
 

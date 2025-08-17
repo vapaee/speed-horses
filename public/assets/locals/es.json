@@ -11,6 +11,25 @@
                 "EN": "Inglés",
                 "ES": "Español"
             }
+        },
+        "FIXTURE": {
+            "NAME": "Fixture"
+        },
+        "HORSES": {
+            "NAME": "Caballos",
+            "FORGE": { "NAME": "Potros" },
+            "TRADING": { "NAME": "Compra Venta" }
+        },
+        "SHOP": {
+            "NAME": "Tienda",
+            "SHOES": { "NAME": "Herraduras" },
+            "HORSE": { "NAME": "Estilo Equino" },
+            "JOCKEY": { "NAME": "Jinetes" }
+        },
+        "REFUGE": {
+            "NAME": "Refugio",
+            "PADDOCK": { "NAME": "Establo" },
+            "INVENTORY": { "NAME": "Inventario" }
         }
     },
     "AUTH": {
