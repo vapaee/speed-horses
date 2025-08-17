@@ -3,10 +3,12 @@
 <ng-container *ngIf="!isMobileView; else mobileNav">
     <nav class="c-navbar">
         <div class="c-navbar__row">
-            <img  class="c-navbar__logo"src="assets/game-img/gold-horse.png" routerLink="/" width="50px">
+            <img class="c-navbar__logo" src="assets/game-img/gold-horse.png" routerLink="/" width="50px">
 
-            <!--a class="c-navbar__button" routerLink="/accounts" routerLinkActive="active-link">{{ 'PAGES.ACCOUNTS.NAME' | translate }}</a-->
-            <!--a class="c-navbar__button" *ngIf="isLogged" routerLink="/wallet" routerLinkActive="active-link">{{ 'PAGES.WALLET.NAME' | translate }}</a-->
+            <a class="c-navbar__button" routerLink="/fixture" routerLinkActive="active-link">{{ 'PAGES.FIXTURE.NAME' | translate }}</a>
+            <a class="c-navbar__button" routerLink="/horses" routerLinkActive="active-link">{{ 'PAGES.HORSES.NAME' | translate }}</a>
+            <a class="c-navbar__button" routerLink="/shop" routerLinkActive="active-link">{{ 'PAGES.SHOP.NAME' | translate }}</a>
+            <a class="c-navbar__button" routerLink="/refuge" routerLinkActive="active-link">{{ 'PAGES.REFUGE.NAME' | translate }}</a>
         </div>
 
         <div class="c-navbar__row">
