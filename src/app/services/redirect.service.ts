@@ -49,7 +49,7 @@ export class RedirectService implements OnDestroy {
                     return;
                 }
                 if (session) {
-                    this.router.navigate(['/wallet']);
+                    this.router.navigate(['/forge']);
                 } else {
                     if (isMobile) {
                         this.router.navigate(['/accounts']);
