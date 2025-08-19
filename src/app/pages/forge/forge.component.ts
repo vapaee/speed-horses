@@ -7,8 +7,8 @@ import { SharedModule } from '@app/shared/shared.module';
     selector: 'app-forge',
     imports: [SharedModule],
     template: `
-        <section class="sh-c1">
-            <h2 class="sh-c1__title">Forge</h2>
+        <section class="p-forge">
+            <span class="p-forge__title">Forge</span>
         </section>
     `,
     styleUrls: ['./forge.component.scss']

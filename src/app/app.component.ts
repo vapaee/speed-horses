@@ -17,11 +17,11 @@ import { UserStateService } from './store/user/user.service';
         SharedModule
     ],
     template: `
-        <app-nav-bar class='navbar'></app-nav-bar>
-        <div class='view'>
+        <app-nav-bar class='app__navbar'></app-nav-bar>
+        <div class='app__page-content'>
             <router-outlet></router-outlet>
         </div>
-        <app-side-menu-mobile></app-side-menu-mobile>
+        <app-side-menu-mobile class='app__side-menu-mobile'></app-side-menu-mobile>
     `,
     styleUrls: ['./app.component.scss']
 })

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { SharedModule } from '@app/shared/shared.module';
@@ -12,17 +12,18 @@ import { filter, Subscription } from 'rxjs';
     imports: [SharedModule, TabMenu, RouterOutlet],
     template: `
         <p-tabmenu
-            class="sh-tabs__bar"
+            class="p-horses__tabs"
             [model]="items"
             [activeItem]="activeItem"
             (activeItemChange)="onActiveItemChange($event)">
         </p-tabmenu>
 
-        <div class="sh-tabs__content">
+        <div class="p-horses__tabs-content">
             <router-outlet></router-outlet>
         </div>
     `,
-    styleUrls: ['./horses.component.scss']
+    styleUrls: ['./horses.component.scss'],
+    encapsulation: ViewEncapsulation.None
 })
 export class HorsesPage implements OnInit, OnDestroy {
     // Items with routerLink will navigate automatically

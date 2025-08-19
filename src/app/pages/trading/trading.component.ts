@@ -8,8 +8,8 @@ import { SharedModule } from '@app/shared/shared.module';
     selector: 'app-trading',
     imports: [SharedModule],
     template: `
-        <section class="sh-c1">
-            <h2 class="sh-c1__title">Trading</h2>
+        <section class="p-trading">
+            <span class="p-trading__title">Trading</span>
         </section>
     `,
     styleUrls: ['./trading.component.scss']

@@ -1,6 +1,15 @@
-.p-horses {
-    padding: 1rem;
+@use 'mixin' as *;
+
+app-horses {
+    @include page;
 }
 
-.sh-tabs__bar { margin-bottom: 1rem; }
-.sh-tabs__content { padding: 0.5rem 0; }
+.p-horses {
+    &__tabs {
+        @include tabs;
+    }
+
+    &__tabs-content {
+        @include tabs-content;
+    }
+}

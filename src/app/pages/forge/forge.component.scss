@@ -1,7 +1,10 @@
 @use 'mixin' as *;
 
 :host {
-    
+
 }
 .p-forge {
-} 
+    &__title {
+        @include tabs-content-title;
+    }
+}

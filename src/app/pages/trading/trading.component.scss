@@ -1,7 +1,11 @@
 @use 'mixin' as *;
 
-:host {
-    
+app-trading {
+    @include page;
 }
+
 .p-trading {
-} 
+    &__title {
+        @include tabs-content-title;
+    }
+}
