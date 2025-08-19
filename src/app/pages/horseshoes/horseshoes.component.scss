@@ -1,0 +1,7 @@
+@use 'mixin' as *;
+
+.p-horseshoes {
+    &__title {
+        @include tabs-content-title;
+    }
+}

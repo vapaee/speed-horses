@@ -1,3 +1,15 @@
+@use 'mixin' as *;
+
+app-refuge {
+    @include page;
+}
+
 .p-refuge {
-    padding: 1rem;
+    &__tabs {
+        @include tabs;
+    }
+
+    &__tabs-content {
+        @include tabs-content;
+    }
 }

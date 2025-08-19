@@ -1,0 +1,7 @@
+@use 'mixin' as *;
+
+.p-accessories {
+    &__title {
+        @include tabs-content-title;
+    }
+}

@@ -1,3 +1,15 @@
+@use 'mixin' as *;
+
+app-shop {
+    @include page;
+}
+
 .p-shop {
-    padding: 1rem;
+    &__tabs {
+        @include tabs;
+    }
+
+    &__tabs-content {
+        @include tabs-content;
+    }
 }

@@ -1,0 +1,7 @@
+@use 'mixin' as *;
+
+.p-paddock {
+    &__title {
+        @include tabs-content-title;
+    }
+}
