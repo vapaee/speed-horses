@@ -1,6 +1,6 @@
 @use 'mixin' as *;
 
-:host {
+app-home {
     @include page;
 }
 
@@ -34,13 +34,6 @@
     }
     &__package {
         @include hyperlink;
-    }
-    &__install {
-        @include container-border;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-family: monospace;
     }
     &__code {
         white-space: nowrap;

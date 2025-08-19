@@ -1,0 +1,7 @@
+@use 'mixin' as *;
+
+.p-inventory {
+    &__title {
+        @include tabs-content-title;
+    }
+}

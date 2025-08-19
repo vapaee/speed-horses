@@ -13,7 +13,23 @@ export const routes: Routes = [
             { path: 'trading', loadComponent: () => import('@app/pages/trading/trading.component').then(m => m.TradingPage) }
         ]
     },
-
-    { path: 'shop', loadComponent: () => import('@app/pages/shop/shop.component').then(m => m.ShopPage) },
-    { path: 'refuge', loadComponent: () => import('@app/pages/refuge/refuge.component').then(m => m.RefugePage) }
+    {
+        path: 'shop',
+        loadComponent: () => import('@app/pages/shop/shop.component').then(m => m.ShopPage),
+        children: [
+            { path: '', pathMatch: 'full', redirectTo: 'horseshoes' },
+            { path: 'horseshoes', loadComponent: () => import('@app/pages/horseshoes/horseshoes.component').then(m => m.HorseshoesPage) },
+            { path: 'accessories', loadComponent: () => import('@app/pages/accessories/accessories.component').then(m => m.AccessoriesPage) },
+            { path: 'jockeys', loadComponent: () => import('@app/pages/jockeys/jockeys.component').then(m => m.JockeysPage) }
+        ]
+    },
+    {
+        path: 'refuge',
+        loadComponent: () => import('@app/pages/refuge/refuge.component').then(m => m.RefugePage),
+        children: [
+            { path: '', pathMatch: 'full', redirectTo: 'paddock' },
+            { path: 'paddock', loadComponent: () => import('@app/pages/paddock/paddock.component').then(m => m.PaddockPage) },
+            { path: 'inventory', loadComponent: () => import('@app/pages/inventory/inventory.component').then(m => m.InventoryPage) }
+        ]
+    }
 ];
