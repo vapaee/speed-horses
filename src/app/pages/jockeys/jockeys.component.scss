@@ -1,0 +1,7 @@
+@use 'mixin' as *;
+
+.p-jockeys {
+    &__title {
+        @include tabs-content-title;
+    }
+}
