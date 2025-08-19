@@ -11,9 +11,9 @@ import { TabViewModule } from 'primeng/tabview';
             <p-tabView>
                 <p-tabPanel header="{{ 'PAGES.SHOP.SHOES.NAME' | translate }}">
                 </p-tabPanel>
-                <p-tabPanel header="{{ 'PAGES.SHOP.HORSE.NAME' | translate }}">
+                <p-tabPanel header="{{ 'PAGES.SHOP.ACCESSORIES.NAME' | translate }}">
                 </p-tabPanel>
-                <p-tabPanel header="{{ 'PAGES.SHOP.JOCKEY.NAME' | translate }}">
+                <p-tabPanel header="{{ 'PAGES.SHOP.JOCKEYS.NAME' | translate }}">
                 </p-tabPanel>
             </p-tabView>
         </div>

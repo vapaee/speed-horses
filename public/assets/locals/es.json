@@ -23,8 +23,8 @@
         "SHOP": {
             "NAME": "Tienda",
             "SHOES": { "NAME": "Herraduras" },
-            "HORSE": { "NAME": "Estilo Equino" },
-            "JOCKEY": { "NAME": "Jinetes" }
+            "ACCESSORIES": { "NAME": "Estilo Equino" },
+            "JOCKEYS": { "NAME": "Jinetes" }
         },
         "REFUGE": {
             "NAME": "Refugio",

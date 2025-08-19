@@ -23,8 +23,8 @@
         "SHOP": {
             "NAME": "Tack Shop",
             "SHOES": { "NAME": "Horseshoes" },
-            "HORSE": { "NAME": "Horse Closet" },
-            "JOCKEY": { "NAME": "Jockey Outfit" }
+            "ACCESSORIES": { "NAME": "Horse Closet" },
+            "JOCKEYS": { "NAME": "Jockey Outfit" }
         },
         "REFUGE": {
             "NAME": "Rider's Refuge",
