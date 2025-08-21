@@ -1,8 +1,8 @@
 Introducción
 
-En el corazón del sistema de carreras de caballos se encuentra el RaceManager, un contrato inteligente cuya misión va mucho más allá de simplemente arrancar un cronómetro. Primero, organiza los fixtures (rondas), agrupando caballos de nivel parecido en bloques de carreras que comparten ventana de inscripción y fecha de inicio, de modo que ninguna prueba quede demasiado desequilibrada. Para dotar de realismo y variabilidad a cada enfrentamiento, mantiene un pool de semillas pseudoaleatorias que se actualiza constantemente: cada nueva semilla se encadena con las anteriores y desplaza la más antigua (manteniendo hasta un máximo de **MAX_SEED_QUEUE_LENGTH** valores), garantizando que los resultados no puedan predecirse ni manipularse fácilmente.
+En el corazón del sistema de carreras de caballos se encuentra el RaceManager, un contrato inteligente cuya misión va mucho más allá de simplemente arrancar un cronómetro. Primero, organiza los fixtures (rondas), agrupando caballos de nivel parecido en bloques de carreras que comparten ventana de inscripción y fecha de inicio, de modo que ninguna prueba quede demasiado desequilibrada. Para dotar de realismo y variabilidad a cada enfrentamiento, mantiene un pool de semillas pseudoaleatorias que se actualiza constantemente y que sirven para dar aleatoriedad al resultado de las carreras: cada nueva semilla se encadena con las anteriores y desplaza la más antigua (manteniendo hasta un máximo de **MAX_SEED_QUEUE_LENGTH** valores), garantizando que los resultados no puedan predecirse ni manipularse fácilmente.
 
-Cuando llega la hora de la verdad, el RaceManager simula cada carrera en un número fijo de iteraciones discretas, tomando semillas sucesivas para calcular el avance de cada caballo en cada “tick” (o iteración) y, al término de la prueba, determinar el orden de llegada. Durante el transcurso de la competición el contrato permite desde simulaciones exploratorias hasta la ejecución definitiva de la función `runRace`, que va registrando de forma inmutable las semillas usadas.
+Cuando llega la hora de la verdad, el RaceManager simula cada carrera en un número iteraciones discretas que depende de la longitud de la carrera, tomando semillas sucesivas para calcular el avance de cada caballo en cada “tick” (o iteración) y, al término de la prueba, determinar el orden de llegada. Durante el transcurso de la competición el contrato permite desde simulaciones exploratorias hasta la ejecución definitiva de la función `runRace`, que va registrando de forma inmutable las semillas usadas.
 
 Paralelamente, el RaceManager se encarga de los costos de inscripción y de la repartición de premios en HAY: cobra en función del nivel de cada caballo, calcula un bote total que combina criterios lineales y logarítmicos, reparte premios principales según posición y añade un “premio por correr” que compensa a los menos favorecidos. Además, coordina la lógica de un contrato externo de apuestas en TLOS, que acumula las apuestas de los usuarios y distribuye un pequeño porcentaje de estos tokens entre los caballos vencedores.
 
@@ -12,22 +12,19 @@ A continuación se presentan con detalle los conceptos clave, su definición y l
 
 ### Definición
 
-Un **Fixture** es un conjunto de carreras que se desarrollan en momentos cercanos entre sí, con una capacidad máxima de `MAX_FIXTURE_HORSES` caballos, organizados en enfrentamientos equilibrados. Cada vez que se inscribe un nuevo caballo, y siempre que el fixture aún tenga cupos disponibles, se activa el algoritmo generador del fixture. Este algoritmo selecciona los caballos elegibles —es decir, aquellos registrados o aplazados— cuyo nivel no difiera en más de `MAX_POINTS_DIFFERENCE_TOLERANCE` puntos (en el caso de caballos veteranos) o `MAX_LEVELS_DIFFERENCE_TOLERANCE` niveles (para caballos novatos), agrupándolos en carreras donde ninguno tenga una ventaja significativa. Este proceso se repite con cada nueva inscripción admitida hasta alcanzar el umbral de confirmación (`FIXTURE_CONFIRM_TIME`) anterior a la hora de inicio (`fixture.startTime`). A partir de ese momento, el fixture queda fijo, se habilitan las apuestas, y cualquier inscripción posterior será postergada para la siguiente ronda.
+Un **Fixture** es un conjunto de carreras que se desarrollan en momentos cercanos entre sí, con una capacidad máxima de `MAX_FIXTURE_RACES` carreras, organizados en enfrentamientos equilibrados. Cada vez que se inscribe un nuevo caballo, y siempre que el fixture aún tenga cupos disponibles, se activa el algoritmo generador del fixture. Este algoritmo selecciona los caballos elegibles —es decir, aquellos registrados o aplazados— cuyo nivel no difiera en más de `MAX_POINTS_DIFFERENCE_TOLERANCE` puntos (en el caso de caballos veteranos) o `MAX_LEVELS_DIFFERENCE_TOLERANCE` niveles (para caballos novatos), agrupándolos en carreras donde ninguno tenga una ventaja significativa. Este proceso se repite con cada nueva inscripción admitida hasta alcanzar el umbral de confirmación (`FIXTURE_CONFIRM_TIME`) anterior a la hora de inicio (`fixture.startTime`). A partir de ese momento, el fixture queda fijo, se habilitan las apuestas, y cualquier inscripción posterior será postergada para la siguiente ronda.
 
 Cada fixture tiene una hora de inicio, y la distancia temporal respecto al siguiente fixture varía según la cantidad de caballos inscriptos en el momento de su creación. Si hay muchos inscriptos, el siguiente fixture se programará pronto; si hay pocos, se espaciará más en el tiempo. En todos los casos, este intervalo estará limitado por los valores `FIXTURE_MIN_TIME_DISTANCE` y `FIXTURE_MAX_TIME_DISTANCE`.
 
-El intervalo entre carreras dentro de un mismo fixture es constante (`TIME_BETWEEN_RACES`) y mucho menor que el tiempo entre fixtures, lo que refuerza su pertenencia a una misma ronda. La duración de cada carrera depende de dos factores: el nivel del caballo con mayor cantidad de puntos (a mayor nivel, mayor longitud de la pista y por ende más duración), y la cantidad de caballos participantes (a mayor número, más larga la carrera).
+El intervalo entre carreras dentro de un mismo fixture es constante (`TIME_BETWEEN_RACES`) y mucho menor que el tiempo entre fixtures, lo que refuerza su pertenencia a una misma ronda. La duración de cada carrera depende de su longitud, que a su vez depende de dos factores: el nivel del caballo con mayor cantidad de puntos (a mayor nivel, mayor longitud de la pista y por ende más duración), y la cantidad de caballos participantes (a mayor número, más larga la carrera).
 
 El contrato mantiene una lista de espera ilimitada de caballos registrados por orden de llegada, así como una lista prioritaria de caballos aplazados —es decir, aquellos que no pudieron competir en fixtures anteriores por falta de rivales adecuados—. Al momento de generar un nuevo fixture, se toman caballos de ambas listas, priorizando los aplazados, hasta completar las carreras necesarias.
 
-El algoritmo de generación de carreras dentro del fixture recorre los caballos candidatos, verificando si existe una carrera en la que puedan participar según su nivel. Si encuentra una carrera adecuada con cupo disponible, lo incorpora; si no, crea una nueva carrera con ese caballo como primer inscripto. Cuando una carrera alcanza el número máximo de participantes, se considera confirmada y se comienza una nueva. El proceso finaliza cuando se alcanza el número máximo de carreras permitidas en el fixture o se agotan los caballos elegibles. Las carreras que cumplen con el mínimo de participantes se ordenan por nivel y se incorporan al fixture. Los caballos que no logran formar una carrera válida son nuevamente aplazados y reciben un premio consuelo proporcional a su nivel.
+El algoritmo de generación de carreras dentro del fixture recorre los caballos candidatos, verificando si existe una carrera en la que puedan participar según su nivel. Si encuentra una carrera adecuada con cupo disponible, lo incorpora; si no, crea una nueva carrera con ese caballo como primer inscripto. Cuando una carrera alcanza el número máximo de participantes, se considera confirmada y, de ser necesario, se comienza una nueva con el mismo nivel. El proceso finaliza cuando se alcanza el número máximo de carreras permitidas en el fixture o se agotan los caballos elegibles. Las carreras que cumplen con el mínimo de participantes se ordenan por nivel y se incorporan al fixture. Los caballos que no logran formar una carrera válida son nuevamente aplazados y reciben un premio consuelo (expresado en token HAY) proporcional a su nivel.
 
-Cuando el un caballo es retirado de la última carrera de un fixture, este se da por finalizado y se genera el siguiente, calculando su fecha de inicio en función de la cantidad de caballos en espera. Desde entonces, por cada nueva inscripción, si aún hay cupo, se ejecuta nuevamente el algoritmo generador. Este ciclo continúa hasta que se alcanza el tiempo de confirmación, tras lo cual el fixture queda congelado y sólo se siguen acumulando inscripciones para la siguiente ronda.
+Después de terminada la última carrera, qualquier usuario puede ejecutar la función que da por finalizado el fixture para generar el siguiente fixture, calculando su fecha de inicio en función de la cantidad de caballos en espera. Desde entonces, por cada nueva inscripción, si aún hay cupo, se ejecuta nuevamente el algoritmo generador del fixture. Este ciclo continúa hasta que se alcanza el tiempo de confirmación, tras lo cual el fixture queda congelado y sólo se siguen acumulando inscripciones para la siguiente ronda.
 
-El contrato mantiene dos listas de espera:
-
-`registered`: caballos inscritos, por orden de llegada.
-`postponed`: caballos pospuestos de rondas anteriores, con prioridad sobre los nuevos.
+Si un caballo que corrió en la última carrera de un fixture, es retirado de la misma, se ejecutará automáticamente la función que dará por finalizado el fixture y generará el siguiente.
 
 ### Implementación
 
@@ -47,13 +44,14 @@ contract RaceManager {
         // datos dinámicos que se iran actualizando tras cada iteracción
         bytes32[] seeds;             // Semillas correspondientes a tiempo pasado
         // Datos finales que se escribirán una única vez
-        uint256[] positions;         // es el resultado de la carrera. Enm el índice 0 está el id del ganador.
+        uint256[] positions;         // es el resultado de la carrera. En el índice 0 está el id del ganador.
     }
 
     struct Fixture {
-        uint256 startTime;           // momento de comienzo de la primer carrera a la vez que sirve de ID para el fixture
+        uint256 startTime;           // momento (timestamp) de comienzo de la primer carrera a la vez que sirve de ID para el fixture
         uint256[] Race;              // carreras generadas. Las carreras de un fixture se identifican por su índice en esta lista
         uint256 currentRace;         // índice de la carrera siguiente o en curso.
+        uint256 prevFixture;         // referencia al Fixture anterior. Servirá para borrar datos de Fixtures pasados.
     }
 
     struct Postponed {
@@ -66,10 +64,10 @@ contract RaceManager {
     uint256[] registered;            // id de los caballos inscriptos
     
     mapping(uint256 => Fixture) public fixtures; // key is the startTime of the fixture
-    uint256 current;                 // id del fixture en el que trabajamos actualemnte. Puedes no haber empezado o estar en proceso.
+    uint256 currentFixture;          // id del fixture en el que trabajamos actualemnte. Puedes no haber empezado o estar en proceso.
 ```
 * **Creación de un Fixture**: `createNextFixture()`
-  Se ejecuta cuando el un caballo de la última carrera del fixture actual es retirado. Esta función decide el startTime del siguiente Fixture basándose en la cantidad de caballos que esperan. Actualiza la variable `current = startTime` para finalmente ejecutar `regenerateFixture(current)` para generar la primer versión del fixture.
+  Se ejecuta cuando un caballo de la última carrera del fixture actual es retirado. Esta función decide el startTime del siguiente Fixture basándose en la cantidad de caballos que esperan. Actualiza la variable `current = startTime` para finalmente ejecutar `regenerateFixture(current)` para generar la primer versión del fixture.
 
 ```solidity
     // Create next fixture when last race is completed
@@ -88,7 +86,7 @@ contract RaceManager {
     // Regenerate current fixture grouping eligible horses
     function regenerateFixture(uint256 fixtureId) public {
         // Iterate postponed then registered to assign into races
-        // respecting MAX_FIXTURE_HORSES and level tolerances
+        // respecting MAX_FIXTURE_RACES and level tolerances
         // ...implementation details...
     }
 ```
@@ -115,13 +113,13 @@ contract RaceManager {
 
 ### Definición
 
-Dado que el tiempo de la carrera se representa de forma discreta, dividiéndolo en `race.iterations` partes, cada iteración corresponde al avance de los caballos en un tramo determinado. Para simular el desarrollo de una carrera, el contrato ofrece dos funciones de solo lectura que pueden ejecutarse en cualquier momento utilizando el pool de semillas disponible. Además, existe una tercera función que efectivamente corre la carrera y registra su evolución.
+Dado que el tiempo de la carrera se representa de forma discreta, dividiéndolo en `race.iterations` partes, cada iteración corresponde al avance de los caballos en un tramo determinado. Para simular el desarrollo de una carrera, el contrato ofrece dos funciones de solo lectura que pueden ejecutarse en cualquier momento utilizando el pool de semillas disponible. Además, existe una tercera función que efectivamente corre la carrera y registra su evolución para que se mantenga inalterable en futuras simulaciones.
 
 Antes de que la carrera comience, es posible simularla de dos maneras: utilizando la última semilla del pool como punto de partida, o indicando explícitamente el índice de la semilla inicial a usar. A partir de esa primera semilla, las sucesivas se determinan calculando el índice siguiente con base en la semilla utilizada en la iteración anterior. De este modo, la elección de la semilla inicial define completamente la secuencia de la carrera simulada.
 
-Una vez iniciada la carrera (`block.timestamp > race.startTime`), se habilita la función encargada de ejecutarla realmente. Esta función calcula cuántas iteraciones ("ticks") deberían haberse procesado desde la última ejecución, en función del tiempo transcurrido. Luego, simula el avance correspondiente desde el punto donde se había detenido, utilizando las semillas disponibles en el estado actual del pool. Las semillas utilizadas pero aún no registradas se agregan al historial `race.seeds`.
+Una vez iniciada la carrera (`block.timestamp > race.startTime`), se habilita la función encargada de ejecutarla realmente. Esta función calcula cuántas iteraciones ("ticks") deberían haberse procesado desde la última ejecución, en función del tiempo transcurrido. Luego, simula el avance correspondiente desde el punto donde se había detenido, utilizando las semillas disponibles en el estado actual del pool. Las semillas utilizadas pero aún no registradas se agregan al historial `race.seeds` generando úna selección de semillas que deberán respetarse en sucesivas simulaciones.
 
-En futuras simulaciones realizadas mediante funciones de solo lectura, se tomará primero el historial de semillas ya registrado (`race.seeds`) y, una vez agotado, se continuará con nuevas semillas generadas a partir de la última semilla utilizada. Esto garantiza que cualquier semilla agregada durante el transcurso de la carrera solo influya en iteraciones futuras, preservando inalteradas las iteraciones ya registradas.
+De este modo, en las simulaciones que se realicen una vez iniciada la carrera, se tomará primero el historial de semillas ya registrado (`race.seeds`) y, una vez agotado, se continuará con nuevas semillas generadas a partir de la última semilla utilizada. Esto garantiza que cualquier semilla agregada durante el transcurso de la carrera solo influya en iteraciones futuras, preservando inalteradas las iteraciones ya registradas.
 
 **Pista y sus tramos**
 

@@ -1,3 +1,5 @@
+# 0xaa286aa4a34aa6aa8aaa2a2aaa54aa7aaa98aa5a3aa2a3a5aaa7aaa9a0aaaaaa
+
 # Sistema de Carreras y Apuestas sobre Blockchain Telos
 
 Este documento describe el diseño de un sistema descentralizado de carreras de caballos y apuestas desarrollado sobre Telos EVM. El sistema se compone de varios contratos inteligentes que representan distintas entidades del juego: caballos, carreras, apuestas y una moneda interna llamada HAY. A través de estos contratos, los usuarios pueden criar y mejorar caballos, competir en carreras y realizar apuestas con tokens TLOS.
