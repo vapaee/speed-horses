@@ -1,9 +1,21 @@
 <div class="c-lock-switch">
-    <p-toggleswitch [(ngModel)]="current_state">
+    <p-toggleswitch [(ngModel)]="current_state" (ngModelChange)="onToggleChange($event)">
         <ng-template #handle let-checked="checked">
             <i [ngClass]="['!text-xs', 'pi', checked ? 'pi-lock-open' : 'pi-lock']"></i>
         </ng-template>
     </p-toggleswitch>
-    <span *ngIf="current_state" class="c-lock-switch__text c-lock-switch__text--unlocked">{{ unlockedText }}</span>
-    <span *ngIf="!current_state" class="c-lock-switch__text c-lock-switch__text--locked">{{ lockedText }}</span>
+    <span
+        *ngIf="current_state"
+        class="c-lock-switch__text c-lock-switch__text--unlocked"
+        (click)="toggle()"
+    >
+        {{ unlockedText }}
+    </span>
+    <span
+        *ngIf="!current_state"
+        class="c-lock-switch__text c-lock-switch__text--locked"
+        (click)="toggle()"
+    >
+        {{ lockedText }}
+    </span>
 </div>
