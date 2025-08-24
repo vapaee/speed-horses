@@ -1,0 +1,26 @@
+@use 'mixin' as *;
+
+app-horseshoe {
+    display: flex;
+}
+
+.c-horseshoe {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--c-accent-1);
+    &__col {
+        display: flex;
+        flex-direction: column;
+
+        & + & {
+            flex-grow: 1;
+        }
+
+        &-image {
+            height: 50px;
+        }
+    }
+}

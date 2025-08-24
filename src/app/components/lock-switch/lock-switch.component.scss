@@ -1,0 +1,12 @@
+.c-lock-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    &__text {
+        &--locked {
+            color: var(--c-accent-2);
+        }
+    }
+}
+

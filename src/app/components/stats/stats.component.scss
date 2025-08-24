@@ -1,0 +1,35 @@
+@use 'mixin' as *;
+
+.c-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    &__row {
+        display: flex;
+        flex-direction: row;
+        gap: 5px;
+        align-items: baseline;
+        justify-content: left;
+
+        &-att {
+            display: flex;
+            flex-direction: row;
+            gap: 5px;
+            align-items: baseline;
+            justify-content: left;
+            &-tooltip-icon {
+                transform: translate(0px, 2px);
+            }
+            &-text {
+                width: 125px;
+                @include field-title;
+            }
+        }
+
+        &-value {
+            flex-grow: 1;
+        }
+    }
+
+}

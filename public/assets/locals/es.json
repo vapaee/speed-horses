@@ -3,7 +3,9 @@
         "HOME": {
             "NAME": "Inicio",
             "TITLE": "Speed Horses",
-            "DESCRIPTION": "Apuesta en carreras de caballos en una emocionante experiencia de juego."
+            "DESCRIPTION": "Apuesta en carreras de caballos en una emocionante experiencia de juego.",
+            "ONLY-ON-TELOS-1": "Solamente en",
+            "ONLY-ON-TELOS-2": "Blockchain"
         },
         "PREFERENCES": {
             "LANGUAGE": {
@@ -17,7 +19,12 @@
         },
         "HORSES": {
             "NAME": "Caballos",
-            "FORGE": { "NAME": "Potros" },
+            "FORGE": {
+                "NAME": "Potros",
+                "TITLE": "Forjar un nuevo Caballo de Velocidad (NFT)",
+                "STATS": "Estadísticas base",
+                "TOTAL-POINTS": "Puntos totales"
+            },
             "TRADING": { "NAME": "Compra Venta" }
         },
         "SHOP": {

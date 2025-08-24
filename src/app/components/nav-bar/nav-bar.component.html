@@ -3,7 +3,7 @@
 <ng-container *ngIf="!isMobileView; else mobileNav">
     <nav class="c-navbar">
         <div class="c-navbar__row">
-            <img class="c-navbar__logo" src="assets/game-img/gold-horse.png" routerLink="/" width="50px">
+            <img class="c-navbar__logo" src="assets/images/gold-horse.png" routerLink="/" width="50px">
 
             <a class="c-navbar__button" routerLink="/fixture" routerLinkActive="active-link">{{ 'PAGES.FIXTURE.NAME' | translate }}</a>
             <a class="c-navbar__button" routerLink="/horses" routerLinkActive="active-link">{{ 'PAGES.HORSES.NAME' | translate }}</a>
@@ -37,7 +37,7 @@
 <ng-template #mobileNav>
     <nav class="c-navbar">
         <div class="c-navbar__row c-navbar__row--mobile">
-            <img src="assets/game-img/gold-horse.png" routerLink="/" width="40px">
+            <img src="assets/images/gold-horse.png" routerLink="/" width="40px">
 
             <app-login></app-login>
 

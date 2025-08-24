@@ -1,0 +1,52 @@
+:root {
+    // Tabs
+    --p-tabs-tablist-border-width: 0px;
+    --p-tabs-tablist-border-color: var(--c-accent-0);
+    --p-tabs-tab-active-color: var(--c-accent-0);
+    --p-tabs-tab-active-border-color: var(--c-accent-0);
+    --p-tabs-tab-border-width: 1px;
+    --p-tabs-tab-padding: 10px 20px;
+    --p-tabs-tab-gap: 8px;
+
+    // progressbar
+    --p-progressbar-height: 4px;
+    --p-progressbar-value-background: var(--c-accent-0);
+    --p-progressbar-background: var(--c-accent-1);
+    --p-progressbar-border-radius: 4px;
+    --p-progressbar-label-color: var(--c-foreground-0);
+    --p-progressbar-label-font-size: 14px;
+    --p-progressbar-label-font-weight: bold;
+
+    // toggleswitch
+    --p-toggleswitch-width: 56px;
+    --p-toggleswitch-height: 24px;
+    --p-toggleswitch-gap: 33px;
+    --p-toggleswitch-border-radius: 20px;
+    --p-toggleswitch-border-width: 2px;
+    --p-toggleswitch-handle-size: 12px;
+    --p-toggleswitch-handle-border-radius: 10px;
+    --p-toggleswitch-transition-duration: 0.3s;
+    --p-toggleswitch-slide-duration: 0.3s;
+    --p-toggleswitch-border-color: var(--c-accent-2);
+
+    --p-toggleswitch-checked-background: var(--c-accent-1);
+    --p-toggleswitch-checked-border-color: var(--c-accent-0);
+    --p-toggleswitch-handle-checked-background: var(--c-accent-1);
+    --p-toggleswitch-handle-checked-color: var(--c-accent-0);
+
+    --p-toggleswitch-handle-checked-hover-background: var(--c-accent-1);
+    --p-toggleswitch-handle-checked-hover-color: var(--c-foreground-1);
+    --p-toggleswitch-checked-hover-background: var(--c-accent-1);
+    --p-toggleswitch-checked-hover-border-color: var(--c-foreground-1);
+
+    --p-toggleswitch-background: var(--c-accent-1);
+    --p-toggleswitch-handle-background: var(--c-accent-1);
+    --p-toggleswitch-handle-color: var(--c-accent-2);
+
+    --p-toggleswitch-handle-hover-background: var(--c-accent-1);
+    --p-toggleswitch-handle-hover-color: var(--c-foreground-1);
+    --p-toggleswitch-hover-background: var(--c-accent-1);
+    --p-toggleswitch-hover-border-color: var(--c-foreground-1);
+
+}
+

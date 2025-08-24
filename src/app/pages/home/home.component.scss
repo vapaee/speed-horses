@@ -5,6 +5,7 @@ app-home {
 }
 
 .p-home {
+    padding: 30px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -19,37 +20,17 @@ app-home {
         width: 150px;
         height: auto;
     }
+
     &__title {
         @include text-title;
     }
+
     &__subtitle {
         @include text-subtitle;
     }
-    &__packages {
-        margin: 1.5rem 0;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.3rem;
-    }
-    &__package {
-        @include hyperlink;
-    }
-    &__code {
-        white-space: nowrap;
-    }
-    &__copy {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: var(--c-foreground-0);
-    }
-    &__link {
-        @include hyperlink;
-        margin-top: 3rem;
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        color: var(--c-foreground-0);
+
+    &__on-telos {
+        @include text-title;
+        margin-top: 40px;
     }
 }

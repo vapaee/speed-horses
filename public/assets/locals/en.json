@@ -3,7 +3,9 @@
         "HOME": {
             "NAME": "Home",
             "TITLE": "Speed Horses",
-            "DESCRIPTION": "Bet on horse races in a thrilling gambling experience."
+            "DESCRIPTION": "Bet on horse races in a thrilling gambling experience.",
+            "ONLY-ON-TELOS-1": "Only on",
+            "ONLY-ON-TELOS-2": "Blockchain"
         },
         "PREFERENCES": {
             "LANGUAGE": {
@@ -17,7 +19,24 @@
         },
         "HORSES": {
             "NAME": "Horses",
-            "FORGE": { "NAME": "Foal Forge" },
+            "FORGE": {
+                "NAME": "Foal Forge",
+                "TITLE": "Forge a new (NFT) Speed Horse",
+                "STATS": "Base Stats",
+                "TOTAL-POINTS": "Total points",
+                "NAME-FIELD": "Name",
+                "COLOR-FIELD": "Color",
+                "PICTURE-LOCKED": "Color and Picture are now locked",
+                "PICTURE-UNLOCKED": "Color and Picture can be shuffled",
+                "HORSESHOES-LOCKED": "Horseshoes are now locked",
+                "HORSESHOES-UNLOCKED": "Horseshoes can be shuffled",
+                "STATS-LOCKED": "Base stats are now locked",
+                "STATS-UNLOCKED": "Base stats can be shuffled",
+                "HORSESHOES": "Horseshoes",
+                "BUY-MORE": "Buy more",
+                "SHUFFLE": "Shuffle",
+                "FORGE": "Forge"
+            },
             "TRADING": { "NAME": "Trading Ground" }
         },
         "SHOP": {
@@ -31,6 +50,16 @@
             "PADDOCK": { "NAME": "The Paddock" },
             "INVENTORY": { "NAME": "Inventory" }
         }
+    },
+    "PROPERTIES": {
+        "power": "power",
+        "acceleration": "acceleration",
+        "stamina": "stamina",
+        "minSpeed": "min speed",
+        "maxSpeed": "max speed",
+        "luck": "luck",
+        "curveBonus": "curve bonus",
+        "straightBonus": "straight bonus"
     },
     "AUTH": {
         "LOGIN": "Login",

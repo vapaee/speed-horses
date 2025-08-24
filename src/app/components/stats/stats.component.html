@@ -1,0 +1,14 @@
+<div class="c-stats">
+    <div *ngFor="let s of statspack.stats" class="c-stats__row">
+        <div class="c-stats__row-att">
+            <div class="c-stats__row-att-tooltip"><i class="c-stats__row-att-tooltip-icon pi pi-info-circle"></i></div>
+            <div class="c-stats__row-att-text">{{s.display}}</div>
+        </div>
+        <div class="c-stats__row-value">
+            <span>{{s.value}} pts.</span>
+            <p-progressbar [value]="percent(s.value)">
+                <ng-template #content let-value></ng-template>
+            </p-progressbar>
+        </div>
+    </div>
+</div>
