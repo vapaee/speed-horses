@@ -29,9 +29,9 @@ export class ForgePage implements OnInit {
     name = "Speedy Gonzales";
     baseStats: StatsPack;
     horseshoes: StatsPack[];
-    shuffle_horseshoes = true;
-    shuffle_basestats = true;
-    shuffle_picture = true;
+    lock_horseshoes = false;
+    lock_basestats = false;
+    lock_picture = false;
 
     constructor(
         private translate: TranslateService,

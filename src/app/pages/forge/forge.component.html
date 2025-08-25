@@ -23,7 +23,7 @@
             <!-- lock button -->
             <div class="p-forge__lock">
                 <app-lock-switch
-                    [(ngModel)]="shuffle_picture"
+                    [(ngModel)]="lock_picture"
                     lockedText="{{ 'PAGES.HORSES.FORGE.PICTURE-LOCKED' | translate }}"
                     unlockedText="{{ 'PAGES.HORSES.FORGE.PICTURE-UNLOCKED' | translate }}"
                 ></app-lock-switch>
@@ -52,7 +52,7 @@
                 <!-- lock button -->
                 <div class="p-forge__lock">
                     <app-lock-switch
-                        [(ngModel)]="shuffle_basestats"
+                        [(ngModel)]="lock_basestats"
                         lockedText="{{ 'PAGES.HORSES.FORGE.STATS-LOCKED' | translate }}"
                         unlockedText="{{ 'PAGES.HORSES.FORGE.STATS-UNLOCKED' | translate }}"
                     ></app-lock-switch>
@@ -77,7 +77,7 @@
             <!-- lock button -->
             <div class="p-forge__lock">
                 <app-lock-switch
-                    [(ngModel)]="shuffle_horseshoes"
+                    [(ngModel)]="lock_horseshoes"
                     lockedText="{{ 'PAGES.HORSES.FORGE.HORSESHOES-LOCKED' | translate }}"
                     unlockedText="{{ 'PAGES.HORSES.FORGE.HORSESHOES-UNLOCKED' | translate }}"
                 ></app-lock-switch>

@@ -23,16 +23,26 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
     ]
 })
 export class LockSwitchComponent implements ControlValueAccessor {
-    @Input() lockedText: string;
-    @Input() unlockedText: string;
+    @Input() lockedText: string = '';
+    @Input() unlockedText: string = '';
 
+    // Internal value driven by writeValue / NgModel (child) / onChange
     current_state = false;
 
+    // Disabled flag propagated by Angular Forms
+    is_disabled = false;
+
+    // Callbacks provided by Angular Forms
     private onChange: (value: boolean) => void = () => {};
     private onTouched: () => void = () => {};
 
+    get isLocked() {
+        return !this.current_state;
+    }
+
+    // ---- ControlValueAccessor API ----
     writeValue(value: boolean): void {
-        this.current_state = value;
+        this.current_state = !value;
     }
 
     registerOnChange(fn: (value: boolean) => void): void {
@@ -43,14 +53,23 @@ export class LockSwitchComponent implements ControlValueAccessor {
         this.onTouched = fn;
     }
 
+    setDisabledState(isDisabled: boolean): void {
+        this.is_disabled = isDisabled;
+    }
+    // ----------------------------------
+
+    // Called when child toggleswitch changes
     onToggleChange(value: boolean): void {
-        this.current_state = value;
-        this.onChange(value);
-        this.onTouched();
+        this.current_state = !!value;
+        this.onChange(this.isLocked); // notify parent form about value change
+        this.onTouched(); // mark as touched
     }
 
+    // Optional: clicking the text also toggles
     toggle(): void {
+        if (this.is_disabled) {
+            return;
+        }
         this.onToggleChange(!this.current_state);
     }
 }
-

@@ -1,19 +1,28 @@
-<div class="c-lock-switch">
-    <p-toggleswitch [(ngModel)]="current_state" (ngModelChange)="onToggleChange($event)">
+<div class="c-lock-switch" [class.c-lock-switch--disabled]="is_disabled">
+    <!-- Use [(ngModel)] inside to drive the PrimeNG control -->
+    <p-toggleswitch
+        [disabled]="is_disabled"
+        [(ngModel)]="current_state"
+        (ngModelChange)="onToggleChange($event)"
+    >
         <ng-template #handle let-checked="checked">
             <i [ngClass]="['!text-xs', 'pi', checked ? 'pi-lock-open' : 'pi-lock']"></i>
         </ng-template>
     </p-toggleswitch>
+
     <span
         *ngIf="current_state"
         class="c-lock-switch__text c-lock-switch__text--unlocked"
+        [class.c-lock-switch__text--disabled]="is_disabled"
         (click)="toggle()"
     >
         {{ unlockedText }}
     </span>
+
     <span
         *ngIf="!current_state"
         class="c-lock-switch__text c-lock-switch__text--locked"
+        [class.c-lock-switch__text--disabled]="is_disabled"
         (click)="toggle()"
     >
         {{ lockedText }}
