@@ -7,9 +7,10 @@
     justify-content: center;
     align-items: center;
     flex-grow: 1;
+    flex-shrink: 0;
     // size
     width: 1200px;
-    max-width: 100vw;
+    max-width: calc(100vw - 10px);
     margin-left: auto;
     margin-right: auto;
 }
@@ -187,7 +188,7 @@
     display: flex;
     flex-direction: row;
     margin-bottom: 16px;
-    align-items: baseline;
+    align-items: stretch;
 }
 
 // Columns ----
@@ -195,6 +196,7 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
+    padding: 0px 5px;
 }
 
 

@@ -5,7 +5,7 @@
     </div>
 
     <!-- image & stats -->
-    <div class="p-forge__row">
+    <div class="p-forge__row p-forge__row-to-column">
         <!-- picture -->
         <div class="p-forge__column p-forge__column--picture">
             <!-- Name -->
@@ -48,7 +48,7 @@
             </div>
 
             <!-- buttons -->
-            <div class="p-forge__row p-forge__row--spread">
+            <div class="p-forge__row p-forge__row--footer">
                 <!-- lock button -->
                 <div class="p-forge__lock">
                     <app-lock-switch
@@ -75,25 +75,31 @@
                 <app-horseshoe  class="p-forge__horseshoes-shoe" *ngFor="let hs of horseshoes" [statspack]="hs"></app-horseshoe>
             </div>
             <!-- lock button -->
-            <div class="p-forge__lock">
-                <app-lock-switch
-                    [(ngModel)]="lock_horseshoes"
-                    lockedText="{{ 'PAGES.HORSES.FORGE.HORSESHOES-LOCKED' | translate }}"
-                    unlockedText="{{ 'PAGES.HORSES.FORGE.HORSESHOES-UNLOCKED' | translate }}"
-                ></app-lock-switch>
+
+
+            <!-- buttons -->
+            <div class="p-forge__row p-forge__row--footer">
+                <!-- lock button -->
+                <div class="p-forge__lock">
+                    <app-lock-switch
+                        [(ngModel)]="lock_horseshoes"
+                        lockedText="{{ 'PAGES.HORSES.FORGE.HORSESHOES-LOCKED' | translate }}"
+                        unlockedText="{{ 'PAGES.HORSES.FORGE.HORSESHOES-UNLOCKED' | translate }}"
+                    ></app-lock-switch>
+                </div>
+                <!-- buy more button -->
+                <div class="p-forge__row p-forge__row--buttons">
+                    <div class="p-forge__shuffle">
+                        <button class="p-forge__shuffle-btn">{{ 'PAGES.HORSES.FORGE.SHUFFLE' | translate }}</button>
+                    </div>
+                    <!-- forge button -->
+                    <div class="p-forge__forge">
+                        <button class="p-forge__forge-btn">{{ 'PAGES.HORSES.FORGE.FORGE' | translate }}</button>
+                    </div>
+                </div>
             </div>
+
         </div>
     </div>
 
-    <!-- footer buttons -->
-    <div class="p-forge__row p-forge__row--right">
-        <!-- shuffle button -->
-        <div class="p-forge__shuffle">
-            <button class="p-forge__shuffle-btn">{{ 'PAGES.HORSES.FORGE.SHUFFLE' | translate }}</button>
-        </div>
-        <!-- forge button -->
-        <div class="p-forge__forge">
-            <button class="p-forge__forge-btn">{{ 'PAGES.HORSES.FORGE.FORGE' | translate }}</button>
-        </div>
-    </div>
 </section>
