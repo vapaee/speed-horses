@@ -68,14 +68,14 @@ contract HorseMinter {
         pendingHorse[msg.sender] = newHorse;
     }
 
-    function randomizeHorse(bool keepImgCategory, bool keepStats) external payable {
-        require(!(keepImgCategory && keepStats), 'Cannot fix both imgCategory and stats');
+    function randomizeHorse(bool keepImage, bool keepStats) external payable {
+        require(!(keepImage && keepStats), 'Cannot fix both image and stats');
 
         HorseBuild storage build = pendingHorse[msg.sender];
         require(build.totalPoints != 0, 'No horse to randomize');
         require(msg.value == RANDOMIZE_COST, 'Incorrect TLOS amount');
 
-        pendingHorse[msg.sender] = _randomize(build.totalPoints, keepImgCategory, keepStats);
+        pendingHorse[msg.sender] = _randomize(build.totalPoints, keepImage, keepStats);
     }
 
     function buyExtraPoints() external payable {
@@ -134,12 +134,12 @@ contract HorseMinter {
         );
     }
 
-    function _randomize(uint256 totalPoints, bool keepImgCategory, bool keepStats) internal view returns (HorseBuild memory) {
+    function _randomize(uint256 totalPoints, bool keepImage, bool keepStats) internal view returns (HorseBuild memory) {
         bool hasPending = pendingHorse[msg.sender].totalPoints != 0;
 
         uint256 imgCategory;
         uint256 imgNumber;
-        if (keepImgCategory && hasPending) {
+        if (keepImage && hasPending) {
             imgCategory = pendingHorse[msg.sender].imgCategory;
             imgNumber = pendingHorse[msg.sender].imgNumber;
         } else {
