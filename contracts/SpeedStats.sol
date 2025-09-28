@@ -5,8 +5,8 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 import { PerformanceStats } from "./StatsStructs.sol";
-import { HorseStatsModule } from "./modules/HorseStatsModule.sol";
-import { HorseshoeStatsModule } from "./modules/HorseshoeStatsModule.sol";
+import { HorseStats } from "./HorseStats.sol";
+import { HorseshoeStats } from "./HorseshoeStats.sol";
 
 interface IFixtureManagerView {
     function isRegistered(uint256 horseId) external view returns (bool);
@@ -90,17 +90,17 @@ contract SpeedStats {
     // ---------------------------------------------------------------------
     // Module wiring
     // ---------------------------------------------------------------------
-    HorseStatsModule public horseModule;
-    HorseshoeStatsModule public horseshoeModule;
+    HorseStats public horseModule;
+    HorseshoeStats public horseshoeModule;
 
     function setHorseModule(address module) external onlyAdmin {
-        HorseStatsModule candidate = HorseStatsModule(module);
+        HorseStats candidate = HorseStats(module);
         require(candidate.speedStats() == address(this), "SpeedStats: controller not granted");
         horseModule = candidate;
     }
 
     function setHorseshoeModule(address module) external onlyAdmin {
-        HorseshoeStatsModule candidate = HorseshoeStatsModule(module);
+        HorseshoeStats candidate = HorseshoeStats(module);
         require(candidate.speedStats() == address(this), "SpeedStats: controller not granted");
         horseshoeModule = candidate;
     }
@@ -157,7 +157,7 @@ contract SpeedStats {
         uint256 totalToAssign = _sumStats(additional);
         require(totalToAssign > 0, "SpeedStats: nothing to assign");
 
-        HorseStatsModule.HorseData memory data = horseModule.getHorse(horseId);
+        HorseStats.HorseData memory data = horseModule.getHorse(horseId);
         require(speedHorsesToken != address(0), "SpeedStats: NFT not set");
         require(IERC721Minimal(speedHorsesToken).ownerOf(horseId) == msg.sender, "SpeedStats: not horse owner");
 
@@ -234,12 +234,12 @@ contract SpeedStats {
     // ---------------------------------------------------------------------
 
     function getBaseStats(uint256 horseId) public view returns (PerformanceStats memory) {
-        HorseStatsModule.HorseData memory data = horseModule.getHorse(horseId);
+        HorseStats.HorseData memory data = horseModule.getHorse(horseId);
         return data.baseStats;
     }
 
     function getAssignedStats(uint256 horseId) public view returns (PerformanceStats memory) {
-        HorseStatsModule.HorseData memory data = horseModule.getHorse(horseId);
+        HorseStats.HorseData memory data = horseModule.getHorse(horseId);
         return data.assignedStats;
     }
 
@@ -247,7 +247,7 @@ contract SpeedStats {
         uint256[] storage list = equippedHorseshoes[horseId];
         totalBonus = PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0);
         for (uint256 i = 0; i < list.length; i++) {
-            HorseshoeStatsModule.HorseshoeData memory shoe = horseshoeModule.getHorseshoe(list[i]);
+            HorseshoeStats.HorseshoeData memory shoe = horseshoeModule.getHorseshoe(list[i]);
             totalBonus = _addPerformance(totalBonus, shoe.bonusStats);
         }
     }
@@ -261,7 +261,7 @@ contract SpeedStats {
     }
 
     function getTotalPoints(uint256 horseId) public view returns (uint256) {
-        HorseStatsModule.HorseData memory data = horseModule.getHorse(horseId);
+        HorseStats.HorseData memory data = horseModule.getHorse(horseId);
         uint256 equipmentPoints = _sumStats(getEquipmentBonus(horseId));
         return data.totalPoints + equipmentPoints;
     }
@@ -275,7 +275,7 @@ contract SpeedStats {
     }
 
     function hasFinishedResting(uint256 horseId) public view returns (bool) {
-        HorseStatsModule.HorseData memory data = horseModule.getHorse(horseId);
+        HorseStats.HorseData memory data = horseModule.getHorse(horseId);
         return block.timestamp >= data.restFinish;
     }
 
@@ -287,7 +287,7 @@ contract SpeedStats {
     }
 
     function tokenURI(uint256 horseId) external view returns (string memory) {
-        HorseStatsModule.HorseData memory data = horseModule.getHorse(horseId);
+        HorseStats.HorseData memory data = horseModule.getHorse(horseId);
         PerformanceStats memory totalStats = getPerformance(horseId);
 
         string memory attributes = string(
