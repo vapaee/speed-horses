@@ -34,6 +34,7 @@
     "esbuild": "^0.25.0",
     "ethers": "^5.5.1",
     "lucide-angular": "^0.483.0",
+    "metakeep": "^2.2.8",
     "ngrx-store-localstorage": "^19.0.0",
     "primeflex": "^3.3.1",
     "primeicons": "^7.0.0",

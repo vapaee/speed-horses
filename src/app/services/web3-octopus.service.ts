@@ -17,6 +17,7 @@ import {
 import {
     EthereumChainSupport,
     EthereumTokensService,
+    EthereumWalletMetamask,
     TelosEVMNetwork,
 } from '@vapaee/w3o-ethereum';
 
@@ -47,7 +48,15 @@ export class Web3OctopusService implements OnDestroy {
             // ---- Register Telos EVM support ----
             const telosEvmSupportSettings: W3oNetworkSupportSettings = {
                 type: 'ethereum',
-                chain: new EthereumChainSupport(context),
+                chain: new EthereumChainSupport(context, [
+                    // Metamask wallet
+                    new EthereumWalletMetamask(context),
+                    // Metakeep wallet
+                    // new EthereumWalletMetakeep({
+                    //     appName: 'Web3 Octopus Wallet',
+                    //     appId: 'd190c88f-1bb5-4e16-bc48-96dbf33b77e0',
+                    // } as MetakeepOptions, context)
+                ]),
                 networks: [
                     new TelosEVMNetwork({}, context),
                 ]

@@ -58,7 +58,7 @@ contract HorseMinter {
         require(msg.value == BASE_CREATION_COST, 'Incorrect TLOS amount');
 
         HorseBuild memory newHorse = _randomize(BASE_INITIAL_POINTS, false, false);
-        newHorse.exists = true;
+        newHorse.exists = true; // FIXME: no es innecesario esto?
 
         pendingHorse[msg.sender] = newHorse;
     }
@@ -71,8 +71,8 @@ contract HorseMinter {
         require(msg.value == RANDOMIZE_COST, 'Incorrect TLOS amount');
 
         pendingHorse[msg.sender] = _randomize(build.totalPoints, keepColor, keepStats);
-        pendingHorse[msg.sender].exists = true;
-        pendingHorse[msg.sender].extraPackagesBought = build.extraPackagesBought;
+        pendingHorse[msg.sender].exists = true; // FIXME: no es innecesario esto?
+        pendingHorse[msg.sender].extraPackagesBought = build.extraPackagesBought; // FIXME: no es innecesario esto?
     }
 
     function buyExtraPoints() external payable {
