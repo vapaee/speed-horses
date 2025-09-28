@@ -10,8 +10,8 @@ using UFix6Lib for UFix6;
 
 /**
  * Título: HorseStats
- * Brief: Registro centralizado de atributos y progresión de cada caballo, encargado de almacenar versiones por color, contabilizar puntos ganados, aplicar tiempos de descanso y generar el JSON dinámico utilizado por los NFTs. Provee la lógica para calcular niveles y bonificaciones basadas en estadísticas base, asignadas y niveles derivados, además de coordinar con otros módulos como el fixture y el token de recompensas.
- * API: incluye métodos administrativos para vincular contratos (`setFixtureManager`, `setHayToken`, `setHorseMinter`, `setColorName`), creación inicial desde el minter (`createHorse`) y actualización post-carrera (`setRacePrize`). Los jugadores interactúan mediante `assignPoints` para redistribuir puntos tras pagar en HAY, mientras que una amplia familia de getters (`getPower`, `getAcceleration`, `getLevel`, `tokenURI`, etc.) expone la información a otros procesos del juego como inscripciones o generación de interfaces, permitiendo validar descansos y consultar atributos en cada etapa.
+ * Brief: Registro centralizado de atributos y progresión de cada caballo, encargado de almacenar categorías y números de imagen, contabilizar puntos ganados, aplicar tiempos de descanso y generar el JSON dinámico utilizado por los NFTs. Provee la lógica para calcular niveles y bonificaciones basadas en estadísticas base, asignadas y niveles derivados, además de coordinar con otros módulos como el fixture y el token de recompensas.
+ * API: incluye métodos administrativos para vincular contratos (`setFixtureManager`, `setHayToken`, `setHorseMinter`, `setImgCategory`), creación inicial desde el minter (`createHorse`) y actualización post-carrera (`setRacePrize`). Los jugadores interactúan mediante `assignPoints` para redistribuir puntos tras pagar en HAY, mientras que una amplia familia de getters (`getPower`, `getAcceleration`, `getLevel`, `tokenURI`, etc.) expone la información a otros procesos del juego como inscripciones o generación de interfaces, permitiendo validar descansos y consultar atributos en cada etapa.
  */
 contract HorseStats {
     string public version = "HorseStats-v1.0.0";
@@ -34,8 +34,8 @@ contract HorseStats {
     // Structs and Mappings
     // ---------------------------------------------------------------------
     struct HorseData {
-        uint256 color;
-        uint256 version;
+        uint256 imgCategory;
+        uint256 imgNumber;
         PerformanceStats baseStats;
         PerformanceStats assignedStats;
         PerformanceStats levelStats; // cached levels for each stat
@@ -46,14 +46,20 @@ contract HorseStats {
     }
 
     mapping(uint256 => HorseData) public horses;
-    mapping(uint256 => uint256) public latestVersionPerColor;
-    mapping(uint256 => string) public colorNames;
+    struct ImgCategoryData {
+        string name;
+        uint256 maxImgNumber;
+        bool exists;
+    }
+
+    mapping(uint256 => ImgCategoryData) public imgCategories;
+    uint256[] private imgCategoryIds;
 
     // ---------------------------------------------------------------------
     // Events
     // ---------------------------------------------------------------------
-    event HorseCreated(uint256 indexed horseId, uint256 color, PerformanceStats baseStats);
-    event ColorNameSet(uint256 indexed colorId, string name);
+    event HorseCreated(uint256 indexed horseId, uint256 imgCategory, uint256 imgNumber, PerformanceStats baseStats);
+    event ImgCategoryConfigured(uint256 indexed imgCategory, string name, uint256 maxImgNumber);
     event HorseStatsUpdated(uint256 indexed horseId, PerformanceStats stats);
     event HorseWonPrize(uint256 indexed horseId, uint256 points);
 
@@ -89,20 +95,40 @@ contract HorseStats {
         horseMinter = _minter;
     }
 
-    function setColorName(uint256 colorId, string calldata name) external onlyAdmin {
-        colorNames[colorId] = name;
-        emit ColorNameSet(colorId, name);
+    function setImgCategory(uint256 imgCategory, string calldata name, uint256 maxImgNumber) external onlyAdmin {
+        ImgCategoryData storage data = imgCategories[imgCategory];
+
+        if (!data.exists) {
+            imgCategoryIds.push(imgCategory);
+            data.exists = true;
+        }
+
+        data.name = name;
+        data.maxImgNumber = maxImgNumber;
+
+        emit ImgCategoryConfigured(imgCategory, name, maxImgNumber);
     }
 
-    function createHorse(uint256 horseId, uint256 color, PerformanceStats calldata baseStats) external onlyHorseMinter {
-        require(horses[horseId].version == 0, 'Horse already exists');
+    function getImgCategoryIds() external view returns (uint256[] memory) {
+        return imgCategoryIds;
+    }
 
-        uint256 nextVersion = latestVersionPerColor[color] + 1;
-        latestVersionPerColor[color] = nextVersion;
+    function createHorse(
+        uint256 horseId,
+        uint256 imgCategory,
+        uint256 imgNumber,
+        PerformanceStats calldata baseStats
+    ) external onlyHorseMinter {
+        require(horses[horseId].imgNumber == 0, 'Horse already exists');
+
+        ImgCategoryData memory data = imgCategories[imgCategory];
+        require(data.exists, 'Img category not configured');
+        require(data.maxImgNumber > 0, 'Img category without images');
+        require(imgNumber != 0 && imgNumber <= data.maxImgNumber, 'Invalid img number');
 
         horses[horseId] = HorseData({
-            color: color,
-            version: nextVersion,
+            imgCategory: imgCategory,
+            imgNumber: imgNumber,
             baseStats: baseStats,
             assignedStats: PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0),
             levelStats: PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0),
@@ -114,11 +140,50 @@ contract HorseStats {
 
         _setPropertyLevels(horseId);
 
-        emit HorseCreated(horseId, color, baseStats);
+        emit HorseCreated(horseId, imgCategory, imgNumber, baseStats);
+    }
+
+    function getRandomVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber) {
+        require(imgCategoryIds.length > 0, 'No img categories configured');
+
+        uint256 validCategories;
+        uint256 length = imgCategoryIds.length;
+        for (uint256 i = 0; i < length; i++) {
+            ImgCategoryData storage data = imgCategories[imgCategoryIds[i]];
+            if (data.exists && data.maxImgNumber > 0) {
+                validCategories++;
+            }
+        }
+
+        require(validCategories > 0, 'No categories with images');
+
+        uint256 categorySeed = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, entropy)));
+        uint256 categoryIndex = categorySeed % validCategories;
+
+        uint256 selectedCategory = type(uint256).max;
+        uint256 counter;
+        for (uint256 i = 0; i < length; i++) {
+            ImgCategoryData storage data = imgCategories[imgCategoryIds[i]];
+            if (data.exists && data.maxImgNumber > 0) {
+                if (counter == categoryIndex) {
+                    selectedCategory = imgCategoryIds[i];
+                    break;
+                }
+                counter++;
+            }
+        }
+
+        require(selectedCategory != type(uint256).max, 'Random category selection failed');
+
+        ImgCategoryData storage chosen = imgCategories[selectedCategory];
+        uint256 numberSeed = uint256(keccak256(abi.encodePacked(categorySeed, entropy, block.number)));
+        uint256 selectedNumber = (numberSeed % chosen.maxImgNumber) + 1;
+
+        return (selectedCategory, selectedNumber);
     }
 
     function setRacePrize(uint256 horseId, uint256 points) external onlyRacingFixture {
-        require(horses[horseId].version != 0, 'Horse not found');
+        require(horses[horseId].imgNumber != 0, 'Horse not found');
         horses[horseId].totalPoints += points;
         horses[horseId].unassignedPoints += points;
 
@@ -150,7 +215,7 @@ contract HorseStats {
         uint256 resting
     ) external {
         HorseData storage h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
 
         uint256 part1 = _sum5(power, acceleration, stamina, minSpeed, maxSpeed);
         uint256 part2 = _sum5(luck, curveBonus, straightBonus, resting, 0);
@@ -183,7 +248,7 @@ contract HorseStats {
 
     function _setPropertyLevels(uint256 horseId) public {
         HorseData storage h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         h.levelStats.power         = getPower(horseId);
         h.levelStats.acceleration  = getAcceleration(horseId);
         h.levelStats.stamina       = getStamina(horseId);
@@ -196,7 +261,7 @@ contract HorseStats {
 
     function _startResting(uint256 horseId) public {
         HorseData storage h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         uint256 lv = getRestingCoolDown(horseId);
         uint256 delay = BASE_RESTING_COOLDOWN / (lv + 1);
         if (h.restFinish >= block.timestamp) {
@@ -226,26 +291,26 @@ contract HorseStats {
         return horses[horseId].baseStats;
     }
 
-    function getColorVersion(uint256 horseId) public view returns (uint256, uint256) {
+    function getImgCategoryAndNumber(uint256 horseId) public view returns (uint256, uint256) {
         HorseData memory h = horses[horseId];
-        return (h.color, h.version);
+        return (h.imgCategory, h.imgNumber);
     }
 
     function getTotalPoints(uint256 horseId) public view returns (uint256) {
         HorseData storage h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         return horses[horseId].totalPoints;
     }
 
     function getUnassignedPoints(uint256 horseId) public view returns (uint256) {
         HorseData memory h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         return h.unassignedPoints;
     }
 
     function getLevel(uint256 horseId) public view returns (uint256 level) {
         HorseData memory h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         // level = floor(h.levelStats.power * h.totalPoints / log2(h.totalPoints));
         UFix6 power = UFix6.wrap(h.levelStats.power);
         UFix6 totalPoints = UFix6Lib.fromUint(h.totalPoints);
@@ -256,7 +321,7 @@ contract HorseStats {
 
     function getPower(uint256 horseId) public view returns (uint256 power) {
         HorseData memory h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         uint256 value = h.assignedStats.power + h.baseStats.power;
         // power = 1 + log2(value) * 0.1;
         UFix6 logValue = UFix6Lib.log2_uint(value);
@@ -267,56 +332,56 @@ contract HorseStats {
 
     function getAcceleration(uint256 horseId) public view returns (uint256 acceleration) {
         HorseData memory h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         uint256 value = h.baseStats.acceleration + h.assignedStats.acceleration;
         acceleration = _computePerformanceStat(h.levelStats.power, value);
     }
 
     function getStamina(uint256 horseId) public view returns (uint256 stamina) {
         HorseData memory h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         uint256 value = h.baseStats.stamina + h.assignedStats.stamina;
         stamina = _computePerformanceStat(h.levelStats.power, value);
     }
 
     function getMinSpeed(uint256 horseId) public view returns (uint256 minSpeed) {
         HorseData memory h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         uint256 value = h.baseStats.minSpeed + h.assignedStats.minSpeed;
         minSpeed = _computePerformanceStat(h.levelStats.power, value);
     }
 
     function getMaxSpeed(uint256 horseId) public view returns (uint256 maxSpeed) {
         HorseData memory h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         uint256 value = h.baseStats.maxSpeed + h.assignedStats.maxSpeed;
         maxSpeed = _computePerformanceStat(h.levelStats.power, value);
     }
 
     function getLuck(uint256 horseId) public view returns (uint256 luck) {
         HorseData memory h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         uint256 value = h.baseStats.luck + h.assignedStats.luck;
         luck = _computePerformanceStat(h.levelStats.power, value);
     }
 
     function getCurveBonus(uint256 horseId) public view returns (uint256 curveBonus) {
         HorseData memory h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         uint256 value = h.baseStats.curveBonus + h.assignedStats.curveBonus;
         curveBonus = _computePerformanceStat(h.levelStats.power, value);
     }
 
     function getStraightBonus(uint256 horseId) public view returns (uint256 straightBonus) {
         HorseData memory h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         uint256 value = h.baseStats.straightBonus + h.assignedStats.straightBonus;
         straightBonus = _computePerformanceStat(h.levelStats.power, value);
     }
 
     function getRestingCoolDown(uint256 horseId) public view returns (uint256 resting) {
         HorseData memory h = horses[horseId];
-        require(h.version != 0, 'Horse not found');
+        require(h.imgNumber != 0, 'Horse not found');
         uint256 value = h.coolDownStats.resting;
         resting = _computeCooldownStat(value);
     }
@@ -344,7 +409,7 @@ contract HorseStats {
     // --------------------------------------------------------
     function tokenURI(uint256 id) external view virtual returns (string memory) {
         HorseData storage h = horses[id];
-        require(h.version != 0, "Horse not found");
+        require(h.imgNumber != 0, "Horse not found");
 
         string memory mainBodyStr = _buildMainBody(id, h);
         string memory attributesStr = _buildAttributes(h);
@@ -359,30 +424,30 @@ contract HorseStats {
         return json;
     }
 
-    function _getColorString(uint256 color) internal view returns (string memory) {
-        string memory name = colorNames[color];
-        if (bytes(name).length == 0) {
-            return string.concat("color-", Strings.toString(color)); // fallback si no está definido
+    function _getImgCategoryString(uint256 imgCategory) internal view returns (string memory) {
+        ImgCategoryData storage data = imgCategories[imgCategory];
+        if (!data.exists || bytes(data.name).length == 0) {
+            return string.concat("imgCategory-", Strings.toString(imgCategory));
         }
-        return name;
+        return data.name;
     }
 
     function _buildMainBody(uint256 id, HorseData storage h) internal view returns (string memory) {
         string memory idStr = id.toString();
-        string memory versionStr = h.version.toString();
-        string memory colorStr = _getColorString(h.color);
+        string memory imgNumberStr = h.imgNumber.toString();
+        string memory imgCategoryStr = _getImgCategoryString(h.imgCategory);
 
         return string.concat(
             '"id": ', idStr, ',',
             '"name": "Horse #', idStr, '",',
             '"description": "Description here",',
-            '"imageUrl": "https://tekika-nfts.s3.amazonaws.com/tokens/', colorStr, '-', versionStr, '.webp",'
+            '"imageUrl": "https://tekika-nfts.s3.amazonaws.com/tokens/', imgCategoryStr, '-', imgNumberStr, '.webp",'
         );
     }
 
     function _buildAttributes(HorseData storage h) internal view returns (string memory) {
 
-        string memory colorStr = _getColorString(h.color);
+        string memory imgCategoryStr = _getImgCategoryString(h.imgCategory);
         string memory powerStr = h.baseStats.power.toString();
         string memory accelerationStr = h.baseStats.acceleration.toString();
         string memory staminaStr = h.baseStats.stamina.toString();
@@ -393,7 +458,7 @@ contract HorseStats {
         string memory straightBonusStr = h.baseStats.straightBonus.toString();
 
         return string.concat(
-            '{"trait_type": "color", "value": "', colorStr, '"},',
+            '{"trait_type": "imgCategory", "value": "', imgCategoryStr, '"},',
             '{"trait_type": "power", "value": ', powerStr, '},',
             '{"trait_type": "acceleration", "value": ', accelerationStr, '},',
             '{"trait_type": "stamina", "value": ', staminaStr, '},',

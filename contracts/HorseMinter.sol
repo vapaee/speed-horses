@@ -4,7 +4,8 @@ pragma solidity ^0.8.20;
 import { PerformanceStats, CooldownStats } from "./StatsStructs.sol";
 
 interface IHorseStats {
-    function createHorse(uint256 horseId, uint256 color, PerformanceStats calldata baseStats) external;
+    function createHorse(uint256 horseId, uint256 imgCategory, uint256 imgNumber, PerformanceStats calldata baseStats) external;
+    function getRandomVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber);
 }
 
 interface ISpeedHorses {
@@ -13,8 +14,8 @@ interface ISpeedHorses {
 
 /**
  * Título: HorseMinter
- * Brief: Coordinador del proceso de creación de caballos que cobra tarifas en TLOS y genera las combinaciones iniciales de color y estadísticas para cada jugador antes de acuñar el NFT y registrar sus atributos definitivos. Gestiona el flujo de construcción incremental, contabiliza los paquetes de puntos extra adquiridos y comunica los resultados al contrato de estadísticas y al ERC-721 del juego.
- * API: ofrece funciones públicas que modelan el proceso de minteo en etapas (`startHorseMint`, `randomizeHorse`, `buyExtraPoints`, `claimHorse`), cada una avanzando el estado del caballo pendiente y validando pagos y límites; incluye utilidades pseudoaleatorias para colores y estadísticas (`_randomStats`, `_randomColor`, `_randomize`) utilizadas durante dicho proceso. El administrador conecta dependencias y gestiona fondos mediante `setHorseStats`, `setSpeedHorses` y `withdrawTLOS`, completando así el circuito operativo del minter.
+ * Brief: Coordinador del proceso de creación de caballos que cobra tarifas en TLOS y genera las combinaciones iniciales de categorías de imagen y estadísticas para cada jugador antes de acuñar el NFT y registrar sus atributos definitivos. Gestiona el flujo de construcción incremental, contabiliza los paquetes de puntos extra adquiridos y comunica los resultados al contrato de estadísticas y al ERC-721 del juego.
+ * API: ofrece funciones públicas que modelan el proceso de minteo en etapas (`startHorseMint`, `randomizeHorse`, `buyExtraPoints`, `claimHorse`), cada una avanzando el estado del caballo pendiente y validando pagos y límites; incluye utilidades pseudoaleatorias para categorías de imagen y estadísticas (`_randomStats`, `_randomVisual`, `_randomize`) utilizadas durante dicho proceso. El administrador conecta dependencias y gestiona fondos mediante `setHorseStats`, `setSpeedHorses` y `withdrawTLOS`, completando así el circuito operativo del minter.
  */
 contract HorseMinter {
     string public version = "HorseMinter-v1.0.0";
@@ -39,7 +40,8 @@ contract HorseMinter {
     uint256 public nextHorseId;
 
     struct HorseBuild {
-        uint256 color;
+        uint256 imgCategory;
+        uint256 imgNumber;
         PerformanceStats baseStats;
         uint256 totalPoints;
         uint8 extraPackagesBought;
@@ -66,14 +68,14 @@ contract HorseMinter {
         pendingHorse[msg.sender] = newHorse;
     }
 
-    function randomizeHorse(bool keepColor, bool keepStats) external payable {
-        require(!(keepColor && keepStats), 'Cannot fix both color and stats');
+    function randomizeHorse(bool keepImgCategory, bool keepStats) external payable {
+        require(!(keepImgCategory && keepStats), 'Cannot fix both imgCategory and stats');
 
         HorseBuild storage build = pendingHorse[msg.sender];
         require(build.totalPoints != 0, 'No horse to randomize');
         require(msg.value == RANDOMIZE_COST, 'Incorrect TLOS amount');
 
-        pendingHorse[msg.sender] = _randomize(build.totalPoints, keepColor, keepStats);
+        pendingHorse[msg.sender] = _randomize(build.totalPoints, keepImgCategory, keepStats);
     }
 
     function buyExtraPoints() external payable {
@@ -93,7 +95,7 @@ contract HorseMinter {
 
         uint256 horseId = nextHorseId++;
         speedHorses.mint(msg.sender, horseId);
-        horseStats.createHorse(horseId, build.color, build.baseStats);
+        horseStats.createHorse(horseId, build.imgCategory, build.imgNumber, build.baseStats);
 
         delete pendingHorse[msg.sender];
     }
@@ -132,21 +134,35 @@ contract HorseMinter {
         );
     }
 
-    function _randomColor() internal view returns (uint256) {
-        return uint256(keccak256(abi.encodePacked(msg.sender, block.timestamp, block.prevrandao))) % 10;
-    }
-
-    function _randomize(uint256 totalPoints, bool keepColor, bool keepStats) internal view returns (HorseBuild memory) {
+    function _randomize(uint256 totalPoints, bool keepImgCategory, bool keepStats) internal view returns (HorseBuild memory) {
         bool hasPending = pendingHorse[msg.sender].totalPoints != 0;
-        uint256 color = keepColor && hasPending ? pendingHorse[msg.sender].color : _randomColor();
+
+        uint256 imgCategory;
+        uint256 imgNumber;
+        if (keepImgCategory && hasPending) {
+            imgCategory = pendingHorse[msg.sender].imgCategory;
+            imgNumber = pendingHorse[msg.sender].imgNumber;
+        } else {
+            (imgCategory, imgNumber) = _randomVisual(totalPoints);
+        }
+
         PerformanceStats memory stats = keepStats && hasPending ? pendingHorse[msg.sender].baseStats : _randomStats(totalPoints);
 
         return HorseBuild({
-            color: color,
+            imgCategory: imgCategory,
+            imgNumber: imgNumber,
             baseStats: stats,
             totalPoints: totalPoints,
             extraPackagesBought: hasPending ? pendingHorse[msg.sender].extraPackagesBought : 0
         });
+    }
+
+    function _randomVisual(uint256 totalPoints) internal view returns (uint256 imgCategory, uint256 imgNumber) {
+        require(address(horseStats) != address(0), 'Horse stats not set');
+        uint256 entropy = uint256(keccak256(
+            abi.encodePacked(msg.sender, block.timestamp, block.prevrandao, totalPoints, nextHorseId)
+        ));
+        return horseStats.getRandomVisual(entropy);
     }
 
     // ----------------------------------------------------
