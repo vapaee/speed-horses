@@ -9,6 +9,11 @@ pragma solidity ^0.8.20;
 
 type UFix6 is uint256;
 
+/**
+ * Título: UFix6Lib
+ * Brief: Biblioteca matemática que implementa aritmética de punto fijo con seis decimales y utilidades logarítmicas necesarias para calcular niveles y escalados dentro del sistema de estadísticas de caballos. Centraliza las operaciones seguras para transformar valores enteros en representaciones fraccionarias sin perder precisión en cálculos recurrentes.
+ * API: expone constructores (`fromUint`, `wrapRaw`, `fromParts`), conversores (`toUint`, `raw`), operaciones básicas (`add`, `sub`, `mul`, `mulUint`, `div`, `divUint`), constantes (`one`) y funciones logarítmicas (`ilog2`, `log2_uint`, `log2`). Estas rutinas son utilizadas por contratos como `HorseStats` para determinar niveles y tiempos de descanso dentro de los procesos de progresión del juego.
+ */
 library UFix6Lib {
     uint256 internal constant SCALE = 1e6;
     uint256 internal constant TWO_SCALE = 2 * SCALE;

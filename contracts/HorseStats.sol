@@ -8,6 +8,11 @@ import { UFix6, UFix6Lib } from "./UFix6Lib.sol";
 using Strings for uint256;
 using UFix6Lib for UFix6;
 
+/**
+ * Título: HorseStats
+ * Brief: Registro centralizado de atributos y progresión de cada caballo, encargado de almacenar versiones por color, contabilizar puntos ganados, aplicar tiempos de descanso y generar el JSON dinámico utilizado por los NFTs. Provee la lógica para calcular niveles y bonificaciones basadas en estadísticas base, asignadas y niveles derivados, además de coordinar con otros módulos como el fixture y el token de recompensas.
+ * API: incluye métodos administrativos para vincular contratos (`setFixtureManager`, `setHayToken`, `setHorseMinter`, `setColorName`), creación inicial desde el minter (`createHorse`) y actualización post-carrera (`setRacePrize`). Los jugadores interactúan mediante `assignPoints` para redistribuir puntos tras pagar en HAY, mientras que una amplia familia de getters (`getPower`, `getAcceleration`, `getLevel`, `tokenURI`, etc.) expone la información a otros procesos del juego como inscripciones o generación de interfaces, permitiendo validar descansos y consultar atributos en cada etapa.
+ */
 contract HorseStats {
     string public version = "HorseStats-v1.0.0";
 

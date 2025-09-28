@@ -4,6 +4,11 @@ pragma solidity ^0.8.20;
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
+/**
+ * Título: SpeedHorses
+ * Brief: Contrato ERC-721 que representa a los caballos del juego, delega la generación de metadatos y controles de transferencia al módulo de estadísticas y garantiza que sólo el administrador y el minter autorizado puedan acuñar o gestionar los tokens. Administra referencias cruzadas a los contratos que definen atributos y respeta las restricciones de descanso y registro en carreras antes de permitir movimientos.
+ * API: expone funciones administrativas para definir los contratos auxiliares (`setHorseMinter`, `setHorseStats`), un punto de acuñación protegido (`mint`) y la consulta de metadatos (`tokenURI`). Además, sobreescribe `_update` para integrarse en el flujo de juego, verificando en las transferencias que el caballo haya terminado de descansar y que no esté inscrito en competencias, siendo esta validación una etapa previa a cualquier intercambio entre jugadores.
+ */
 contract SpeedHorses is ERC721, Ownable {
     string public version = "SpeedHorses-v1.0.0";
 
