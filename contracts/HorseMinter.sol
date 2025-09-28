@@ -38,7 +38,6 @@ contract HorseMinter {
         PerformanceStats baseStats;
         uint256 totalPoints;
         uint8 extraPackagesBought;
-        bool exists;
     }
 
     mapping(address => HorseBuild) public pendingHorse;
@@ -54,11 +53,10 @@ contract HorseMinter {
     }
 
     function startHorseMint() external payable {
-        require(!pendingHorse[msg.sender].exists, 'Already minting a horse');
+        require(pendingHorse[msg.sender].totalPoints == 0, 'Already minting a horse');
         require(msg.value == BASE_CREATION_COST, 'Incorrect TLOS amount');
 
         HorseBuild memory newHorse = _randomize(BASE_INITIAL_POINTS, false, false);
-        newHorse.exists = true; // FIXME: no es innecesario esto?
 
         pendingHorse[msg.sender] = newHorse;
     }
@@ -67,17 +65,15 @@ contract HorseMinter {
         require(!(keepColor && keepStats), 'Cannot fix both color and stats');
 
         HorseBuild storage build = pendingHorse[msg.sender];
-        require(build.exists, 'No horse to randomize');
+        require(build.totalPoints != 0, 'No horse to randomize');
         require(msg.value == RANDOMIZE_COST, 'Incorrect TLOS amount');
 
         pendingHorse[msg.sender] = _randomize(build.totalPoints, keepColor, keepStats);
-        pendingHorse[msg.sender].exists = true; // FIXME: no es innecesario esto?
-        pendingHorse[msg.sender].extraPackagesBought = build.extraPackagesBought; // FIXME: no es innecesario esto?
     }
 
     function buyExtraPoints() external payable {
         HorseBuild storage build = pendingHorse[msg.sender];
-        require(build.exists, 'No horse to upgrade');
+        require(build.totalPoints != 0, 'No horse to upgrade');
         require(build.extraPackagesBought < MAX_EXTRA_PACKAGES, 'Max extra points reached');
         require(msg.value == EXTRA_POINTS_COST, 'Incorrect TLOS amount');
 
@@ -88,7 +84,7 @@ contract HorseMinter {
 
     function claimHorse() external {
         HorseBuild storage build = pendingHorse[msg.sender];
-        require(build.exists, 'No horse to claim');
+        require(build.totalPoints != 0, 'No horse to claim');
 
         uint256 horseId = nextHorseId++;
         speedHorses.mint(msg.sender, horseId);
@@ -136,15 +132,15 @@ contract HorseMinter {
     }
 
     function _randomize(uint256 totalPoints, bool keepColor, bool keepStats) internal view returns (HorseBuild memory) {
-        uint256 color = keepColor && pendingHorse[msg.sender].exists ? pendingHorse[msg.sender].color : _randomColor();
-        PerformanceStats memory stats = keepStats && pendingHorse[msg.sender].exists ? pendingHorse[msg.sender].baseStats : _randomStats(totalPoints);
+        bool hasPending = pendingHorse[msg.sender].totalPoints != 0;
+        uint256 color = keepColor && hasPending ? pendingHorse[msg.sender].color : _randomColor();
+        PerformanceStats memory stats = keepStats && hasPending ? pendingHorse[msg.sender].baseStats : _randomStats(totalPoints);
 
         return HorseBuild({
             color: color,
             baseStats: stats,
             totalPoints: totalPoints,
-            extraPackagesBought: pendingHorse[msg.sender].exists ? pendingHorse[msg.sender].extraPackagesBought : 0,
-            exists: true
+            extraPackagesBought: hasPending ? pendingHorse[msg.sender].extraPackagesBought : 0
         });
     }
 
