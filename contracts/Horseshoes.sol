@@ -41,3 +41,4 @@ contract Horseshoes is ERC721, Ownable {
         _mint(to, tokenId);
     }
 }
+

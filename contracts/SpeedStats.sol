@@ -55,27 +55,15 @@ contract SpeedStats {
         admin = msg.sender;
     }
 
+    
+    // ----------------------------------------------------
+    // Admin functions
+    // ----------------------------------------------------
+
+
     function setAdmin(address newAdmin) external onlyAdmin {
         require(newAdmin != address(0), "SpeedStats: invalid admin");
         admin = newAdmin;
-    }
-
-    // ---------------------------------------------------------------------
-    // Module wiring
-    // ---------------------------------------------------------------------
-    HorseStatsModule public horseModule;
-    HorseshoeStatsModule public horseshoeModule;
-
-    function setHorseModule(address module) external onlyAdmin {
-        HorseStatsModule candidate = HorseStatsModule(module);
-        require(candidate.speedStats() == address(this), "SpeedStats: controller not granted");
-        horseModule = candidate;
-    }
-
-    function setHorseshoeModule(address module) external onlyAdmin {
-        HorseshoeStatsModule candidate = HorseshoeStatsModule(module);
-        require(candidate.speedStats() == address(this), "SpeedStats: controller not granted");
-        horseshoeModule = candidate;
     }
 
     function setHorseMinter(address _minter) external onlyAdmin {
@@ -97,6 +85,26 @@ contract SpeedStats {
     function setHorseshoes(address _token) external onlyAdmin {
         horseshoesToken = _token;
     }
+
+
+    // ---------------------------------------------------------------------
+    // Module wiring
+    // ---------------------------------------------------------------------
+    HorseStatsModule public horseModule;
+    HorseshoeStatsModule public horseshoeModule;
+
+    function setHorseModule(address module) external onlyAdmin {
+        HorseStatsModule candidate = HorseStatsModule(module);
+        require(candidate.speedStats() == address(this), "SpeedStats: controller not granted");
+        horseModule = candidate;
+    }
+
+    function setHorseshoeModule(address module) external onlyAdmin {
+        HorseshoeStatsModule candidate = HorseshoeStatsModule(module);
+        require(candidate.speedStats() == address(this), "SpeedStats: controller not granted");
+        horseshoeModule = candidate;
+    }
+
 
     // ---------------------------------------------------------------------
     // Configuration proxied to modules
