@@ -2,16 +2,16 @@
 pragma solidity ^0.8.20;
 
 import { PerformanceStats } from "./StatsStructs.sol";
+import { VisualsLib } from "./VisualsLib.sol";
 
 /**
- * Título: HorseStats
- * Brief: Registro integral de caballos que consolida atributos visuales, estadísticas base y puntos asignables para cada NFT,
- *         controlando además permisos administrativos y de controlador.
- * API: expone operaciones restringidas al coordinador (`createHorse`, `addPoints`, `consumeUnassigned`, `setAssignedStats`,
- *       `setRestFinish`, `setImgCategory`) junto a vistas públicas (`getHorse`, `getImgCategoryIds`, `getRandomVisual`) que
- *       devuelven el estado completo y utilidades de selección visual.
+ * Title: HorseStats
+ * Brief: Persistent storage for horses: visuals, base/assigned stats, points ledger and rest cooldown.
+ *        Uses VisualsLib for category administration and random selection.
  */
 contract HorseStats {
+    using VisualsLib for VisualsLib.VisualSpace;
+
     // ---------------------------------------------------------------------
     // Roles
     // ---------------------------------------------------------------------
@@ -59,38 +59,20 @@ contract HorseStats {
     mapping(uint256 => HorseData) private horses;
 
     // ---------------------------------------------------------------------
-    // Visual categories
+    // Visuals (for horses) via VisualsLib
     // ---------------------------------------------------------------------
-    struct ImgCategoryData {
-        string name;
-        uint256 maxImgNumber;
-        bool exists;
-    }
+    VisualsLib.VisualSpace private horseVisuals;
 
-    mapping(uint256 => ImgCategoryData) public imgCategories;
-    uint256[] private imgCategoryIds;
-
-    // ---------------------------------------------------------------------
-    // Category administration
-    // ---------------------------------------------------------------------
-
+    // Category administration (proxied to library)
     function setImgCategory(uint256 imgCategory, string calldata name, uint256 maxImgNumber)
         external
         onlySpeedStats
     {
-        ImgCategoryData storage data = imgCategories[imgCategory];
-
-        if (!data.exists) {
-            imgCategoryIds.push(imgCategory);
-            data.exists = true;
-        }
-
-        data.name = name;
-        data.maxImgNumber = maxImgNumber;
+        horseVisuals.setImgCategory(imgCategory, name, maxImgNumber);
     }
 
     function getImgCategoryIds() external view returns (uint256[] memory) {
-        return imgCategoryIds;
+        return horseVisuals.getImgCategoryIds();
     }
 
     // ---------------------------------------------------------------------
@@ -152,43 +134,9 @@ contract HorseStats {
         return h;
     }
 
+    /// @notice Generic random visual using the shared library (restricted to controller).
     function getRandomVisual(uint256 entropy) external view onlySpeedStats returns (uint256, uint256) {
-        require(imgCategoryIds.length > 0, "HorseStats: no categories");
-
-        uint256 validCategories = 0;
-        uint256 length = imgCategoryIds.length;
-        for (uint256 i = 0; i < length; i++) {
-            ImgCategoryData storage data = imgCategories[imgCategoryIds[i]];
-            if (data.exists && data.maxImgNumber > 0) {
-                validCategories++;
-            }
-        }
-
-        require(validCategories > 0, "HorseStats: categories empty");
-
-        uint256 categorySeed = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, entropy)));
-        uint256 categoryIndex = categorySeed % validCategories;
-
-        uint256 selectedCategory = type(uint256).max;
-        uint256 counter;
-        for (uint256 i = 0; i < length; i++) {
-            ImgCategoryData storage data = imgCategories[imgCategoryIds[i]];
-            if (data.exists && data.maxImgNumber > 0) {
-                if (counter == categoryIndex) {
-                    selectedCategory = imgCategoryIds[i];
-                    break;
-                }
-                counter++;
-            }
-        }
-
-        require(selectedCategory != type(uint256).max, "HorseStats: invalid selection");
-
-        ImgCategoryData storage chosen = imgCategories[selectedCategory];
-        uint256 numberSeed = uint256(keccak256(abi.encodePacked(categorySeed, entropy, block.number)));
-        uint256 selectedNumber = (numberSeed % chosen.maxImgNumber) + 1;
-
-        return (selectedCategory, selectedNumber);
+        return horseVisuals.getRandomVisual(entropy);
     }
 
     // ---------------------------------------------------------------------

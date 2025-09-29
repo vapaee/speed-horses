@@ -17,14 +17,12 @@ interface IERC721Minimal {
 }
 
 /// @title SpeedStats
-/// @notice Central coordinator that combines horse and horseshoe statistics while delegating
-///         storage to dedicated modules. The contract exposes the same external surface that the
-///         rest of the ecosystem expects (levels, tokenURI, cooldown checks) but builds the values
-///         by composing the underlying modules.
+/// @notice Central coordinator that composes horse stats (base + assigned + equipped horseshoes)
+///         while delegating storage/mutations to modules.
 contract SpeedStats {
     using Strings for uint256;
 
-    string public constant version = "SpeedStats-v1.0.0";
+    string public constant version = "SpeedStats-v1.0.1";
 
     // ---------------------------------------------------------------------
     // Roles
@@ -55,11 +53,9 @@ contract SpeedStats {
         admin = msg.sender;
     }
 
-    
     // ----------------------------------------------------
     // Admin functions
     // ----------------------------------------------------
-
 
     function setAdmin(address newAdmin) external onlyAdmin {
         require(newAdmin != address(0), "SpeedStats: invalid admin");
@@ -86,7 +82,6 @@ contract SpeedStats {
         horseshoesToken = _token;
     }
 
-
     // ---------------------------------------------------------------------
     // Module wiring
     // ---------------------------------------------------------------------
@@ -109,13 +104,22 @@ contract SpeedStats {
     // ---------------------------------------------------------------------
     // Configuration proxied to modules
     // ---------------------------------------------------------------------
-
-    function setImgCategory(uint256 imgCategory, string calldata name, uint256 maxImgNumber) external onlyAdmin {
+    function setHorseImgCategory(uint256 imgCategory, string calldata name, uint256 maxImgNumber) external onlyAdmin {
         horseModule.setImgCategory(imgCategory, name, maxImgNumber);
     }
 
-    function getImgCategoryIds() external view returns (uint256[] memory) {
+    function getHorseImgCategoryIds() external view returns (uint256[] memory) {
         return horseModule.getImgCategoryIds();
+    }
+    function setHorseshoeImgCategory(uint256 imgCategory, string calldata name, uint256 maxImgNumber)
+        external
+        onlyAdmin
+    {
+        horseshoeModule.setImgCategory(imgCategory, name, maxImgNumber);
+    }
+
+    function getHorseshoeImgCategoryIds() external view returns (uint256[] memory) {
+        return horseshoeModule.getImgCategoryIds();
     }
 
     // ---------------------------------------------------------------------
@@ -173,39 +177,57 @@ contract SpeedStats {
     // ---------------------------------------------------------------------
     // Horseshoe lifecycle
     // ---------------------------------------------------------------------
-    event HorseshoeCreated(uint256 indexed horseshoeId, PerformanceStats bonusStats, uint256 maxDurability, uint256 maxAdjustments);
+
+    /// @dev maxAdjustments removed to match HorseshoeStats; event updated accordingly.
+    event HorseshoeCreated(uint256 indexed horseshoeId, PerformanceStats bonusStats, uint256 maxDurability);
     event HorseshoeEquipped(uint256 indexed horseId, uint256 indexed horseshoeId);
     event HorseshoeUnequipped(uint256 indexed horseId, uint256 indexed horseshoeId);
 
+    // hard cap of 4 shoe slots per horse
+    uint256 public constant MAX_SHOE_SLOTS = 4;
+
+    // horseId => list of equipped horseshoe tokenIds
     mapping(uint256 => uint256[]) private equippedHorseshoes;
+    // horseId => horseshoeId => bool
     mapping(uint256 => mapping(uint256 => bool)) private horseHasShoe;
 
+    /// @notice Create a new horseshoe record in the module (admin operation).
     function createHorseshoe(
         uint256 horseshoeId,
         PerformanceStats calldata bonusStats,
-        uint256 maxDurability,
-        uint256 maxAdjustments
+        uint256 maxDurability
     ) external onlyAdmin {
-        horseshoeModule.createHorseshoe(horseshoeId, bonusStats, maxDurability, maxAdjustments);
-        emit HorseshoeCreated(horseshoeId, bonusStats, maxDurability, maxAdjustments);
+        horseshoeModule.createHorseshoe(horseshoeId, bonusStats, maxDurability);
+        emit HorseshoeCreated(horseshoeId, bonusStats, maxDurability);
     }
 
+    /// @notice Equip a horseshoe into one of the limited slots of the horse.
     function equipHorseshoe(uint256 horseId, uint256 horseshoeId) external {
         require(speedHorsesToken != address(0) && horseshoesToken != address(0), "SpeedStats: tokens not set");
         require(IERC721Minimal(speedHorsesToken).ownerOf(horseId) == msg.sender, "SpeedStats: not horse owner");
         require(IERC721Minimal(horseshoesToken).ownerOf(horseshoeId) == msg.sender, "SpeedStats: not horseshoe owner");
         require(!horseHasShoe[horseId][horseshoeId], "SpeedStats: already equipped");
 
-        horseshoeModule.getHorseshoe(horseshoeId); // ensure exists
+        uint256[] storage list = equippedHorseshoes[horseId];
+        require(list.length < MAX_SHOE_SLOTS, "SpeedStats: all slots occupied");
+
+        // ensure horseshoe exists (will revert otherwise)
+        horseshoeModule.getHorseshoe(horseshoeId);
+
         horseHasShoe[horseId][horseshoeId] = true;
-        equippedHorseshoes[horseId].push(horseshoeId);
+        list.push(horseshoeId);
+
         emit HorseshoeEquipped(horseId, horseshoeId);
     }
 
+    /// @notice Unequip a horseshoe. Blocked if the horse is registered for racing.
     function unequipHorseshoe(uint256 horseId, uint256 horseshoeId) external {
         require(speedHorsesToken != address(0) && horseshoesToken != address(0), "SpeedStats: tokens not set");
         require(IERC721Minimal(speedHorsesToken).ownerOf(horseId) == msg.sender, "SpeedStats: not horse owner");
         require(horseHasShoe[horseId][horseshoeId], "SpeedStats: not equipped");
+
+        // Block unequip while registered for racing
+        require(!isRegisteredForRacing(horseId), "SpeedStats: horse registered for racing");
 
         uint256[] storage list = equippedHorseshoes[horseId];
         for (uint256 i = 0; i < list.length; i++) {
@@ -227,6 +249,22 @@ contract SpeedStats {
             result[i] = list[i];
         }
         return result;
+    }
+
+    /// @notice Consume durability from all equipped horseshoes of the given horse.
+    /// @dev Restricted to fixture manager (typical lifecycle: consume on race end).
+    /// @param horseId The horse NFT id
+    /// @param lessPerShoe The durability amount to consume per equipped horseshoe
+    function consumeEquippedDurability(uint256 horseId, uint256 lessPerShoe) external onlyFixtureManager {
+        require(lessPerShoe > 0, "SpeedStats: invalid amount");
+        uint256[] storage list = equippedHorseshoes[horseId];
+        require(list.length > 0, "SpeedStats: no horseshoes equipped");
+
+        // Iterate and consume durability on each equipped horseshoe.
+        // This call will revert if HorseshoeStats' internal checks fail.
+        for (uint256 i = 0; i < list.length; i++) {
+            horseshoeModule.consume(list[i], lessPerShoe);
+        }
     }
 
     // ---------------------------------------------------------------------
@@ -260,10 +298,21 @@ contract SpeedStats {
         return _addPerformance(total, equipment);
     }
 
+    function getHorsePerformance(uint256 horseId) public view returns (PerformanceStats memory) {
+        PerformanceStats memory baseStats = getBaseStats(horseId);
+        PerformanceStats memory assigned = getAssignedStats(horseId);
+        return _addPerformance(baseStats, assigned);
+    }        
+
     function getTotalPoints(uint256 horseId) public view returns (uint256) {
         HorseStats.HorseData memory data = horseModule.getHorse(horseId);
         uint256 equipmentPoints = _sumStats(getEquipmentBonus(horseId));
         return data.totalPoints + equipmentPoints;
+    }
+
+    function getHorseTotalPoints(uint256 horseId) public view returns (uint256) {
+        HorseStats.HorseData memory data = horseModule.getHorse(horseId);
+        return data.totalPoints;
     }
 
     function getLevel(uint256 horseId) public view returns (uint256) {
@@ -286,9 +335,9 @@ contract SpeedStats {
         return IFixtureManagerView(fixtureManager).isRegistered(horseId);
     }
 
-    function tokenURI(uint256 horseId) external view returns (string memory) {
+    function horseTokenURI(uint256 horseId) external view returns (string memory) {
         HorseStats.HorseData memory data = horseModule.getHorse(horseId);
-        PerformanceStats memory totalStats = getPerformance(horseId);
+        PerformanceStats memory totalStats = getHorsePerformance(horseId);
 
         string memory attributes = string(
             abi.encodePacked(

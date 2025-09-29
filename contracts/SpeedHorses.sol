@@ -48,7 +48,7 @@ contract SpeedHorses is ERC721, Ownable {
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(ownerOf(tokenId) != address(0), "Token does not exist");
         require(horseStats != address(0), "horseStats not set");
-        return StatsBase(horseStats).tokenURI(tokenId);
+        return StatsBase(horseStats).horseTokenURI(tokenId);
     }
 
     function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
@@ -66,7 +66,7 @@ contract SpeedHorses is ERC721, Ownable {
 
 // En vez de interface, definimos un contrato base vacío
 contract StatsBase {
-    function tokenURI(uint256) external pure virtual returns (string memory) {
+    function horseTokenURI(uint256) external pure virtual returns (string memory) {
         return "";
     }
 
