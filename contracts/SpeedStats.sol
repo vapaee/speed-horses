@@ -335,6 +335,7 @@ contract SpeedStats {
         return IFixtureManagerView(fixtureManager).isRegistered(horseId);
     }
 
+    // returns all JSON metadata for the given horseId
     function horseTokenURI(uint256 horseId) external view returns (string memory) {
         HorseStats.HorseData memory data = horseModule.getHorse(horseId);
         PerformanceStats memory totalStats = getHorsePerformance(horseId);
@@ -362,6 +363,40 @@ contract SpeedStats {
                 '"image":"ipfs://category/', data.imgCategory.toString(), '/', data.imgNumber.toString(), '",',
                 '"level":', getLevel(horseId).toString(), ',',
                 '"totalPoints":', getTotalPoints(horseId).toString(), ',',
+                '"attributes":', attributes,
+                '}'
+            )
+        );
+
+        return string(abi.encodePacked("data:application/json;utf8,", json));
+    }
+
+    // returns all JSON metadata for the given horseshoeId
+    function horseshoeTokenURI(uint256 horseshoeId) external view returns (string memory) {
+        HorseshoeStats.HorseshoeData memory data = horseshoeModule.getHorseshoe(horseshoeId);
+        string memory attributes = string(
+            abi.encodePacked(
+                '[',
+                _attributeJson("Power", data.bonusStats.power), ',',
+                _attributeJson("Acceleration", data.bonusStats.acceleration), ',',
+                _attributeJson("Stamina", data.bonusStats.stamina), ',',
+                _attributeJson("Min Speed", data.bonusStats.minSpeed), ',',
+                _attributeJson("Max Speed", data.bonusStats.maxSpeed), ',',
+                _attributeJson("Luck", data.bonusStats.luck), ',',
+                _attributeJson("Curve Bonus", data.bonusStats.curveBonus), ',',
+                _attributeJson("Straight Bonus", data.bonusStats.straightBonus), ',',
+                _attributeJson("Durability", data.durabilityUsed), ',',
+                _attributeJson("Max Durability", data.maxDurability),
+                ']'
+            )
+        );
+
+        string memory json = string(
+            abi.encodePacked(
+                '{',
+                '"name":"Horseshoe #', horseshoeId.toString(), '",',
+                '"description":"A horseshoe that can be equipped to a Speed Horse to enhance its performance.",',
+                '"image":"ipfs://category/', data.imgCategory.toString(), '/', data.imgNumber.toString(), '",',
                 '"attributes":', attributes,
                 '}'
             )
