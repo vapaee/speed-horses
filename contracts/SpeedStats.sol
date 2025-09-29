@@ -374,22 +374,28 @@ contract SpeedStats {
     // returns all JSON metadata for the given horseshoeId
     function horseshoeTokenURI(uint256 horseshoeId) external view returns (string memory) {
         HorseshoeStats.HorseshoeData memory data = horseshoeModule.getHorseshoe(horseshoeId);
-        string memory attributes = string(
-            abi.encodePacked(
-                '[',
-                _attributeJson("Power", data.bonusStats.power), ',',
-                _attributeJson("Acceleration", data.bonusStats.acceleration), ',',
-                _attributeJson("Stamina", data.bonusStats.stamina), ',',
-                _attributeJson("Min Speed", data.bonusStats.minSpeed), ',',
-                _attributeJson("Max Speed", data.bonusStats.maxSpeed), ',',
-                _attributeJson("Luck", data.bonusStats.luck), ',',
-                _attributeJson("Curve Bonus", data.bonusStats.curveBonus), ',',
-                _attributeJson("Straight Bonus", data.bonusStats.straightBonus), ',',
-                _attributeJson("Durability", data.durabilityUsed), ',',
-                _attributeJson("Max Durability", data.maxDurability),
-                ']'
-            )
-        );
+        string memory attributes = '[';
+        bool isFirst = true;
+
+        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Power", data.bonusStats.power, isFirst);
+        (attributes, isFirst) =
+            _appendAttributeIfNonZero(attributes, "Acceleration", data.bonusStats.acceleration, isFirst);
+        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Stamina", data.bonusStats.stamina, isFirst);
+        (attributes, isFirst) =
+            _appendAttributeIfNonZero(attributes, "Min Speed", data.bonusStats.minSpeed, isFirst);
+        (attributes, isFirst) =
+            _appendAttributeIfNonZero(attributes, "Max Speed", data.bonusStats.maxSpeed, isFirst);
+        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Luck", data.bonusStats.luck, isFirst);
+        (attributes, isFirst) =
+            _appendAttributeIfNonZero(attributes, "Curve Bonus", data.bonusStats.curveBonus, isFirst);
+        (attributes, isFirst) =
+            _appendAttributeIfNonZero(attributes, "Straight Bonus", data.bonusStats.straightBonus, isFirst);
+        (attributes, isFirst) =
+            _appendAttributeIfNonZero(attributes, "Durability", data.durabilityUsed, isFirst);
+        (attributes, isFirst) =
+            _appendAttributeIfNonZero(attributes, "Max Durability", data.maxDurability, isFirst);
+
+        attributes = string(abi.encodePacked(attributes, ']'));
 
         string memory json = string(
             abi.encodePacked(
@@ -411,6 +417,24 @@ contract SpeedStats {
 
     function _attributeJson(string memory trait, uint256 value) internal pure returns (string memory) {
         return string(abi.encodePacked('{"trait_type":"', trait, '","value":', value.toString(), '}'));
+    }
+
+    function _appendAttributeIfNonZero(
+        string memory current,
+        string memory trait,
+        uint256 value,
+        bool isFirst
+    ) internal pure returns (string memory, bool) {
+        if (value == 0) {
+            return (current, isFirst);
+        }
+
+        string memory separator = isFirst ? "" : ",";
+        string memory updated = string(
+            abi.encodePacked(current, separator, _attributeJson(trait, value))
+        );
+
+        return (updated, false);
     }
 
     function _addPerformance(PerformanceStats memory a, PerformanceStats memory b)
