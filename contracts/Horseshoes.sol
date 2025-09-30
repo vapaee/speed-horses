@@ -4,6 +4,8 @@ pragma solidity ^0.8.20;
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
+import './SpeedHorses.sol';
+
 /**
  * Título: Horseshoes
  * Brief: Contrato ERC-721 que representa las herraduras del ecosistema Speed Horses, permitiendo que el juego administre la
@@ -18,6 +20,7 @@ contract Horseshoes is ERC721, Ownable {
 
     address public admin;
     address public horseMinter;
+    address public horseStats;
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Not admin");
@@ -37,8 +40,27 @@ contract Horseshoes is ERC721, Ownable {
         horseMinter = _minter;
     }
 
+    function setHorseStats(address _stats) external onlyAdmin {
+        horseStats = _stats;
+    }
+
     function mint(address to, uint256 tokenId) external onlyHorseMinter {
         _mint(to, tokenId);
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_ownerOf(tokenId) != address(0), 'Token does not exist');
+        require(horseStats != address(0), 'horseStats not set');
+        return StatsBase(horseStats).horseshoeTokenURI(tokenId);
+    }
+
+    function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
+        address from = _ownerOf(tokenId);
+        if (from != address(0) && to != address(0)) {
+            require(horseStats != address(0), 'horseStats not set');
+            require(!StatsBase(horseStats).isHorseshoeEquipped(tokenId), 'Horseshoe equipped');
+        }
+        return super._update(to, tokenId, auth);
     }
 }
 

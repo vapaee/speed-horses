@@ -190,6 +190,8 @@ contract SpeedStats {
     mapping(uint256 => uint256[]) private equippedHorseshoes;
     // horseId => horseshoeId => bool
     mapping(uint256 => mapping(uint256 => bool)) private horseHasShoe;
+    // horseshoeId => whether the horseshoe is currently equipped on any horse
+    mapping(uint256 => bool) private horseshoeEquipped;
 
     /// @notice Create a new horseshoe record in the module (admin operation).
     function createHorseshoe(
@@ -207,6 +209,7 @@ contract SpeedStats {
         require(IERC721Minimal(speedHorsesToken).ownerOf(horseId) == msg.sender, "SpeedStats: not horse owner");
         require(IERC721Minimal(horseshoesToken).ownerOf(horseshoeId) == msg.sender, "SpeedStats: not horseshoe owner");
         require(!horseHasShoe[horseId][horseshoeId], "SpeedStats: already equipped");
+        require(!horseshoeEquipped[horseshoeId], "SpeedStats: horseshoe in use");
 
         uint256[] storage list = equippedHorseshoes[horseId];
         require(list.length < MAX_SHOE_SLOTS, "SpeedStats: all slots occupied");
@@ -215,6 +218,7 @@ contract SpeedStats {
         horseshoeModule.getHorseshoe(horseshoeId);
 
         horseHasShoe[horseId][horseshoeId] = true;
+        horseshoeEquipped[horseshoeId] = true;
         list.push(horseshoeId);
 
         emit HorseshoeEquipped(horseId, horseshoeId);
@@ -239,6 +243,7 @@ contract SpeedStats {
         }
 
         horseHasShoe[horseId][horseshoeId] = false;
+        horseshoeEquipped[horseshoeId] = false;
         emit HorseshoeUnequipped(horseId, horseshoeId);
     }
 
@@ -249,6 +254,10 @@ contract SpeedStats {
             result[i] = list[i];
         }
         return result;
+    }
+
+    function isHorseshoeEquipped(uint256 horseshoeId) external view returns (bool) {
+        return horseshoeEquipped[horseshoeId];
     }
 
     /// @notice Consume durability from all equipped horseshoes of the given horse.
