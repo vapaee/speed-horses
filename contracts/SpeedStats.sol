@@ -364,12 +364,15 @@ contract SpeedStats {
             )
         );
 
+        string memory categoryName = horseModule.getImgCategoryName(data.imgCategory);
+        string memory categoryPath = _categoryPathSegment(categoryName, data.imgCategory);
+
         string memory json = string(
             abi.encodePacked(
                 '{',
                 '"name":"Speed Horse #', horseId.toString(), '",',
                 '"description":"Composite statistics between the horse and its equipped horseshoes.",',
-                '"image":"ipfs://category/', data.imgCategory.toString(), '/', data.imgNumber.toString(), '",',
+                '"image":"ipfs://category/', categoryPath, '/', data.imgNumber.toString(), '",',
                 '"level":', getLevel(horseId).toString(), ',',
                 '"totalPoints":', getTotalPoints(horseId).toString(), ',',
                 '"attributes":', attributes,
@@ -399,12 +402,15 @@ contract SpeedStats {
 
         attributes = string(abi.encodePacked(attributes, ']'));
 
+        string memory categoryName = horseshoeModule.getImgCategoryName(data.imgCategory);
+        string memory categoryPath = _categoryPathSegment(categoryName, data.imgCategory);
+
         string memory json = string(
             abi.encodePacked(
                 '{',
                 '"name":"Horseshoe #', horseshoeId.toString(), '",',
                 '"description":"A horseshoe that can be equipped to a Speed Horse to enhance its performance.",',
-                '"image":"ipfs://category/', data.imgCategory.toString(), '/', data.imgNumber.toString(), '",',
+                '"image":"ipfs://category/', categoryPath, '/', data.imgNumber.toString(), '",',
                 '"attributes":', attributes,
                 '}'
             )
@@ -419,6 +425,17 @@ contract SpeedStats {
 
     function _attributeJson(string memory trait, uint256 value) internal pure returns (string memory) {
         return string(abi.encodePacked('{"trait_type":"', trait, '","value":', value.toString(), '}'));
+    }
+
+    function _categoryPathSegment(string memory categoryName, uint256 fallbackId)
+        internal
+        pure
+        returns (string memory)
+    {
+        if (bytes(categoryName).length > 0) {
+            return categoryName;
+        }
+        return fallbackId.toString();
     }
 
     function _appendAttributeIfNonZero(

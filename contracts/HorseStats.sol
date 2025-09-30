@@ -75,6 +75,11 @@ contract HorseStats {
         return horseVisuals.getImgCategoryIds();
     }
 
+    function getImgCategoryName(uint256 imgCategory) external view returns (string memory) {
+        VisualsLib.ImgCategoryData storage data = horseVisuals.imgCategories[imgCategory];
+        return data.name;
+    }
+
     // ---------------------------------------------------------------------
     // Horse mutations (only controller)
     // ---------------------------------------------------------------------
