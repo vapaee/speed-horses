@@ -68,6 +68,11 @@ contract HorseshoeStats {
         return shoeVisuals.getImgCategoryIds();
     }
 
+    function getImgCategoryName(uint256 imgCategory) external view returns (string memory) {
+        VisualsLib.ImgCategoryData storage data = shoeVisuals.imgCategories[imgCategory];
+        return data.name;
+    }
+
     /// @notice Random visual usable by the controller (same signature as in HorseStats).
     function getRandomVisual(uint256 entropy) external view onlySpeedStats returns (uint256, uint256) {
         return shoeVisuals.getRandomVisual(entropy);
