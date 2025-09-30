@@ -70,11 +70,19 @@ contract StatsBase {
         return "";
     }
 
+    function horseshoeTokenURI(uint256) external pure virtual returns (string memory) {
+        return "";
+    }
+
     function isRegisteredForRacing(uint256) external pure virtual returns (bool) {
         return true;
     }
 
     function hasFinishedResting(uint256) external pure virtual returns (bool) {
         return true;
+    }
+
+    function isHorseshoeEquipped(uint256) external pure virtual returns (bool) {
+        return false;
     }
 }
