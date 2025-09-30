@@ -378,22 +378,15 @@ contract SpeedStats {
         bool isFirst = true;
 
         (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Power", data.bonusStats.power, isFirst);
-        (attributes, isFirst) =
-            _appendAttributeIfNonZero(attributes, "Acceleration", data.bonusStats.acceleration, isFirst);
+        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Acceleration", data.bonusStats.acceleration, isFirst);
         (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Stamina", data.bonusStats.stamina, isFirst);
-        (attributes, isFirst) =
-            _appendAttributeIfNonZero(attributes, "Min Speed", data.bonusStats.minSpeed, isFirst);
-        (attributes, isFirst) =
-            _appendAttributeIfNonZero(attributes, "Max Speed", data.bonusStats.maxSpeed, isFirst);
+        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Min Speed", data.bonusStats.minSpeed, isFirst);
+        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Max Speed", data.bonusStats.maxSpeed, isFirst);
         (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Luck", data.bonusStats.luck, isFirst);
-        (attributes, isFirst) =
-            _appendAttributeIfNonZero(attributes, "Curve Bonus", data.bonusStats.curveBonus, isFirst);
-        (attributes, isFirst) =
-            _appendAttributeIfNonZero(attributes, "Straight Bonus", data.bonusStats.straightBonus, isFirst);
-        (attributes, isFirst) =
-            _appendAttributeIfNonZero(attributes, "Durability", data.durabilityUsed, isFirst);
-        (attributes, isFirst) =
-            _appendAttributeIfNonZero(attributes, "Max Durability", data.maxDurability, isFirst);
+        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Curve Bonus", data.bonusStats.curveBonus, isFirst);
+        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Straight Bonus", data.bonusStats.straightBonus, isFirst);
+        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Durability", data.durabilityUsed, isFirst);
+        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Max Durability", data.maxDurability, isFirst);
 
         attributes = string(abi.encodePacked(attributes, ']'));
 
