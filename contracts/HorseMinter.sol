@@ -1,15 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { PerformanceStats, CooldownStats } from "./StatsStructs.sol";
+import { PerformanceStats } from "./StatsStructs.sol";
 
 interface IHorseStats {
     function createHorse(uint256 horseId, uint256 imgCategory, uint256 imgNumber, PerformanceStats calldata baseStats) external;
     function getRandomVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber);
+    function getRandomHorseshoeVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber);
+    function createStarterHorseshoe(
+        uint256 horseId,
+        uint256 horseshoeId,
+        uint256 imgCategory,
+        uint256 imgNumber,
+        PerformanceStats calldata bonusStats,
+        uint256 maxDurability
+    ) external;
 }
 
 interface ISpeedHorses {
     function mint(address to, uint256 horseId) external;
+}
+
+interface IHorseshoes {
+    function mint(address to, uint256 horseshoeId) external;
 }
 
 /**
@@ -18,7 +31,7 @@ interface ISpeedHorses {
  * API: ofrece funciones públicas que modelan el proceso de minteo en etapas (`startHorseMint`, `randomizeHorse`, `buyExtraPoints`, `claimHorse`), cada una avanzando el estado del caballo pendiente y validando pagos y límites; incluye utilidades pseudoaleatorias para categorías de imagen y estadísticas (`_randomStats`, `_randomVisual`, `_randomize`) utilizadas durante dicho proceso. El administrador conecta dependencias y gestiona fondos mediante `setHorseStats`, `setSpeedHorses` y `withdrawTLOS`, completando así el circuito operativo del minter.
  */
 contract HorseMinter {
-    string public version = "HorseMinter-v1.0.0";
+    string public version = "HorseMinter-v1.1.0";
 
     // ---------------------------------------------------------------------
     // Contract References
@@ -26,6 +39,7 @@ contract HorseMinter {
     address public admin;
     IHorseStats public horseStats;
     ISpeedHorses public speedHorses;
+    IHorseshoes public horseshoes;
 
     // ---------------------------------------------------------------------
     // Constants
@@ -36,8 +50,18 @@ contract HorseMinter {
     uint256 public constant MAX_EXTRA_PACKAGES = 4;
     uint256 public constant BASE_INITIAL_POINTS = 60;
     uint256 public constant EXTRA_POINTS_PER_PACKAGE = 10;
+    uint256 public constant HORSESHOES_PER_HORSE = 4;
+    uint256 public constant HORSESHOE_TOTAL_POINTS = 10;
+    uint256 public constant STARTER_HORSESHOE_DURABILITY = 100;
 
     uint256 public nextHorseId;
+    uint256 public nextHorseshoeId;
+
+    struct PendingHorseshoe {
+        uint256 imgCategory;
+        uint256 imgNumber;
+        PerformanceStats bonusStats;
+    }
 
     struct HorseBuild {
         uint256 imgCategory;
@@ -45,6 +69,7 @@ contract HorseMinter {
         PerformanceStats baseStats;
         uint256 totalPoints;
         uint8 extraPackagesBought;
+        PendingHorseshoe[HORSESHOES_PER_HORSE] horseshoes;
     }
 
     mapping(address => HorseBuild) public pendingHorse;
@@ -57,25 +82,26 @@ contract HorseMinter {
     constructor() {
         admin = msg.sender;
         nextHorseId = 1;
+        nextHorseshoeId = 1;
     }
 
     function startHorseMint() external payable {
         require(pendingHorse[msg.sender].totalPoints == 0, 'Already minting a horse');
         require(msg.value == BASE_CREATION_COST, 'Incorrect TLOS amount');
 
-        HorseBuild memory newHorse = _randomize(BASE_INITIAL_POINTS, false, false);
+        HorseBuild memory newHorse = _randomize(BASE_INITIAL_POINTS, false, false, false);
 
         pendingHorse[msg.sender] = newHorse;
     }
 
-    function randomizeHorse(bool keepImage, bool keepStats) external payable {
-        require(!(keepImage && keepStats), 'Cannot fix both image and stats');
+    function randomizeHorse(bool keepImage, bool keepStats, bool keepShoes) external payable {
+        require(!(keepImage && keepStats && keepShoes), 'Cannot lock everything');
 
         HorseBuild storage build = pendingHorse[msg.sender];
         require(build.totalPoints != 0, 'No horse to randomize');
         require(msg.value == RANDOMIZE_COST, 'Incorrect TLOS amount');
 
-        pendingHorse[msg.sender] = _randomize(build.totalPoints, keepImage, keepStats);
+        pendingHorse[msg.sender] = _randomize(build.totalPoints, keepImage, keepStats, keepShoes);
     }
 
     function buyExtraPoints() external payable {
@@ -93,9 +119,25 @@ contract HorseMinter {
         HorseBuild storage build = pendingHorse[msg.sender];
         require(build.totalPoints != 0, 'No horse to claim');
 
+        require(address(horseshoes) != address(0), 'Horseshoes not set');
+
         uint256 horseId = nextHorseId++;
         speedHorses.mint(msg.sender, horseId);
         horseStats.createHorse(horseId, build.imgCategory, build.imgNumber, build.baseStats);
+
+        for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
+            PendingHorseshoe memory shoe = build.horseshoes[i];
+            uint256 horseshoeId = nextHorseshoeId++;
+            horseshoes.mint(msg.sender, horseshoeId);
+            horseStats.createStarterHorseshoe(
+                horseId,
+                horseshoeId,
+                shoe.imgCategory,
+                shoe.imgNumber,
+                shoe.bonusStats,
+                STARTER_HORSESHOE_DURABILITY
+            );
+        }
 
         delete pendingHorse[msg.sender];
     }
@@ -134,7 +176,7 @@ contract HorseMinter {
         );
     }
 
-    function _randomize(uint256 totalPoints, bool keepImage, bool keepStats) internal view returns (HorseBuild memory) {
+    function _randomize(uint256 totalPoints, bool keepImage, bool keepStats, bool keepShoes) internal view returns (HorseBuild memory) {
         bool hasPending = pendingHorse[msg.sender].totalPoints != 0;
 
         uint256 imgCategory;
@@ -148,13 +190,26 @@ contract HorseMinter {
 
         PerformanceStats memory stats = keepStats && hasPending ? pendingHorse[msg.sender].baseStats : _randomStats(totalPoints);
 
-        return HorseBuild({
-            imgCategory: imgCategory,
-            imgNumber: imgNumber,
-            baseStats: stats,
-            totalPoints: totalPoints,
-            extraPackagesBought: hasPending ? pendingHorse[msg.sender].extraPackagesBought : 0
-        });
+        PendingHorseshoe[HORSESHOES_PER_HORSE] memory shoes;
+        if (keepShoes && hasPending) {
+            for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
+                shoes[i] = pendingHorse[msg.sender].horseshoes[i];
+            }
+        } else {
+            shoes = _randomHorseshoes();
+        }
+
+        HorseBuild memory build;
+        build.imgCategory = imgCategory;
+        build.imgNumber = imgNumber;
+        build.baseStats = stats;
+        build.totalPoints = totalPoints;
+        build.extraPackagesBought = hasPending ? pendingHorse[msg.sender].extraPackagesBought : 0;
+        for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
+            build.horseshoes[i] = shoes[i];
+        }
+
+        return build;
     }
 
     function _randomVisual(uint256 totalPoints) internal view returns (uint256 imgCategory, uint256 imgNumber) {
@@ -163,6 +218,44 @@ contract HorseMinter {
             abi.encodePacked(msg.sender, block.timestamp, block.prevrandao, totalPoints, nextHorseId)
         ));
         return horseStats.getRandomVisual(entropy);
+    }
+
+    function _randomHorseshoes() internal view returns (PendingHorseshoe[HORSESHOES_PER_HORSE] memory result) {
+        require(address(horseStats) != address(0), 'Horse stats not set');
+        for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
+            uint256 entropy = uint256(
+                keccak256(abi.encodePacked(msg.sender, block.timestamp, block.prevrandao, nextHorseId, nextHorseshoeId, i))
+            );
+            (uint256 imgCategory, uint256 imgNumber) = horseStats.getRandomHorseshoeVisual(entropy);
+            PerformanceStats memory stats = _randomHorseshoeStats(entropy);
+            result[i] = PendingHorseshoe({ imgCategory: imgCategory, imgNumber: imgNumber, bonusStats: stats });
+        }
+    }
+
+    function _randomHorseshoeStats(uint256 entropy) internal pure returns (PerformanceStats memory) {
+        uint256 firstIndex = entropy % 8;
+        uint256 secondIndex = uint256(keccak256(abi.encodePacked(entropy, "shoe-second"))) % 8;
+        if (secondIndex == firstIndex) {
+            secondIndex = (secondIndex + 1) % 8;
+        }
+
+        uint256 firstPoints = (uint256(keccak256(abi.encodePacked(entropy, "shoe-points"))) % (HORSESHOE_TOTAL_POINTS - 1)) + 1;
+        uint256 secondPoints = HORSESHOE_TOTAL_POINTS - firstPoints;
+
+        uint256[8] memory distribution;
+        distribution[firstIndex] = firstPoints;
+        distribution[secondIndex] = secondPoints;
+
+        return PerformanceStats(
+            distribution[0],
+            distribution[1],
+            distribution[2],
+            distribution[3],
+            distribution[4],
+            distribution[5],
+            distribution[6],
+            distribution[7]
+        );
     }
 
     // ----------------------------------------------------
@@ -175,6 +268,10 @@ contract HorseMinter {
 
     function setSpeedHorses(address _horses) external onlyAdmin {
         speedHorses = ISpeedHorses(_horses);
+    }
+
+    function setHorseshoes(address _horseshoes) external onlyAdmin {
+        horseshoes = IHorseshoes(_horseshoes);
     }
 
     function withdrawTLOS(address payable to, uint256 amount) external onlyAdmin {
