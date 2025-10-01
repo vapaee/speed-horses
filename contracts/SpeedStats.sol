@@ -144,10 +144,6 @@ contract SpeedStats {
         emit HorseCreated(horseId, imgCategory, imgNumber, baseStats);
     }
 
-    function getRandomVisual(uint256 entropy) external view returns (uint256, uint256) {
-        return horseModule.getRandomVisual(entropy);
-    }
-
     function setRacePrize(uint256 horseId, uint256 points) external onlyFixtureManager {
         horseModule.addPoints(horseId, points);
         uint256 newRest = block.timestamp + BASE_RESTING_COOLDOWN;
