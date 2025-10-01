@@ -179,7 +179,13 @@ contract SpeedStats {
     // ---------------------------------------------------------------------
 
     /// @dev maxAdjustments removed to match HorseshoeStats; event updated accordingly.
-    event HorseshoeCreated(uint256 indexed horseshoeId, PerformanceStats bonusStats, uint256 maxDurability);
+    event HorseshoeCreated(
+        uint256 indexed horseshoeId,
+        uint256 imgCategory,
+        uint256 imgNumber,
+        PerformanceStats bonusStats,
+        uint256 maxDurability
+    );
     event HorseshoeEquipped(uint256 indexed horseId, uint256 indexed horseshoeId);
     event HorseshoeUnequipped(uint256 indexed horseId, uint256 indexed horseshoeId);
 
@@ -196,11 +202,13 @@ contract SpeedStats {
     /// @notice Create a new horseshoe record in the module (admin operation).
     function createHorseshoe(
         uint256 horseshoeId,
+        uint256 imgCategory,
+        uint256 imgNumber,
         PerformanceStats calldata bonusStats,
         uint256 maxDurability
     ) external onlyAdmin {
-        horseshoeModule.createHorseshoe(horseshoeId, bonusStats, maxDurability);
-        emit HorseshoeCreated(horseshoeId, bonusStats, maxDurability);
+        horseshoeModule.createHorseshoe(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability);
+        emit HorseshoeCreated(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability);
     }
 
     /// @notice Equip a horseshoe into one of the limited slots of the horse.

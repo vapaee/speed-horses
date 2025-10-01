@@ -84,6 +84,8 @@ contract HorseshoeStats {
 
     function createHorseshoe(
         uint256 horseshoeId,
+        uint256 imgCategory,
+        uint256 imgNumber,
         PerformanceStats calldata bonusStats,
         uint256 maxDurability
     ) external onlySpeedStats {
@@ -91,28 +93,15 @@ contract HorseshoeStats {
         require(data.maxDurability == 0, "HorseshoeStats: horseshoe exists");
         require(maxDurability > 0, "HorseshoeStats: invalid durability");
 
-        // visuals will be set later via setHorseshoeImage (keeps signature stable)
-        data.imgCategory = 0;
-        data.imgNumber = 0;
+        VisualsLib.ImgCategoryData storage cat = shoeVisuals.imgCategories[imgCategory];
+        require(cat.exists && imgNumber >= 1 && imgNumber <= cat.maxImgNumber, "HorseshoeStats: invalid image");
+
+        data.imgCategory = imgCategory;
+        data.imgNumber = imgNumber;
 
         data.bonusStats = bonusStats;
         data.maxDurability = maxDurability;
         data.durabilityUsed = maxDurability; // as per your current semantics
-    }
-
-    /// @notice Sets the image for a given horseshoe (restricted to controller).
-    function setHorseshoeImage(
-        uint256 horseshoeId,
-        uint256 imgCategory,
-        uint256 imgNumber
-    ) external onlySpeedStats {
-        HorseshoeData storage data = horseshoes[horseshoeId];
-        require(data.maxDurability > 0, "HorseshoeStats: unknown horseshoe");
-        // Optional guards: ensure category exists and number is within range
-        VisualsLib.ImgCategoryData storage cat = shoeVisuals.imgCategories[imgCategory];
-        require(cat.exists && imgNumber >= 1 && imgNumber <= cat.maxImgNumber, "HorseshoeStats: invalid image");
-        data.imgCategory = imgCategory;
-        data.imgNumber = imgNumber;
     }
 
     function restore(uint256 horseshoeId) external onlySpeedStats {
