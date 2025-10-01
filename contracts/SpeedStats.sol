@@ -207,6 +207,39 @@ contract SpeedStats {
         emit HorseshoeCreated(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability);
     }
 
+    /// @notice Hook used by the minter to materialize the starter horseshoes and equip them immediately.
+    function createStarterHorseshoe(
+        uint256 horseId,
+        uint256 horseshoeId,
+        uint256 imgCategory,
+        uint256 imgNumber,
+        PerformanceStats calldata bonusStats,
+        uint256 maxDurability
+    ) external onlyHorseMinter {
+        require(address(horseshoeModule) != address(0), "SpeedStats: horseshoe module not set");
+        require(address(horseModule) != address(0), "SpeedStats: horse module not set");
+        require(speedHorsesToken != address(0) && horseshoesToken != address(0), "SpeedStats: tokens not set");
+        horseshoeModule.createHorseshoe(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability);
+        emit HorseshoeCreated(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability);
+
+        // Will revert if the horse does not exist
+        horseModule.getHorse(horseId);
+
+        address horseOwner = IERC721Minimal(speedHorsesToken).ownerOf(horseId);
+        require(horseOwner == IERC721Minimal(horseshoesToken).ownerOf(horseshoeId), "SpeedStats: mismatched owner");
+
+        uint256[] storage list = equippedHorseshoes[horseId];
+        require(list.length < MAX_SHOE_SLOTS, "SpeedStats: all slots occupied");
+        require(!horseHasShoe[horseId][horseshoeId], "SpeedStats: already equipped");
+        require(!horseshoeEquipped[horseshoeId], "SpeedStats: horseshoe in use");
+
+        horseHasShoe[horseId][horseshoeId] = true;
+        horseshoeEquipped[horseshoeId] = true;
+        list.push(horseshoeId);
+
+        emit HorseshoeEquipped(horseId, horseshoeId);
+    }
+
     /// @notice Equip a horseshoe into one of the limited slots of the horse.
     function equipHorseshoe(uint256 horseId, uint256 horseshoeId) external {
         require(speedHorsesToken != address(0) && horseshoesToken != address(0), "SpeedStats: tokens not set");
@@ -301,6 +334,11 @@ contract SpeedStats {
             HorseshoeStats.HorseshoeData memory shoe = horseshoeModule.getHorseshoe(list[i]);
             totalBonus = _addPerformance(totalBonus, shoe.bonusStats);
         }
+    }
+
+    function getRandomHorseshoeVisual(uint256 entropy) external view returns (uint256, uint256) {
+        require(address(horseshoeModule) != address(0), "SpeedStats: horseshoe module not set");
+        return horseshoeModule.getRandomVisual(entropy);
     }
 
     function getPerformance(uint256 horseId) public view returns (PerformanceStats memory) {
