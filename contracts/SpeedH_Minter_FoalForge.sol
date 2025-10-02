@@ -13,7 +13,9 @@ interface ISpeedH_Stats_Horse {
         uint256 imgCategory,
         uint256 imgNumber,
         PerformanceStats calldata bonusStats,
-        uint256 maxDurability
+        uint256 maxDurability,
+        uint256 level,
+        bool pure
     ) external;
 }
 
@@ -22,16 +24,17 @@ interface ISpeedH_NFT_Horse {
 }
 
 interface ISpeedH_NFT_Horseshoe {
-    function mint(address to, uint256 horseshoeId) external;
+    function mint(address to) external returns (uint256);
+    function nextTokenId() external view returns (uint256);
 }
 
 /**
- * Título: SpeedH_FoalForge
+ * Título: SpeedH_Minter_FoalForge
  * Brief: Coordinador del proceso de creación de caballos que cobra tarifas en TLOS y genera las combinaciones iniciales de categorías de imagen y estadísticas para cada jugador antes de acuñar el NFT y registrar sus atributos definitivos. Gestiona el flujo de construcción incremental, contabiliza los paquetes de puntos extra adquiridos y comunica los resultados al contrato de estadísticas y al ERC-721 del juego.
  * API: ofrece funciones públicas que modelan el proceso de minteo en etapas (`startHorseMint`, `randomizeHorse`, `buyExtraPoints`, `claimHorse`), cada una avanzando el estado del caballo pendiente y validando pagos y límites; incluye utilidades pseudoaleatorias para categorías de imagen y estadísticas (`_randomHorseStats`, `_randomVisual`, `_randomize`) utilizadas durante dicho proceso. El administrador conecta dependencias y gestiona fondos mediante `setHorseStats`, `setSpeedHorses` y `withdrawTLOS`, completando así el circuito operativo del minter.
  */
-contract SpeedH_FoalForge {
-    string public version = "SpeedH_FoalForge-v1.1.0";
+contract SpeedH_Minter_FoalForge {
+    string public version = "SpeedH_Minter_FoalForge-v1.1.0";
 
     // ---------------------------------------------------------------------
     // Contract References
@@ -55,7 +58,6 @@ contract SpeedH_FoalForge {
     uint256 public constant STARTER_HORSESHOE_DURABILITY = 100;
 
     uint256 public nextHorseId;
-    uint256 public nextHorseshoeId;
 
     struct PendingHorseshoe {
         uint256 imgCategory;
@@ -82,7 +84,6 @@ contract SpeedH_FoalForge {
     constructor() {
         admin = msg.sender;
         nextHorseId = 1;
-        nextHorseshoeId = 1;
     }
 
     function startHorseMint() external payable {
@@ -127,15 +128,16 @@ contract SpeedH_FoalForge {
 
         for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
             PendingHorseshoe memory shoe = build.horseshoes[i];
-            uint256 horseshoeId = nextHorseshoeId++;
-            horseshoes.mint(msg.sender, horseshoeId);
+            uint256 horseshoeId = horseshoes.mint(msg.sender);
             horseStats.createStarterHorseshoe(
                 horseId,
                 horseshoeId,
                 shoe.imgCategory,
                 shoe.imgNumber,
                 shoe.bonusStats,
-                STARTER_HORSESHOE_DURABILITY
+                STARTER_HORSESHOE_DURABILITY,
+                1,
+                true
             );
         }
 
@@ -187,6 +189,7 @@ contract SpeedH_FoalForge {
 
     function _randomVisual(uint256 totalPoints) internal view returns (uint256 imgCategory, uint256 imgNumber) {
         require(address(horseStats) != address(0), 'Horse stats not set');
+        require(address(horseshoes) != address(0), 'Horseshoe NFT not set');
         uint256 entropy = uint256(keccak256(
             abi.encodePacked(msg.sender, block.timestamp, block.prevrandao, totalPoints, nextHorseId)
         ));
@@ -195,9 +198,10 @@ contract SpeedH_FoalForge {
 
     function _randomHorseshoes() internal view returns (PendingHorseshoe[HORSESHOES_PER_HORSE] memory result) {
         require(address(horseStats) != address(0), 'Horse stats not set');
+        uint256 baseId = horseshoes.nextTokenId();
         for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
             uint256 entropy = uint256(
-                keccak256(abi.encodePacked(msg.sender, block.timestamp, block.prevrandao, nextHorseId, nextHorseshoeId, i))
+                keccak256(abi.encodePacked(msg.sender, block.timestamp, block.prevrandao, nextHorseId, baseId, i))
             );
             (uint256 imgCategory, uint256 imgNumber) = horseStats.getRandomHorseshoeVisual(entropy);
             PerformanceStats memory stats = _randomHorseshoeStats(entropy);

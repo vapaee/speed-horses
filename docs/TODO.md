@@ -2,7 +2,7 @@
 - SpeedH_HayTokenOFT.sol
 - SpeedH_NFT_Horse.sol
 - SpeedH_Stats_Horse.sol
-- SpeedH_FoalForge.sol
+- SpeedH_Minter_FoalForge.sol
 
 
 

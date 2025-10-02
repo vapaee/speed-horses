@@ -14,7 +14,7 @@ contract SpeedH_Stats_Horseshoe {
 
     address public owner;
     address public speedStats;
-    string public version = "SpeedH_Stats_Horseshoe-v1.0.0";
+    string public version = "SpeedH_Stats_Horseshoe-v1.1.0";
 
     modifier onlyOwner() {
         require(msg.sender == owner, "SpeedH_Stats_Horseshoe: not owner");
@@ -48,6 +48,8 @@ contract SpeedH_Stats_Horseshoe {
         PerformanceStats bonusStats;
         uint256 maxDurability;
         uint256 durabilityUsed;
+        uint256 level;
+        bool pure;
     }
 
     mapping(uint256 => HorseshoeData) private horseshoes;
@@ -88,7 +90,9 @@ contract SpeedH_Stats_Horseshoe {
         uint256 imgCategory,
         uint256 imgNumber,
         PerformanceStats calldata bonusStats,
-        uint256 maxDurability
+        uint256 maxDurability,
+        uint256 level,
+        bool pure
     ) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
         require(data.maxDurability == 0, "SpeedH_Stats_Horseshoe: horseshoe exists");
@@ -103,6 +107,8 @@ contract SpeedH_Stats_Horseshoe {
         data.bonusStats = bonusStats;
         data.maxDurability = maxDurability;
         data.durabilityUsed = maxDurability; // as per your current semantics
+        data.level = level;
+        data.pure = pure;
     }
 
     function restore(uint256 horseshoeId) external onlySpeedStats {
