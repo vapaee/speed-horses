@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { PerformanceStats } from "./StatsStructs.sol";
+import { PerformanceStats } from "./SpeedH_StatsStructs.sol";
 
-interface IHorseStats {
+interface ISpeedH_Stats_Horse {
     function createHorse(uint256 horseId, uint256 imgCategory, uint256 imgNumber, PerformanceStats calldata baseStats) external;
     function getRandomVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber);
     function getRandomHorseshoeVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber);
@@ -17,29 +17,29 @@ interface IHorseStats {
     ) external;
 }
 
-interface ISpeedHorses {
+interface ISpeedH_NFT_Horse {
     function mint(address to, uint256 horseId) external;
 }
 
-interface IHorseshoes {
+interface ISpeedH_NFT_Horseshoe {
     function mint(address to, uint256 horseshoeId) external;
 }
 
 /**
- * Título: HorseMinter
+ * Título: SpeedH_FoalForge
  * Brief: Coordinador del proceso de creación de caballos que cobra tarifas en TLOS y genera las combinaciones iniciales de categorías de imagen y estadísticas para cada jugador antes de acuñar el NFT y registrar sus atributos definitivos. Gestiona el flujo de construcción incremental, contabiliza los paquetes de puntos extra adquiridos y comunica los resultados al contrato de estadísticas y al ERC-721 del juego.
  * API: ofrece funciones públicas que modelan el proceso de minteo en etapas (`startHorseMint`, `randomizeHorse`, `buyExtraPoints`, `claimHorse`), cada una avanzando el estado del caballo pendiente y validando pagos y límites; incluye utilidades pseudoaleatorias para categorías de imagen y estadísticas (`_randomHorseStats`, `_randomVisual`, `_randomize`) utilizadas durante dicho proceso. El administrador conecta dependencias y gestiona fondos mediante `setHorseStats`, `setSpeedHorses` y `withdrawTLOS`, completando así el circuito operativo del minter.
  */
-contract HorseMinter {
-    string public version = "HorseMinter-v1.1.0";
+contract SpeedH_FoalForge {
+    string public version = "SpeedH_FoalForge-v1.1.0";
 
     // ---------------------------------------------------------------------
     // Contract References
     // ---------------------------------------------------------------------
     address public admin;
-    IHorseStats public horseStats;
-    ISpeedHorses public speedHorses;
-    IHorseshoes public horseshoes;
+    ISpeedH_Stats_Horse public horseStats;
+    ISpeedH_NFT_Horse public speedHorses;
+    ISpeedH_NFT_Horseshoe public horseshoes;
 
     // ---------------------------------------------------------------------
     // Constants
@@ -119,7 +119,7 @@ contract HorseMinter {
         HorseBuild storage build = pendingHorse[msg.sender];
         require(build.totalPoints != 0, 'No horse to claim');
 
-        require(address(horseshoes) != address(0), 'Horseshoes not set');
+        require(address(horseshoes) != address(0), 'SpeedH_NFT_Horseshoe not set');
 
         uint256 horseId = nextHorseId++;
         speedHorses.mint(msg.sender, horseId);
@@ -260,15 +260,15 @@ contract HorseMinter {
     // ----------------------------------------------------
 
     function setHorseStats(address _stats) external onlyAdmin {
-        horseStats = IHorseStats(_stats);
+        horseStats = ISpeedH_Stats_Horse(_stats);
     }
 
     function setSpeedHorses(address _horses) external onlyAdmin {
-        speedHorses = ISpeedHorses(_horses);
+        speedHorses = ISpeedH_NFT_Horse(_horses);
     }
 
     function setHorseshoes(address _horseshoes) external onlyAdmin {
-        horseshoes = IHorseshoes(_horseshoes);
+        horseshoes = ISpeedH_NFT_Horseshoe(_horseshoes);
     }
 
     function withdrawTLOS(address payable to, uint256 amount) external onlyAdmin {

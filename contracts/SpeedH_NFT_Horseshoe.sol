@@ -4,23 +4,22 @@ pragma solidity ^0.8.20;
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
-import './SpeedHorses.sol';
+import './SpeedH_NFT_Horse.sol';
 
 /**
- * Título: Horseshoes
+ * Título: SpeedH_NFT_Horseshoe
  * Brief: Contrato ERC-721 que representa las herraduras del ecosistema Speed Horses, permitiendo que el juego administre la
  * acuñación de piezas equipables para los caballos. Mantiene un control de acceso sencillo en el que solamente el administrador
  * o el minter autorizado pueden configurar dependencias y emitir nuevos NFTs.
  * API: expone operaciones administrativas para definir el minter (`setHorseMinter`) y un punto de acuñación restringido (`mint`)
- * que delega en el contrato `HorseMinter`. Hereda de `ERC721` y `Ownable` para integrarse sin fricción con el resto de módulos
- * on-chain.
+ * que delega en el contrato `SpeedH_FoalForge`. Hereda de `ERC721` y `Ownable` para integrarse sin fricción con el resto de módulos on-chain.
  */
-contract Horseshoes is ERC721, Ownable {
+contract SpeedH_NFT_Horseshoe is ERC721, Ownable {
     // ---------------------------------------------------------------------
     // Storage
     // ---------------------------------------------------------------------
 
-    string public version = 'Horseshoes-v1.0.0';
+    string public version = 'SpeedH_NFT_Horseshoe-v1.0.0';
 
     address public admin;
     address public horseMinter;

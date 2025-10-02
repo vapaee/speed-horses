@@ -1,30 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { PerformanceStats } from "./StatsStructs.sol";
-import { VisualsLib } from "./VisualsLib.sol";
+import { PerformanceStats } from "./SpeedH_StatsStructs.sol";
+import { SpeedH_VisualsLib } from "./SpeedH_VisualsLib.sol";
 
 /**
- * Title: HorseStats
+ * Title: SpeedH_Stats_Horse
  * Brief: Persistent storage for horses: visuals, base/assigned stats, points ledger and rest cooldown.
- *        Uses VisualsLib for category administration and random selection.
+ *        Uses SpeedH_VisualsLib for category administration and random selection.
  */
-contract HorseStats {
-    using VisualsLib for VisualsLib.VisualSpace;
+contract SpeedH_Stats_Horse {
+    using SpeedH_VisualsLib for SpeedH_VisualsLib.VisualSpace;
 
     // ---------------------------------------------------------------------
     // Roles
     // ---------------------------------------------------------------------
     address public owner;
     address public speedStats;
+    string public version = "SpeedH_Stats_Horse-v1.0.0";
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "HorseStats: not owner");
+        require(msg.sender == owner, "SpeedH_Stats_Horse: not owner");
         _;
     }
 
     modifier onlySpeedStats() {
-        require(msg.sender == speedStats, "HorseStats: only controller");
+        require(msg.sender == speedStats, "SpeedH_Stats_Horse: only controller");
         _;
     }
 
@@ -33,12 +34,12 @@ contract HorseStats {
     }
 
     function setSpeedStats(address controller) external onlyOwner {
-        require(controller != address(0), "HorseStats: invalid controller");
+        require(controller != address(0), "SpeedH_Stats_Horse: invalid controller");
         speedStats = controller;
     }
 
     function transferOwnership(address newOwner) external onlyOwner {
-        require(newOwner != address(0), "HorseStats: invalid owner");
+        require(newOwner != address(0), "SpeedH_Stats_Horse: invalid owner");
         owner = newOwner;
     }
 
@@ -59,9 +60,9 @@ contract HorseStats {
     mapping(uint256 => HorseData) private horses;
 
     // ---------------------------------------------------------------------
-    // Visuals (for horses) via VisualsLib
+    // Visuals (for horses) via SpeedH_VisualsLib
     // ---------------------------------------------------------------------
-    VisualsLib.VisualSpace private horseVisuals;
+    SpeedH_VisualsLib.VisualSpace private horseVisuals;
 
     // Category administration (proxied to library)
     function setImgCategory(uint256 imgCategory, string calldata name, uint256 maxImgNumber)
@@ -76,7 +77,7 @@ contract HorseStats {
     }
 
     function getImgCategoryName(uint256 imgCategory) external view returns (string memory) {
-        VisualsLib.ImgCategoryData storage data = horseVisuals.imgCategories[imgCategory];
+        SpeedH_VisualsLib.ImgCategoryData storage data = horseVisuals.imgCategories[imgCategory];
         return data.name;
     }
 
@@ -91,7 +92,7 @@ contract HorseStats {
         PerformanceStats calldata baseStats
     ) external onlySpeedStats {
         HorseData storage h = horses[horseId];
-        require(!h.exists, "HorseStats: horse exists");
+        require(!h.exists, "SpeedH_Stats_Horse: horse exists");
 
         h.exists = true;
         h.imgCategory = imgCategory;
@@ -105,27 +106,27 @@ contract HorseStats {
 
     function addPoints(uint256 horseId, uint256 points) external onlySpeedStats {
         HorseData storage h = horses[horseId];
-        require(h.exists, "HorseStats: unknown horse");
+        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
         h.totalPoints += points;
         h.unassignedPoints += points;
     }
 
     function consumeUnassigned(uint256 horseId, uint256 points) external onlySpeedStats {
         HorseData storage h = horses[horseId];
-        require(h.exists, "HorseStats: unknown horse");
-        require(h.unassignedPoints >= points, "HorseStats: not enough points");
+        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
+        require(h.unassignedPoints >= points, "SpeedH_Stats_Horse: not enough points");
         h.unassignedPoints -= points;
     }
 
     function setAssignedStats(uint256 horseId, PerformanceStats calldata stats) external onlySpeedStats {
         HorseData storage h = horses[horseId];
-        require(h.exists, "HorseStats: unknown horse");
+        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
         h.assignedStats = stats;
     }
 
     function setRestFinish(uint256 horseId, uint256 restFinish) external onlySpeedStats {
         HorseData storage h = horses[horseId];
-        require(h.exists, "HorseStats: unknown horse");
+        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
         h.restFinish = restFinish;
     }
 
@@ -135,7 +136,7 @@ contract HorseStats {
 
     function getHorse(uint256 horseId) external view returns (HorseData memory) {
         HorseData memory h = horses[horseId];
-        require(h.exists, "HorseStats: unknown horse");
+        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
         return h;
     }
 

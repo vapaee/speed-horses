@@ -1,27 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { PerformanceStats } from "./StatsStructs.sol";
-import { VisualsLib } from "./VisualsLib.sol";
+import { PerformanceStats } from "./SpeedH_StatsStructs.sol";
+import { SpeedH_VisualsLib } from "./SpeedH_VisualsLib.sol";
 
 /**
- * Title: HorseshoeStats
+ * Title: SpeedH_Stats_Horseshoe
  * Brief: Lifecycle and storage of horseshoes: bonus stats, durability, and visuals.
- *        Uses VisualsLib for category administration and random selection.
+ *        Uses SpeedH_VisualsLib for category administration and random selection.
  */
-contract HorseshoeStats {
-    using VisualsLib for VisualsLib.VisualSpace;
+contract SpeedH_Stats_Horseshoe {
+    using SpeedH_VisualsLib for SpeedH_VisualsLib.VisualSpace;
 
     address public owner;
     address public speedStats;
+    string public version = "SpeedH_Stats_Horseshoe-v1.0.0";
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "HorseshoeStats: not owner");
+        require(msg.sender == owner, "SpeedH_Stats_Horseshoe: not owner");
         _;
     }
 
     modifier onlySpeedStats() {
-        require(msg.sender == speedStats, "HorseshoeStats: only controller");
+        require(msg.sender == speedStats, "SpeedH_Stats_Horseshoe: only controller");
         _;
     }
 
@@ -30,12 +31,12 @@ contract HorseshoeStats {
     }
 
     function setSpeedStats(address controller) external onlyOwner {
-        require(controller != address(0), "HorseshoeStats: invalid controller");
+        require(controller != address(0), "SpeedH_Stats_Horseshoe: invalid controller");
         speedStats = controller;
     }
 
     function transferOwnership(address newOwner) external onlyOwner {
-        require(newOwner != address(0), "HorseshoeStats: invalid owner");
+        require(newOwner != address(0), "SpeedH_Stats_Horseshoe: invalid owner");
         owner = newOwner;
     }
 
@@ -52,9 +53,9 @@ contract HorseshoeStats {
     mapping(uint256 => HorseshoeData) private horseshoes;
 
     // ---------------------------------------------------------------------
-    // Visuals (for horseshoes) via VisualsLib
+    // Visuals (for horseshoes) via SpeedH_VisualsLib
     // ---------------------------------------------------------------------
-    VisualsLib.VisualSpace private shoeVisuals;
+    SpeedH_VisualsLib.VisualSpace private shoeVisuals;
 
     /// @notice Adds/updates image categories for horseshoes.
     function setImgCategory(uint256 imgCategory, string calldata name, uint256 maxImgNumber)
@@ -69,11 +70,11 @@ contract HorseshoeStats {
     }
 
     function getImgCategoryName(uint256 imgCategory) external view returns (string memory) {
-        VisualsLib.ImgCategoryData storage data = shoeVisuals.imgCategories[imgCategory];
+        SpeedH_VisualsLib.ImgCategoryData storage data = shoeVisuals.imgCategories[imgCategory];
         return data.name;
     }
 
-    /// @notice Random visual usable by the controller (same signature as in HorseStats).
+    /// @notice Random visual usable by the controller (same signature as in SpeedH_Stats_Horse).
     function getRandomVisual(uint256 entropy) external view onlySpeedStats returns (uint256, uint256) {
         return shoeVisuals.getRandomVisual(entropy);
     }
@@ -90,11 +91,11 @@ contract HorseshoeStats {
         uint256 maxDurability
     ) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
-        require(data.maxDurability == 0, "HorseshoeStats: horseshoe exists");
-        require(maxDurability > 0, "HorseshoeStats: invalid durability");
+        require(data.maxDurability == 0, "SpeedH_Stats_Horseshoe: horseshoe exists");
+        require(maxDurability > 0, "SpeedH_Stats_Horseshoe: invalid durability");
 
-        VisualsLib.ImgCategoryData storage cat = shoeVisuals.imgCategories[imgCategory];
-        require(cat.exists && imgNumber >= 1 && imgNumber <= cat.maxImgNumber, "HorseshoeStats: invalid image");
+        SpeedH_VisualsLib.ImgCategoryData storage cat = shoeVisuals.imgCategories[imgCategory];
+        require(cat.exists && imgNumber >= 1 && imgNumber <= cat.maxImgNumber, "SpeedH_Stats_Horseshoe: invalid image");
 
         data.imgCategory = imgCategory;
         data.imgNumber = imgNumber;
@@ -106,20 +107,20 @@ contract HorseshoeStats {
 
     function restore(uint256 horseshoeId) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
-        require(data.maxDurability > 0, "HorseshoeStats: unknown horseshoe");
+        require(data.maxDurability > 0, "SpeedH_Stats_Horseshoe: unknown horseshoe");
         data.durabilityUsed = data.maxDurability;
     }
 
     function consume(uint256 horseshoeId, uint256 less) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
-        require(data.maxDurability > 0, "HorseshoeStats: unknown horseshoe");
-        require(less > data.durabilityUsed, "HorseshoeStats: insufficient durability");
+        require(data.maxDurability > 0, "SpeedH_Stats_Horseshoe: unknown horseshoe");
+        require(less > data.durabilityUsed, "SpeedH_Stats_Horseshoe: insufficient durability");
         data.durabilityUsed = data.durabilityUsed - less;
     }
 
     function getHorseshoe(uint256 horseshoeId) external view returns (HorseshoeData memory) {
         HorseshoeData memory data = horseshoes[horseshoeId];
-        require(data.maxDurability > 0, "HorseshoeStats: unknown horseshoe");
+        require(data.maxDurability > 0, "SpeedH_Stats_Horseshoe: unknown horseshoe");
         return data;
     }
 }

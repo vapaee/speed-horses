@@ -10,11 +10,11 @@ pragma solidity ^0.8.20;
 type UFix6 is uint256;
 
 /**
- * Título: UFix6Lib
+ * Título: SpeedH_UFix6Lib
  * Brief: Biblioteca matemática que implementa aritmética de punto fijo con seis decimales y utilidades logarítmicas necesarias para calcular niveles y escalados dentro del sistema de estadísticas de caballos. Centraliza las operaciones seguras para transformar valores enteros en representaciones fraccionarias sin perder precisión en cálculos recurrentes.
- * API: expone constructores (`fromUint`, `wrapRaw`, `fromParts`), conversores (`toUint`, `raw`), operaciones básicas (`add`, `sub`, `mul`, `mulUint`, `div`, `divUint`), constantes (`one`) y funciones logarítmicas (`ilog2`, `log2_uint`, `log2`). Estas rutinas son utilizadas por contratos como `HorseStats` para determinar niveles y tiempos de descanso dentro de los procesos de progresión del juego.
+ * API: expone constructores (`fromUint`, `wrapRaw`, `fromParts`), conversores (`toUint`, `raw`), operaciones básicas (`add`, `sub`, `mul`, `mulUint`, `div`, `divUint`), constantes (`one`) y funciones logarítmicas (`ilog2`, `log2_uint`, `log2`). Estas rutinas son utilizadas por contratos como `SpeedH_Stats_Horse` para determinar niveles y tiempos de descanso dentro de los procesos de progresión del juego.
  */
-library UFix6Lib {
+library SpeedH_UFix6Lib {
     uint256 internal constant SCALE = 1e6;
     uint256 internal constant TWO_SCALE = 2 * SCALE;
 
@@ -145,17 +145,17 @@ library UFix6Lib {
 
 /*
 library LogMath {
-    using UFix6Lib for UFix6;
+    using SpeedH_UFix6Lib for UFix6;
 
     // result = K * log2(x), with x as uint (1..1000), returns UFix6
     function kMulLog2_uint(uint256 K, uint256 x) internal pure returns (UFix6) {
-        UFix6 lx = UFix6Lib.log2_uint(x);         // UFix6
+        UFix6 lx = SpeedH_UFix6Lib.log2_uint(x);         // UFix6
         return lx.mulUint(K);                      // still UFix6
     }
 
     // result = K * log2(x), with x as UFix6, returns UFix6
     function kMulLog2_ufix(uint256 K, UFix6 x) internal pure returns (UFix6) {
-        UFix6 lx = UFix6Lib.log2(x);
+        UFix6 lx = SpeedH_UFix6Lib.log2(x);
         return lx.mulUint(K);
     }
 }
@@ -163,20 +163,20 @@ library LogMath {
 // ---------- Example usage ----------
 
 contract LogExample {
-    using UFix6Lib for UFix6;
+    using SpeedH_UFix6Lib for UFix6;
 
     uint256 public constant K = 100;
 
     function resultFor(uint256 x) external pure returns (uint256 resultScaled, uint256 resultInteger) {
         // x is plain integer in [1..1000]
         UFix6 r = LogMath.kMulLog2_uint(K, x);      // UFix6 (scale 1e6)
-        resultScaled = UFix6Lib.raw(r);             // scaled by 1e6
+        resultScaled = SpeedH_UFix6Lib.raw(r);             // scaled by 1e6
         resultInteger = r.toUint();                 // truncated integer part
     }
     function resultForUFix6(UFix6 x) external pure returns (uint256 resultScaled, uint256 resultInteger) {
         // x is UFix6 (scale 1e6)
         UFix6 r = LogMath.kMulLog2_ufix(K, x);      // UFix6 (scale 1e6)
-        resultScaled = UFix6Lib.raw(r);             // scaled by 1e6
+        resultScaled = SpeedH_UFix6Lib.raw(r);             // scaled by 1e6
         resultInteger = r.toUint();                 // truncated integer part
     }
 }

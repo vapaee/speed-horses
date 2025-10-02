@@ -6,16 +6,16 @@ interface IHorses {
     function getTotalPoints(uint256 horseId) external view returns (uint256 points);
 }
 
-/// @title FixtureManager
+/// @title SpeedH_FixtureManager
 /// @notice Manages race fixtures and horse registrations.
 /// @dev This is a simplified implementation based on the provided specification.
 /**
- * Título: FixtureManager
+ * Título: SpeedH_FixtureManager
  * Brief: Orquestador de las carreras que se encarga de recibir inscripciones, organizar caballos por puntaje y armar las tandas de competencias respetando capacidades, tiempos y compensaciones. Administra el ciclo de vida de cada fixture desde su creación hasta su confirmación, calculando longitudes de pista y premios de consolación mientras coordina con el contrato de estadísticas y el token HAY.
  * API: los jugadores interactúan mediante `registerHorse`, que dispara internamente `_tryGenerateFixture` para avanzar en el proceso de armado; el contrato expone utilidades privadas (`_calculateNextStartTime`, `_calculateRaceLength`, `_min`) que determinan horarios y distancias de las carreras, y mantiene getters como `isRegistered` para consultas externas. Las funciones administrativas (`setHorseStats`, `setHayToken`) conectan las dependencias necesarias, completando el flujo de preparación de fixtures antes de las simulaciones de carrera.
  */
-contract FixtureManager {
-    string public version = "FixtureManager-v1.0.0";
+contract SpeedH_FixtureManager {
+    string public version = "SpeedH_FixtureManager-v1.0.0";
 
     // ---------------------------------------------------------------------
     // Contract References
