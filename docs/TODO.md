@@ -1,8 +1,8 @@
 # Deploy
-- HayTokenOFT.sol
-- SpeedHorses.sol
-- HorseStats.sol
-- HorseMinter.sol
+- SpeedH_HayTokenOFT.sol
+- SpeedH_NFT_Horse.sol
+- SpeedH_Stats_Horse.sol
+- SpeedH_FoalForge.sol
 
 
 

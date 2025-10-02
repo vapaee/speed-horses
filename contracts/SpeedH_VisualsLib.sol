@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-/// @title VisualsLib
+/// @title SpeedH_VisualsLib
 /// @notice Reusable storage & helpers to manage image categories and random visual selection.
-library VisualsLib {
+library SpeedH_VisualsLib {
     struct ImgCategoryData {
         string name;
         uint256 maxImgNumber;
@@ -51,7 +51,7 @@ library VisualsLib {
         VisualSpace storage vs,
         uint256 entropy
     ) internal view returns (uint256 imgCategory, uint256 imgNumber) {
-        require(vs.imgCategoryIds.length > 0, "VisualsLib: no categories");
+        require(vs.imgCategoryIds.length > 0, "SpeedH_VisualsLib: no categories");
 
         uint256 validCategories = 0;
         uint256 length = vs.imgCategoryIds.length;
@@ -61,7 +61,7 @@ library VisualsLib {
                 validCategories++;
             }
         }
-        require(validCategories > 0, "VisualsLib: categories empty");
+        require(validCategories > 0, "SpeedH_VisualsLib: categories empty");
 
         uint256 categorySeed = uint256(
             keccak256(abi.encodePacked(block.timestamp, block.prevrandao, entropy))
@@ -80,7 +80,7 @@ library VisualsLib {
                 counter++;
             }
         }
-        require(selectedCategory != type(uint256).max, "VisualsLib: invalid selection");
+        require(selectedCategory != type(uint256).max, "SpeedH_VisualsLib: invalid selection");
 
         ImgCategoryData storage chosen = vs.imgCategories[selectedCategory];
         uint256 numberSeed = uint256(keccak256(abi.encodePacked(categorySeed, entropy, block.number)));
