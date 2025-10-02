@@ -18,7 +18,7 @@ interface ISpeedH_Stats_Fusion {
         PerformanceStats calldata bonusStats,
         uint256 maxDurability,
         uint256 level,
-        bool pure
+        bool isPure
     ) external;
 }
 
@@ -60,7 +60,7 @@ contract SpeedH_Minter_AnvilAlchemy {
         PerformanceStats stats;
         uint256 maxDurability;
         uint256 level;
-        bool pure;
+        bool isPure;
         uint256 imgCategory;
         uint256 imgNumber;
     }
@@ -87,7 +87,7 @@ contract SpeedH_Minter_AnvilAlchemy {
     event FusionRandomized(
         uint256 indexed fusionId,
         uint256 level,
-        bool pure,
+        bool isPure,
         uint256 imgCategory,
         uint256 imgNumber,
         bool keepStats
@@ -221,7 +221,7 @@ contract SpeedH_Minter_AnvilAlchemy {
         process.preview = preview;
         process.hasPreview = true;
 
-        emit FusionRandomized(fusionId, preview.level, preview.pure, preview.imgCategory, preview.imgNumber, keepStats);
+        emit FusionRandomized(fusionId, preview.level, preview.isPure, preview.imgCategory, preview.imgNumber, keepStats);
     }
 
     function claimFusion(uint256 fusionId) external validFusion(fusionId) {
@@ -249,7 +249,7 @@ contract SpeedH_Minter_AnvilAlchemy {
             preview.stats,
             preview.maxDurability,
             preview.level,
-            preview.pure
+            preview.isPure
         );
 
         delete _fusions[fusionId];
@@ -316,7 +316,7 @@ contract SpeedH_Minter_AnvilAlchemy {
 
         uint256 maxDurability = father.maxDurability > mother.maxDurability ? father.maxDurability : mother.maxDurability;
 
-        bool pure = father.pure && mother.pure && father.level == mother.level;
+        bool isPure = father.isPure && mother.isPure && father.level == mother.level;
         uint256 level = (father.level > mother.level ? father.level : mother.level) + 1;
 
         (uint256 imgCategory, uint256 imgNumber) = speedStats.getRandomHorseshoeVisual(visualEntropy);
@@ -325,7 +325,7 @@ contract SpeedH_Minter_AnvilAlchemy {
             stats: combined,
             maxDurability: maxDurability,
             level: level,
-            pure: pure,
+            isPure: isPure,
             imgCategory: imgCategory,
             imgNumber: imgNumber
         });

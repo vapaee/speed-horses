@@ -17,7 +17,7 @@ interface ISpeedH_Stats_Repair {
         PerformanceStats calldata bonusStats,
         uint256 maxDurability,
         uint256 level,
-        bool pure
+        boolean isPure
     ) external;
 }
 
@@ -54,7 +54,7 @@ contract SpeedH_Minter_IronRedemption {
         PerformanceStats stats;
         uint256 maxDurability;
         uint256 level;
-        bool pure;
+        boolean isPure;
         uint256 imgCategory;
         uint256 imgNumber;
     }
@@ -174,7 +174,7 @@ contract SpeedH_Minter_IronRedemption {
             stats: data.bonusStats,
             maxDurability: data.maxDurability,
             level: data.level,
-            pure: data.pure,
+            isPure: data.isPure,
             imgCategory: data.imgCategory,
             imgNumber: data.imgNumber
         });
@@ -196,13 +196,13 @@ contract SpeedH_Minter_IronRedemption {
         RepairPreview memory base = process.baseline;
 
         PerformanceStats memory degraded = _scaleStats(base.stats, 100 - errorPct);
-        bool isPure = base.pure && errorPct == 0;
+        bool isPure = base.isPure && errorPct == 0;
 
         RepairPreview memory preview = RepairPreview({
             stats: degraded,
             maxDurability: base.maxDurability,
             level: base.level,
-            pure: isPure,
+            isPure: isPure,
             imgCategory: base.imgCategory,
             imgNumber: base.imgNumber
         });
@@ -210,7 +210,7 @@ contract SpeedH_Minter_IronRedemption {
         process.preview = preview;
         process.hasPreview = true;
 
-        emit RepairRandomized(repairId, preview.level, preview.pure, errorPct);
+        emit RepairRandomized(repairId, preview.level, preview.isPure, errorPct);
     }
 
     function claimRepair(uint256 repairId) external validRepair(repairId) {
@@ -236,7 +236,7 @@ contract SpeedH_Minter_IronRedemption {
             preview.stats,
             preview.maxDurability,
             preview.level,
-            preview.pure
+            preview.isPure
         );
 
         delete _repairs[repairId];

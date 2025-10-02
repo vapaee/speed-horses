@@ -14,7 +14,7 @@ contract SpeedH_Stats_Horseshoe {
 
     address public owner;
     address public speedStats;
-    string public version = "SpeedH_Stats_Horseshoe-v1.1.0";
+    string public version = "SpeedH_Stats_Horseshoe-v1.0.1";
 
     modifier onlyOwner() {
         require(msg.sender == owner, "SpeedH_Stats_Horseshoe: not owner");
