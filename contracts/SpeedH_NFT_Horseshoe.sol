@@ -12,18 +12,18 @@ import './SpeedH_NFT_Horse.sol';
  * acuñación de piezas equipables para los caballos. Mantiene un control de acceso sencillo en el que solamente el administrador
  * o el minter autorizado pueden configurar dependencias y emitir nuevos NFTs.
  * API: expone operaciones administrativas para definir el minter (`setHorseMinter`) y un punto de acuñación restringido (`mint`)
- * que delega en el contrato `SpeedH_FoalForge`. Hereda de `ERC721` y `Ownable` para integrarse sin fricción con el resto de módulos on-chain.
+ * que delega en el contrato `SpeedH_Minter_FoalForge`. Hereda de `ERC721` y `Ownable` para integrarse sin fricción con el resto de módulos on-chain.
  */
 contract SpeedH_NFT_Horseshoe is ERC721, Ownable {
     // ---------------------------------------------------------------------
     // Storage
     // ---------------------------------------------------------------------
 
-    string public version = 'SpeedH_NFT_Horseshoe-v1.0.0';
+    string public version = 'SpeedH_NFT_Horseshoe-v1.1.0';
 
     address public admin;
-    address public horseMinter;
     address public horseStats;
+    mapping(address => bool) private _horseMinters;
 
     // Next token id to be minted (auto-incremented)
     uint256 private _nextTokenId;
@@ -38,7 +38,7 @@ contract SpeedH_NFT_Horseshoe is ERC721, Ownable {
     }
 
     modifier onlyHorseMinter() {
-        require(msg.sender == horseMinter, 'Not horseMinter');
+        require(_horseMinters[msg.sender], 'Not horseMinter');
         _;
     }
 
@@ -56,8 +56,16 @@ contract SpeedH_NFT_Horseshoe is ERC721, Ownable {
     // Admin
     // ---------------------------------------------------------------------
 
-    function setHorseMinter(address _minter) external onlyAdmin {
-        horseMinter = _minter;
+    event HorseMinterUpdated(address indexed minter, bool allowed);
+
+    function setHorseMinter(address minter, bool allowed) external onlyAdmin {
+        require(minter != address(0), 'Invalid minter');
+        _horseMinters[minter] = allowed;
+        emit HorseMinterUpdated(minter, allowed);
+    }
+
+    function isHorseMinter(address account) external view returns (bool) {
+        return _horseMinters[account];
     }
 
     function setHorseStats(address _stats) external onlyAdmin {
@@ -79,6 +87,10 @@ contract SpeedH_NFT_Horseshoe is ERC721, Ownable {
 
         _safeMint(to, tokenId);
         return tokenId;
+    }
+
+    function burn(uint256 tokenId) external onlyHorseMinter {
+        _burn(tokenId);
     }
 
     // ---------------------------------------------------------------------
