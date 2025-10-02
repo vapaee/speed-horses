@@ -16,25 +16,46 @@ import './SpeedHorses.sol';
  * on-chain.
  */
 contract Horseshoes is ERC721, Ownable {
-    string public version = "Horseshoes-v1.0.0";
+    // ---------------------------------------------------------------------
+    // Storage
+    // ---------------------------------------------------------------------
+
+    string public version = 'Horseshoes-v1.0.0';
 
     address public admin;
     address public horseMinter;
     address public horseStats;
 
+    // Next token id to be minted (auto-incremented)
+    uint256 private _nextTokenId;
+
+    // ---------------------------------------------------------------------
+    // Admin functions
+    // ---------------------------------------------------------------------
+
     modifier onlyAdmin() {
-        require(msg.sender == admin, "Not admin");
+        require(msg.sender == admin, 'Not admin');
         _;
     }
 
     modifier onlyHorseMinter() {
-        require(msg.sender == horseMinter, "Not horseMinter");
+        require(msg.sender == horseMinter, 'Not horseMinter');
         _;
     }
 
-    constructor() ERC721("Horseshoes", "SHOE") Ownable(msg.sender) {
+    // ---------------------------------------------------------------------
+    // Constructor
+    // ---------------------------------------------------------------------
+
+    constructor() ERC721('Horseshoes', 'SHOE') Ownable(msg.sender) {
         admin = msg.sender;
+        // Start from any desired number (e.g., 1). Must be >= 0.
+        _nextTokenId = 1;
     }
+
+    // ---------------------------------------------------------------------
+    // Admin
+    // ---------------------------------------------------------------------
 
     function setHorseMinter(address _minter) external onlyAdmin {
         horseMinter = _minter;
@@ -44,8 +65,29 @@ contract Horseshoes is ERC721, Ownable {
         horseStats = _stats;
     }
 
-    function mint(address to, uint256 tokenId) external onlyHorseMinter {
-        _mint(to, tokenId);
+    // ---------------------------------------------------------------------
+    // Minting (auto-increment ids)
+    // ---------------------------------------------------------------------
+
+    /**
+     * Mints a single NFT to `to` using the current `_nextTokenId`, then increments it.
+     * Returns the minted token id.
+     */
+    function mint(address to) external onlyHorseMinter returns (uint256) {
+        uint256 tokenId = _nextTokenId;
+        // Increment first to avoid reentrancy issues if receiver calls back
+        _nextTokenId = tokenId + 1;
+
+        _safeMint(to, tokenId);
+        return tokenId;
+    }
+
+    // ---------------------------------------------------------------------
+    // Views
+    // ---------------------------------------------------------------------
+
+    function nextTokenId() external view returns (uint256) {
+        return _nextTokenId;
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
@@ -54,6 +96,14 @@ contract Horseshoes is ERC721, Ownable {
         return StatsBase(horseStats).horseshoeTokenURI(tokenId);
     }
 
+    // ---------------------------------------------------------------------
+    // Hooks / Overrides
+    // ---------------------------------------------------------------------
+
+    /**
+     * Prevent transfers while a horseshoe is equipped. Mirrors your original logic.
+     * OpenZeppelin v5 uses _update; keep the check before calling super.
+     */
     function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
         address from = _ownerOf(tokenId);
         if (from != address(0) && to != address(0)) {
@@ -63,4 +113,3 @@ contract Horseshoes is ERC721, Ownable {
         return super._update(to, tokenId, auth);
     }
 }
-

@@ -27,3 +27,4 @@ https://lucide.dev/icons/
 code node_modules/lucide-angular/icons/lucide-icons.d.ts
 ```
 
+https://github.com/vapaee/speed-horses/blob/11a8b9f2cce2c4f754a87721d8013fb0c87da9ee/contracts/HorseStats.sol

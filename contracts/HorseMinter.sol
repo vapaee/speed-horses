@@ -28,7 +28,7 @@ interface IHorseshoes {
 /**
  * Título: HorseMinter
  * Brief: Coordinador del proceso de creación de caballos que cobra tarifas en TLOS y genera las combinaciones iniciales de categorías de imagen y estadísticas para cada jugador antes de acuñar el NFT y registrar sus atributos definitivos. Gestiona el flujo de construcción incremental, contabiliza los paquetes de puntos extra adquiridos y comunica los resultados al contrato de estadísticas y al ERC-721 del juego.
- * API: ofrece funciones públicas que modelan el proceso de minteo en etapas (`startHorseMint`, `randomizeHorse`, `buyExtraPoints`, `claimHorse`), cada una avanzando el estado del caballo pendiente y validando pagos y límites; incluye utilidades pseudoaleatorias para categorías de imagen y estadísticas (`_randomStats`, `_randomVisual`, `_randomize`) utilizadas durante dicho proceso. El administrador conecta dependencias y gestiona fondos mediante `setHorseStats`, `setSpeedHorses` y `withdrawTLOS`, completando así el circuito operativo del minter.
+ * API: ofrece funciones públicas que modelan el proceso de minteo en etapas (`startHorseMint`, `randomizeHorse`, `buyExtraPoints`, `claimHorse`), cada una avanzando el estado del caballo pendiente y validando pagos y límites; incluye utilidades pseudoaleatorias para categorías de imagen y estadísticas (`_randomHorseStats`, `_randomVisual`, `_randomize`) utilizadas durante dicho proceso. El administrador conecta dependencias y gestiona fondos mediante `setHorseStats`, `setSpeedHorses` y `withdrawTLOS`, completando así el circuito operativo del minter.
  */
 contract HorseMinter {
     string public version = "HorseMinter-v1.1.0";
@@ -112,7 +112,7 @@ contract HorseMinter {
 
         build.extraPackagesBought += 1;
         build.totalPoints = BASE_INITIAL_POINTS + (build.extraPackagesBought * EXTRA_POINTS_PER_PACKAGE);
-        build.baseStats = _randomStats(build.totalPoints);
+        build.baseStats = _randomHorseStats(build.totalPoints);
     }
 
     function claimHorse() external {
@@ -146,39 +146,10 @@ contract HorseMinter {
     // Random Helpers (pseudo-random, no para mainnet)
     // ----------------------------------------------------
 
-    function _randomStats(uint256 totalPoints) public view returns (PerformanceStats memory) {
-        uint256[8] memory distribution;
-        uint256 remaining = totalPoints;
-
-        // El algoritmo debe ser el siguiente:
-        // Se itera indefinidas veces mientras queden puntos por distribuir.
-        // el índice i se reinicia a 0 cuando llega a 7.
-        // En cada iteración, se genera un número aleatorio entre 1 y 5.
-        // al final de cada iteración se resta el número generado a remaining.
-        // Si remaining es 0, se sale del loop.
-        while (remaining > 0) {
-            for (uint256 i = 0; i < 8; i++) {
-                if (remaining == 0) {
-                    break;
-                }
-                uint256 rand = (uint256(keccak256(abi.encodePacked(msg.sender, block.timestamp, block.prevrandao, i, remaining))) % 7) + 1;
-                if (rand > remaining) {
-                    rand = remaining;
-                }
-                distribution[i] += rand;
-                remaining -= rand;
-            }
-        }
-
-        return PerformanceStats(
-            distribution[0], distribution[1], distribution[2], distribution[3],
-            distribution[4], distribution[5], distribution[6], distribution[7]
-        );
-    }
-
     function _randomize(uint256 totalPoints, bool keepImage, bool keepStats, bool keepShoes) internal view returns (HorseBuild memory) {
         bool hasPending = pendingHorse[msg.sender].totalPoints != 0;
 
+        // Randomize visual
         uint256 imgCategory;
         uint256 imgNumber;
         if (keepImage && hasPending) {
@@ -188,8 +159,10 @@ contract HorseMinter {
             (imgCategory, imgNumber) = _randomVisual(totalPoints);
         }
 
-        PerformanceStats memory stats = keepStats && hasPending ? pendingHorse[msg.sender].baseStats : _randomStats(totalPoints);
+        // Randomize Horse Stats
+        PerformanceStats memory stats = keepStats && hasPending ? pendingHorse[msg.sender].baseStats : _randomHorseStats(totalPoints);
 
+        // Randomize Horseshoes
         PendingHorseshoe[HORSESHOES_PER_HORSE] memory shoes;
         if (keepShoes && hasPending) {
             for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
@@ -230,6 +203,30 @@ contract HorseMinter {
             PerformanceStats memory stats = _randomHorseshoeStats(entropy);
             result[i] = PendingHorseshoe({ imgCategory: imgCategory, imgNumber: imgNumber, bonusStats: stats });
         }
+    }
+
+    function _randomHorseStats(uint256 totalPoints) public view returns (PerformanceStats memory) {
+        uint256[8] memory distribution;
+        uint256 remaining = totalPoints;
+
+        while (remaining > 0) {
+            for (uint256 i = 0; i < 8; i++) {
+                if (remaining == 0) {
+                    break;
+                }
+                uint256 rand = (uint256(keccak256(abi.encodePacked(msg.sender, block.timestamp, block.prevrandao, i, remaining))) % 7) + 1;
+                if (rand > remaining) {
+                    rand = remaining;
+                }
+                distribution[i] += rand;
+                remaining -= rand;
+            }
+        }
+
+        return PerformanceStats(
+            distribution[0], distribution[1], distribution[2], distribution[3],
+            distribution[4], distribution[5], distribution[6], distribution[7]
+        );
     }
 
     function _randomHorseshoeStats(uint256 entropy) internal pure returns (PerformanceStats memory) {
