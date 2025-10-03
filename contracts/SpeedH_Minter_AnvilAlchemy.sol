@@ -11,7 +11,7 @@ interface ISpeedH_Stats_Fusion {
     function horseshoeModule() external view returns (SpeedH_Stats_Horseshoe);
     function isHorseshoeEquipped(uint256 horseshoeId) external view returns (bool);
     function getRandomHorseshoeVisual(uint256 entropy) external view returns (uint256, uint256);
-    function registerForgedHorseshoe(
+    function registerHorseshoeStats(
         uint256 horseshoeId,
         uint256 imgCategory,
         uint256 imgNumber,
@@ -242,7 +242,7 @@ contract SpeedH_Minter_AnvilAlchemy {
         horseshoeNft.burn(motherId);
 
         uint256 newId = horseshoeNft.mint(owner);
-        speedStats.registerForgedHorseshoe(
+        speedStats.registerHorseshoeStats(
             newId,
             preview.imgCategory,
             preview.imgNumber,
