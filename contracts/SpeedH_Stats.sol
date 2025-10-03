@@ -246,8 +246,18 @@ contract SpeedH_Stats {
         require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         require(speedHorsesToken != address(0) && horseshoesToken != address(0), "SpeedH_Stats: tokens not set");
-        horseshoeModule.createHorseshoe(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, pure);
-        emit HorseshoeCreated(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, pure);
+
+        bool exists = true;
+        try horseshoeModule.getHorseshoe(horseshoeId) returns (SpeedH_Stats_Horseshoe.HorseshoeData memory /*existing*/) {
+            // Horseshoe already registered, nothing else to do before equipping.
+        } catch {
+            exists = false;
+        }
+
+        if (!exists) {
+            horseshoeModule.createHorseshoe(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, pure);
+            emit HorseshoeCreated(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, pure);
+        }
 
         // Will revert if the horse does not exist
         horseModule.getHorse(horseId);
