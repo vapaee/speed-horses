@@ -31,7 +31,7 @@ interface ISpeedH_NFT_Horseshoe {
 /**
  * Título: SpeedH_Minter_FoalForge
  * Brief: Coordinador del proceso de creación de caballos que cobra tarifas en TLOS y genera las combinaciones iniciales de categorías de imagen y estadísticas para cada jugador antes de acuñar el NFT y registrar sus atributos definitivos. Gestiona el flujo de construcción incremental, contabiliza los paquetes de puntos extra adquiridos y comunica los resultados al contrato de estadísticas y al ERC-721 del juego.
- * API: ofrece funciones públicas que modelan el proceso de minteo en etapas (`startHorseMint`, `randomizeHorse`, `buyExtraPoints`, `claimHorse`), cada una avanzando el estado del caballo pendiente y validando pagos y límites; incluye utilidades pseudoaleatorias para categorías de imagen y estadísticas (`_randomHorseStats`, `_randomVisual`, `_randomize`) utilizadas durante dicho proceso. El administrador conecta dependencias y gestiona fondos mediante `setHorseStats`, `setSpeedHorses` y `withdrawTLOS`, completando así el circuito operativo del minter.
+ * API: ofrece funciones públicas que modelan el proceso de minteo en etapas (`startHorseMint`, `randomizeHorse`, `buyExtraPoints`, `claimHorse`), cada una avanzando el estado del caballo pendiente y validando pagos y límites; incluye utilidades pseudoaleatorias para categorías de imagen y estadísticas (`_randomHorseStats`, `_randomVisual`, `_randomizeAll`) utilizadas durante dicho proceso. El administrador conecta dependencias y gestiona fondos mediante `setHorseStats`, `setSpeedHorses` y `withdrawTLOS`, completando así el circuito operativo del minter.
  */
 contract SpeedH_Minter_FoalForge {
     string public version = "SpeedH_Minter_FoalForge-v1.1.0";
@@ -90,7 +90,7 @@ contract SpeedH_Minter_FoalForge {
         require(pendingHorse[msg.sender].totalPoints == 0, 'Already minting a horse');
         require(msg.value == BASE_CREATION_COST, 'Incorrect TLOS amount');
 
-        HorseBuild memory newHorse = _randomize(BASE_INITIAL_POINTS, false, false, false);
+        HorseBuild memory newHorse = _randomizeAll(BASE_INITIAL_POINTS, false, false, false);
 
         pendingHorse[msg.sender] = newHorse;
     }
@@ -102,7 +102,7 @@ contract SpeedH_Minter_FoalForge {
         require(build.totalPoints != 0, 'No horse to randomize');
         require(msg.value == RANDOMIZE_COST, 'Incorrect TLOS amount');
 
-        pendingHorse[msg.sender] = _randomize(build.totalPoints, keepImage, keepStats, keepShoes);
+        pendingHorse[msg.sender] = _randomizeAll(build.totalPoints, keepImage, keepStats, keepShoes);
     }
 
     function buyExtraPoints() external payable {
@@ -136,7 +136,7 @@ contract SpeedH_Minter_FoalForge {
                 shoe.imgNumber,
                 shoe.bonusStats,
                 STARTER_HORSESHOE_DURABILITY,
-                1,
+                0,
                 true
             );
         }
@@ -148,7 +148,7 @@ contract SpeedH_Minter_FoalForge {
     // Random Helpers (pseudo-random, no para mainnet)
     // ----------------------------------------------------
 
-    function _randomize(uint256 totalPoints, bool keepImage, bool keepStats, bool keepShoes) internal view returns (HorseBuild memory) {
+    function _randomizeAll(uint256 totalPoints, bool keepImage, bool keepStats, bool keepShoes) internal view returns (HorseBuild memory) {
         bool hasPending = pendingHorse[msg.sender].totalPoints != 0;
 
         // Randomize visual

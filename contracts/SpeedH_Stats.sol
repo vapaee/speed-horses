@@ -190,7 +190,7 @@ contract SpeedH_Stats {
         PerformanceStats bonusStats,
         uint256 maxDurability,
         uint256 level,
-        bool pure
+        bool isPure
     );
     event HorseshoeEquipped(uint256 indexed horseId, uint256 indexed horseshoeId);
     event HorseshoeUnequipped(uint256 indexed horseId, uint256 indexed horseshoeId);
@@ -205,31 +205,17 @@ contract SpeedH_Stats {
     // horseshoeId => whether the horseshoe is currently equipped on any horse
     mapping(uint256 => bool) private horseshoeEquipped;
 
-    /// @notice Create a new horseshoe record in the module (admin operation).
-    function createHorseshoe(
+    function registerHorseshoeStats(
         uint256 horseshoeId,
         uint256 imgCategory,
         uint256 imgNumber,
         PerformanceStats calldata bonusStats,
         uint256 maxDurability,
         uint256 level,
-        bool pure
-    ) external onlyAdmin {
-        horseshoeModule.createHorseshoe(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, pure);
-        emit HorseshoeCreated(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, pure);
-    }
-
-    function registerForgedHorseshoe(
-        uint256 horseshoeId,
-        uint256 imgCategory,
-        uint256 imgNumber,
-        PerformanceStats calldata bonusStats,
-        uint256 maxDurability,
-        uint256 level,
-        bool pure
+        bool isPure
     ) external onlyHorseMinter {
-        horseshoeModule.createHorseshoe(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, pure);
-        emit HorseshoeCreated(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, pure);
+        horseshoeModule.createHorseshoe(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, isPure);
+        emit HorseshoeCreated(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, isPure);
     }
 
     /// @notice Hook used by the minter to materialize the starter horseshoes and equip them immediately.
@@ -241,13 +227,21 @@ contract SpeedH_Stats {
         PerformanceStats calldata bonusStats,
         uint256 maxDurability,
         uint256 level,
-        bool pure
+        bool isPure
     ) external onlyHorseMinter {
         require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         require(speedHorsesToken != address(0) && horseshoesToken != address(0), "SpeedH_Stats: tokens not set");
-        horseshoeModule.createHorseshoe(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, pure);
-        emit HorseshoeCreated(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, pure);
+        // Create the horseshoe record
+        registerForgedHorseshoe(
+            horseshoeId,
+            imgCategory,
+            imgNumber,
+            bonusStats,
+            maxDurability,
+            level,
+            isPure
+        );
 
         // Will revert if the horse does not exist
         horseModule.getHorse(horseId);
@@ -470,7 +464,7 @@ contract SpeedH_Stats {
         (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Max Durability", data.maxDurability, isFirst);
         (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Level", data.level, isFirst);
 
-        string memory pureValue = data.pure ? "Yes" : "No";
+        string memory pureValue = data.isPure ? "Yes" : "No";
         string memory pureEntry = string(abi.encodePacked('{"trait_type":"Pure","value":"', pureValue, '"}'));
         string memory separator = isFirst ? "" : ",";
         attributes = string(abi.encodePacked(attributes, separator, pureEntry));
