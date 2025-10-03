@@ -7,6 +7,15 @@ interface ISpeedH_Stats_Horse {
     function createHorse(uint256 horseId, uint256 imgCategory, uint256 imgNumber, PerformanceStats calldata baseStats) external;
     function getRandomVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber);
     function getRandomHorseshoeVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber);
+    function registerForgedHorseshoe(
+        uint256 horseshoeId,
+        uint256 imgCategory,
+        uint256 imgNumber,
+        PerformanceStats calldata bonusStats,
+        uint256 maxDurability,
+        uint256 level,
+        bool pure
+    ) external;
     function createStarterHorseshoe(
         uint256 horseId,
         uint256 horseshoeId,
@@ -129,6 +138,15 @@ contract SpeedH_Minter_FoalForge {
         for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
             PendingHorseshoe memory shoe = build.horseshoes[i];
             uint256 horseshoeId = horseshoes.mint(msg.sender);
+            horseStats.registerForgedHorseshoe(
+                horseshoeId,
+                shoe.imgCategory,
+                shoe.imgNumber,
+                shoe.bonusStats,
+                STARTER_HORSESHOE_DURABILITY,
+                0,
+                true
+            );
             horseStats.createStarterHorseshoe(
                 horseId,
                 horseshoeId,
@@ -136,7 +154,7 @@ contract SpeedH_Minter_FoalForge {
                 shoe.imgNumber,
                 shoe.bonusStats,
                 STARTER_HORSESHOE_DURABILITY,
-                1,
+                0,
                 true
             );
         }
