@@ -142,13 +142,13 @@ contract SpeedH_Stats {
     uint256 public constant LEVEL_STEP = 50;
     uint256 public constant FEEDING_COST_PER_POINT = 1 ether;
 
-    function createHorse(
+    function createHorseStats(
         uint256 horseId,
         uint256 imgCategory,
         uint256 imgNumber,
         PerformanceStats calldata baseStats
     ) external onlyHorseMinter {
-        horseModule.createHorse(horseId, imgCategory, imgNumber, baseStats);
+        horseModule.createHorseStats(horseId, imgCategory, imgNumber, baseStats);
         emit HorseCreated(horseId, imgCategory, imgNumber, baseStats);
     }
 
@@ -183,7 +183,7 @@ contract SpeedH_Stats {
     // ---------------------------------------------------------------------
 
     /// @dev maxAdjustments removed to match SpeedH_Stats_Horseshoe; event updated accordingly.
-    event HorseshoeCreated(
+    event HorseshoeStats(
         uint256 indexed horseshoeId,
         uint256 imgCategory,
         uint256 imgNumber,
@@ -214,12 +214,20 @@ contract SpeedH_Stats {
         uint256 level,
         bool isPure
     ) external onlyHorseMinter {
-        horseshoeModule.createHorseshoe(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, isPure);
-        emit HorseshoeCreated(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, isPure);
+        horseshoeModule.createHorseshoeStats(
+            horseshoeId,
+            imgCategory,
+            imgNumber,
+            bonusStats,
+            maxDurability,
+            level,
+            isPure
+        );
+        emit HorseshoeStats(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, isPure);
     }
 
     /// @notice Hook used by the minter to materialize the starter horseshoes and equip them immediately.
-    function createStarterHorseshoe(
+    function registerStarterHorseshoeStats(
         uint256 horseId,
         uint256 horseshoeId,
         uint256 imgCategory,
@@ -233,7 +241,7 @@ contract SpeedH_Stats {
         require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         require(speedHorsesToken != address(0) && horseshoesToken != address(0), "SpeedH_Stats: tokens not set");
         // Create the horseshoe record
-        registerForgedHorseshoe(
+        registerHorseshoeStats(
             horseshoeId,
             imgCategory,
             imgNumber,

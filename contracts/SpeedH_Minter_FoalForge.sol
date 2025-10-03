@@ -4,10 +4,15 @@ pragma solidity ^0.8.20;
 import { PerformanceStats } from "./SpeedH_StatsStructs.sol";
 
 interface ISpeedH_Stats_Horse {
-    function createHorse(uint256 horseId, uint256 imgCategory, uint256 imgNumber, PerformanceStats calldata baseStats) external;
+    function createHorseStats(
+        uint256 horseId,
+        uint256 imgCategory,
+        uint256 imgNumber,
+        PerformanceStats calldata baseStats
+    ) external;
     function getRandomVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber);
     function getRandomHorseshoeVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber);
-    function createStarterHorseshoe(
+    function registerStarterHorseshoeStats(
         uint256 horseId,
         uint256 horseshoeId,
         uint256 imgCategory,
@@ -15,7 +20,7 @@ interface ISpeedH_Stats_Horse {
         PerformanceStats calldata bonusStats,
         uint256 maxDurability,
         uint256 level,
-        bool pure
+        bool isPure
     ) external;
 }
 
@@ -124,12 +129,12 @@ contract SpeedH_Minter_FoalForge {
 
         uint256 horseId = nextHorseId++;
         speedHorses.mint(msg.sender, horseId);
-        horseStats.createHorse(horseId, build.imgCategory, build.imgNumber, build.baseStats);
+        horseStats.createHorseStats(horseId, build.imgCategory, build.imgNumber, build.baseStats);
 
         for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
             PendingHorseshoe memory shoe = build.horseshoes[i];
             uint256 horseshoeId = horseshoes.mint(msg.sender);
-            horseStats.createStarterHorseshoe(
+            horseStats.registerStarterHorseshoeStats(
                 horseId,
                 horseshoeId,
                 shoe.imgCategory,

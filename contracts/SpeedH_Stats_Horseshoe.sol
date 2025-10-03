@@ -49,7 +49,8 @@ contract SpeedH_Stats_Horseshoe {
         uint256 maxDurability;
         uint256 durabilityUsed;
         uint256 level;
-        bool pure;
+        bool isPure;
+        bool exists;
     }
 
     mapping(uint256 => HorseshoeData) private horseshoes;
@@ -85,17 +86,17 @@ contract SpeedH_Stats_Horseshoe {
     // Lifecycle
     // ---------------------------------------------------------------------
 
-    function createHorseshoe(
+    function createHorseshoeStats(
         uint256 horseshoeId,
         uint256 imgCategory,
         uint256 imgNumber,
         PerformanceStats calldata bonusStats,
         uint256 maxDurability,
         uint256 level,
-        bool pure
+        bool isPure
     ) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
-        require(data.maxDurability == 0, "SpeedH_Stats_Horseshoe: horseshoe exists");
+        require(!data.exists, "SpeedH_Stats_Horseshoe: horseshoe exists");
         require(maxDurability > 0, "SpeedH_Stats_Horseshoe: invalid durability");
 
         SpeedH_VisualsLib.ImgCategoryData storage cat = shoeVisuals.imgCategories[imgCategory];
@@ -108,25 +109,26 @@ contract SpeedH_Stats_Horseshoe {
         data.maxDurability = maxDurability;
         data.durabilityUsed = maxDurability; // as per your current semantics
         data.level = level;
-        data.pure = pure;
+        data.isPure = isPure;
+        data.exists = true;
     }
 
     function restore(uint256 horseshoeId) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
-        require(data.maxDurability > 0, "SpeedH_Stats_Horseshoe: unknown horseshoe");
+        require(data.exists, "SpeedH_Stats_Horseshoe: unknown horseshoe");
         data.durabilityUsed = data.maxDurability;
     }
 
     function consume(uint256 horseshoeId, uint256 less) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
-        require(data.maxDurability > 0, "SpeedH_Stats_Horseshoe: unknown horseshoe");
+        require(data.exists, "SpeedH_Stats_Horseshoe: unknown horseshoe");
         require(less > data.durabilityUsed, "SpeedH_Stats_Horseshoe: insufficient durability");
         data.durabilityUsed = data.durabilityUsed - less;
     }
 
     function getHorseshoe(uint256 horseshoeId) external view returns (HorseshoeData memory) {
         HorseshoeData memory data = horseshoes[horseshoeId];
-        require(data.maxDurability > 0, "SpeedH_Stats_Horseshoe: unknown horseshoe");
+        require(data.exists, "SpeedH_Stats_Horseshoe: unknown horseshoe");
         return data;
     }
 }

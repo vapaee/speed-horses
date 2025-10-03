@@ -85,7 +85,7 @@ contract SpeedH_Stats_Horse {
     // Horse mutations (only controller)
     // ---------------------------------------------------------------------
 
-    function createHorse(
+    function createHorseStats(
         uint256 horseId,
         uint256 imgCategory,
         uint256 imgNumber,

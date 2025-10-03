@@ -10,14 +10,14 @@ import { SpeedH_Stats_Horseshoe } from "./SpeedH_Stats_Horseshoe.sol";
 interface ISpeedH_Stats_Repair {
     function horseshoeModule() external view returns (SpeedH_Stats_Horseshoe);
     function isHorseshoeEquipped(uint256 horseshoeId) external view returns (bool);
-    function registerForgedHorseshoe(
+    function registerHorseshoeStats(
         uint256 horseshoeId,
         uint256 imgCategory,
         uint256 imgNumber,
         PerformanceStats calldata bonusStats,
         uint256 maxDurability,
         uint256 level,
-        boolean isPure
+        bool isPure
     ) external;
 }
 
@@ -54,7 +54,7 @@ contract SpeedH_Minter_IronRedemption {
         PerformanceStats stats;
         uint256 maxDurability;
         uint256 level;
-        boolean isPure;
+        bool isPure;
         uint256 imgCategory;
         uint256 imgNumber;
     }
@@ -78,7 +78,7 @@ contract SpeedH_Minter_IronRedemption {
     // ---------------------------------------------------------------------
 
     event RepairStarted(uint256 indexed repairId, address indexed owner, uint256 tokenId);
-    event RepairRandomized(uint256 indexed repairId, uint256 level, bool pure, uint256 errorPct);
+    event RepairRandomized(uint256 indexed repairId, uint256 level, bool isPure, uint256 errorPct);
     event RepairClaimed(uint256 indexed repairId, uint256 newHorseshoeId);
     event RepairCancelled(uint256 indexed repairId);
 
@@ -229,7 +229,7 @@ contract SpeedH_Minter_IronRedemption {
         horseshoeNft.burn(tokenId);
 
         uint256 newId = horseshoeNft.mint(owner);
-        speedStats.registerForgedHorseshoe(
+        speedStats.registerHorseshoeStats(
             newId,
             preview.imgCategory,
             preview.imgNumber,
