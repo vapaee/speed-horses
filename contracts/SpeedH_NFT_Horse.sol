@@ -10,7 +10,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
  * API: expone funciones administrativas para definir los contratos auxiliares (`setHorseMinter`, `setHorseStats`), un punto de acuñación protegido (`mint`) y la consulta de metadatos (`tokenURI`). Además, sobreescribe `_update` para integrarse en el flujo de juego, verificando en las transferencias que el caballo haya terminado de descansar y que no esté inscrito en competencias, siendo esta validación una etapa previa a cualquier intercambio entre jugadores.
  */
 contract SpeedH_NFT_Horse is ERC721, Ownable {
-    string public version = "SpeedH_NFT_Horse-v1.0.0";
+    string public version = "SpeedH_NFT_Horse-v1.1.0";
 
     // ---------------------------------------------------------------------
     // Contract References
@@ -18,6 +18,7 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
     address public admin;
     address public horseMinter;
     address public horseStats;
+    uint256 private _totalSupply;
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Not admin");
@@ -45,6 +46,10 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
         _mint(to, id);
     }
 
+    function totalSupply() external view returns (uint256) {
+        return _totalSupply;
+    }
+
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(ownerOf(tokenId) != address(0), "Token does not exist");
         require(horseStats != address(0), "horseStats not set");
@@ -59,7 +64,15 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
             require(stats.hasFinishedResting(tokenId), "Horse still resting");
             require(!stats.isRegisteredForRacing(tokenId), "Horse is registered for racing");
         }
-        return super._update(to, tokenId, auth);
+        address previousOwner = super._update(to, tokenId, auth);
+
+        if (from == address(0)) {
+            _totalSupply += 1;
+        } else if (to == address(0)) {
+            _totalSupply -= 1;
+        }
+
+        return previousOwner;
     }
 }
 
