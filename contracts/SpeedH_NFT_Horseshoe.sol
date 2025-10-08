@@ -27,6 +27,7 @@ contract SpeedH_NFT_Horseshoe is ERC721, Ownable {
 
     // Next token id to be minted (auto-incremented)
     uint256 private _nextTokenId;
+    uint256 private _totalSupply;
 
     // ---------------------------------------------------------------------
     // Admin functions
@@ -72,6 +73,11 @@ contract SpeedH_NFT_Horseshoe is ERC721, Ownable {
         horseStats = _stats;
     }
 
+    function totalSupply() external view returns (uint256) {
+        return _totalSupply;
+    }
+
+
     // ---------------------------------------------------------------------
     // Minting (auto-increment ids)
     // ---------------------------------------------------------------------
@@ -114,13 +120,28 @@ contract SpeedH_NFT_Horseshoe is ERC721, Ownable {
     /**
      * Prevent transfers while a horseshoe is equipped. Mirrors your original logic.
      * OpenZeppelin v5 uses _update; keep the check before calling super.
-     */
+     */   
     function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
         address from = _ownerOf(tokenId);
+
+        // --- tus checks previos (prohibir transferir si está equipada) ---
         if (from != address(0) && to != address(0)) {
             require(horseStats != address(0), 'horseStats not set');
             require(!StatsBase(horseStats).isHorseshoeEquipped(tokenId), 'Horseshoe equipped');
         }
-        return super._update(to, tokenId, auth);
+
+        // Ejecuta la actualización de OZ (cambia propietario / emite / quema)
+        address previousOwner = super._update(to, tokenId, auth);
+
+        // --- supply ---
+        if (from == address(0)) {
+            // mint
+            _totalSupply += 1;
+        } else if (to == address(0)) {
+            // burn
+            _totalSupply -= 1;
+        }
+
+        return previousOwner;
     }
 }
