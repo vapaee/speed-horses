@@ -20,6 +20,9 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
     address public horseStats;
     uint256 private _totalSupply;
 
+    // Next token id to be minted (auto-incremented)
+    uint256 private _nextTokenId;
+
     modifier onlyAdmin() {
         require(msg.sender == admin, "Not admin");
         _;
@@ -32,6 +35,8 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
 
     constructor() ERC721('SpeedHorses', 'HORSE') Ownable(msg.sender) {
         admin = msg.sender;
+        // Start from any desired number (e.g., 1). Must be >= 0.
+        _nextTokenId = 1;
     }
 
     function setHorseMinter(address _minter) external onlyAdmin {
@@ -42,12 +47,21 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
         horseStats = _stats;
     }
 
-    function mint(address to, uint256 id) external onlyHorseMinter {
-        _mint(to, id);
+    function mint(address to) external onlyHorseMinter returns (uint256) {
+        uint256 tokenId = _nextTokenId;
+        // Increment first to avoid reentrancy issues if receiver calls back
+        _nextTokenId = tokenId + 1;
+
+        _safeMint(to, tokenId);
+        return tokenId;
     }
 
     function totalSupply() external view returns (uint256) {
         return _totalSupply;
+    }
+
+    function nextTokenId() external view returns (uint256) {
+        return _nextTokenId;
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
