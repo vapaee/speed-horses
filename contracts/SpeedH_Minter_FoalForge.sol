@@ -59,8 +59,9 @@ contract SpeedH_Minter_FoalForge {
     uint256 public constant BASE_INITIAL_POINTS = 60;
     uint256 public constant EXTRA_POINTS_PER_PACKAGE = 10;
     uint256 public constant HORSESHOES_PER_HORSE = 4;
-    uint256 public constant HORSESHOE_TOTAL_POINTS = 10;
     uint256 public constant STARTER_HORSESHOE_DURABILITY = 100;
+    uint256 public constant STARTER_HORSESHOE_LEVEL = 3;
+    uint256 public constant STARTER_HORSESHOE_POINTS = 8;
 
     uint256 public nextHorseId;
 
@@ -141,7 +142,7 @@ contract SpeedH_Minter_FoalForge {
                 shoe.imgNumber,
                 shoe.bonusStats,
                 STARTER_HORSESHOE_DURABILITY,
-                0,
+                STARTER_HORSESHOE_LEVEL,
                 true
             );
         }
@@ -245,8 +246,8 @@ contract SpeedH_Minter_FoalForge {
             secondIndex = (secondIndex + 1) % 8;
         }
 
-        uint256 firstPoints = (uint256(keccak256(abi.encodePacked(entropy, "shoe-points"))) % (HORSESHOE_TOTAL_POINTS - 1)) + 1;
-        uint256 secondPoints = HORSESHOE_TOTAL_POINTS - firstPoints;
+        uint256 firstPoints = (uint256(keccak256(abi.encodePacked(entropy, "shoe-points"))) % (STARTER_HORSESHOE_POINTS - 1)) + 1;
+        uint256 secondPoints = STARTER_HORSESHOE_POINTS - firstPoints;
 
         uint256[8] memory distribution;
         distribution[firstIndex] = firstPoints;
