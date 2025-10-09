@@ -25,7 +25,8 @@ interface ISpeedH_Stats_Horse {
 }
 
 interface ISpeedH_NFT_Horse {
-    function mint(address to, uint256 horseId) external;
+    function mint(address to) external returns (uint256);
+    function nextTokenId() external view returns (uint256);
 }
 
 interface ISpeedH_NFT_Horseshoe {
@@ -63,8 +64,6 @@ contract SpeedH_Minter_FoalForge {
     uint256 public constant STARTER_HORSESHOE_LEVEL = 3;
     uint256 public constant STARTER_HORSESHOE_POINTS = 8;
 
-    uint256 public nextHorseId;
-
     struct PendingHorseshoe {
         uint256 imgCategory;
         uint256 imgNumber;
@@ -89,7 +88,6 @@ contract SpeedH_Minter_FoalForge {
 
     constructor() {
         admin = msg.sender;
-        nextHorseId = 1;
     }
 
     function startHorseMint() external payable {
@@ -128,8 +126,7 @@ contract SpeedH_Minter_FoalForge {
 
         require(address(horseshoes) != address(0), 'SpeedH_NFT_Horseshoe not set');
 
-        uint256 horseId = nextHorseId++;
-        speedHorses.mint(msg.sender, horseId);
+        uint256 horseId = speedHorses.mint(msg.sender);
         horseStats.createHorseStats(horseId, build.imgCategory, build.imgNumber, build.baseStats);
 
         for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
@@ -197,7 +194,13 @@ contract SpeedH_Minter_FoalForge {
         require(address(horseStats) != address(0), 'Horse stats not set');
         require(address(horseshoes) != address(0), 'Horseshoe NFT not set');
         uint256 entropy = uint256(keccak256(
-            abi.encodePacked(msg.sender, block.timestamp, block.prevrandao, totalPoints, nextHorseId)
+            abi.encodePacked(
+                msg.sender,
+                block.timestamp,
+                block.prevrandao,
+                totalPoints,
+                speedHorses.nextTokenId()
+            )
         ));
         return horseStats.getRandomVisual(entropy);
     }
@@ -205,9 +208,19 @@ contract SpeedH_Minter_FoalForge {
     function _randomHorseshoes() internal view returns (PendingHorseshoe[HORSESHOES_PER_HORSE] memory result) {
         require(address(horseStats) != address(0), 'Horse stats not set');
         uint256 baseId = horseshoes.nextTokenId();
+        uint256 horseBaseId = speedHorses.nextTokenId();
         for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
             uint256 entropy = uint256(
-                keccak256(abi.encodePacked(msg.sender, block.timestamp, block.prevrandao, nextHorseId, baseId, i))
+                keccak256(
+                    abi.encodePacked(
+                        msg.sender,
+                        block.timestamp,
+                        block.prevrandao,
+                        horseBaseId,
+                        baseId,
+                        i
+                    )
+                )
             );
             (uint256 imgCategory, uint256 imgNumber) = horseStats.getRandomHorseshoeVisual(entropy);
             PerformanceStats memory stats = _randomHorseshoeStats(entropy);
