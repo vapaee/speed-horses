@@ -95,6 +95,12 @@ contract SpeedH_Stats_Horse {
         HorseData storage h = horses[horseId];
         require(!h.exists, "SpeedH_Stats_Horse: horse exists");
 
+        SpeedH_VisualsLib.ImgCategoryData storage cat = horseVisuals.imgCategories[imgCategory];
+        require(
+            cat.exists && imgNumber >= 1 && imgNumber <= cat.maxImgNumber,
+            "SpeedH_Stats_Horse: invalid image"
+        );
+
         h.exists = true;
         h.imgCategory = imgCategory;
         h.imgNumber = imgNumber;

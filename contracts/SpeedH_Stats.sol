@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 import { PerformanceStats } from "./SpeedH_StatsStructs.sol";
@@ -22,6 +23,7 @@ interface IERC721Minimal {
 ///         while delegating storage/mutations to modules.
 contract SpeedH_Stats {
     using Strings for uint256;
+    using SafeERC20 for IERC20;
 
     string public constant version = "SpeedH_Stats-v1.1.0";
 
@@ -76,18 +78,22 @@ contract SpeedH_Stats {
     }
 
     function setFixtureManager(address _fixture) external onlyAdmin {
+        require(_fixture != address(0), "SpeedH_Stats: invalid fixture manager");
         fixtureManager = _fixture;
     }
 
     function setHayToken(address _hay) external onlyAdmin {
+        require(_hay != address(0), "SpeedH_Stats: invalid hay token");
         hayToken = _hay;
     }
 
     function setSpeedHorses(address _token) external onlyAdmin {
+        require(_token != address(0), "SpeedH_Stats: invalid horse token");
         speedHorsesToken = _token;
     }
 
     function setHorseshoes(address _token) external onlyAdmin {
+        require(_token != address(0), "SpeedH_Stats: invalid horseshoe token");
         horseshoesToken = _token;
     }
 
@@ -114,20 +120,24 @@ contract SpeedH_Stats {
     // Configuration proxied to modules
     // ---------------------------------------------------------------------
     function setHorseImgCategory(uint256 imgCategory, string calldata name, uint256 maxImgNumber) external onlyAdmin {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         horseModule.setImgCategory(imgCategory, name, maxImgNumber);
     }
 
     function getHorseImgCategoryIds() external view returns (uint256[] memory) {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         return horseModule.getImgCategoryIds();
     }
     function setHorseshoeImgCategory(uint256 imgCategory, string calldata name, uint256 maxImgNumber)
         external
         onlyAdmin
     {
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         horseshoeModule.setImgCategory(imgCategory, name, maxImgNumber);
     }
 
     function getHorseshoeImgCategoryIds() external view returns (uint256[] memory) {
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         return horseshoeModule.getImgCategoryIds();
     }
 
@@ -148,11 +158,13 @@ contract SpeedH_Stats {
         uint256 imgNumber,
         PerformanceStats calldata baseStats
     ) external onlyHorseMinter {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         horseModule.createHorseStats(horseId, imgCategory, imgNumber, baseStats);
         emit HorseCreated(horseId, imgCategory, imgNumber, baseStats);
     }
 
     function setRacePrize(uint256 horseId, uint256 points) external onlyFixtureManager {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         horseModule.addPoints(horseId, points);
         uint256 newRest = block.timestamp + BASE_RESTING_COOLDOWN;
         horseModule.setRestFinish(horseId, newRest);
@@ -161,6 +173,7 @@ contract SpeedH_Stats {
     }
 
     function assignPoints(uint256 horseId, PerformanceStats calldata additional) external {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         require(hayToken != address(0), "SpeedH_Stats: hay token not set");
         uint256 totalToAssign = _sumStats(additional);
         require(totalToAssign > 0, "SpeedH_Stats: nothing to assign");
@@ -170,7 +183,7 @@ contract SpeedH_Stats {
         require(IERC721Minimal(speedHorsesToken).ownerOf(horseId) == msg.sender, "SpeedH_Stats: not horse owner");
 
         horseModule.consumeUnassigned(horseId, totalToAssign);
-        IERC20(hayToken).transferFrom(msg.sender, address(this), totalToAssign * FEEDING_COST_PER_POINT);
+        IERC20(hayToken).safeTransferFrom(msg.sender, address(this), totalToAssign * FEEDING_COST_PER_POINT);
 
         PerformanceStats memory updated = _addPerformance(data.assignedStats, additional);
         horseModule.setAssignedStats(horseId, updated);
@@ -214,7 +227,7 @@ contract SpeedH_Stats {
         uint256 level,
         bool isPure
     ) external onlyHorseMinter {
-        horseshoeModule.createHorseshoeStats(
+        _registerHorseshoeStats(
             horseshoeId,
             imgCategory,
             imgNumber,
@@ -223,7 +236,6 @@ contract SpeedH_Stats {
             level,
             isPure
         );
-        emit HorseshoeStats(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, isPure);
     }
 
     /// @notice Hook used by the minter to materialize the starter horseshoes and equip them immediately.
@@ -241,7 +253,7 @@ contract SpeedH_Stats {
         require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         require(speedHorsesToken != address(0) && horseshoesToken != address(0), "SpeedH_Stats: tokens not set");
         // Create the horseshoe record
-        registerHorseshoeStats(
+        _registerHorseshoeStats(
             horseshoeId,
             imgCategory,
             imgNumber,
@@ -261,6 +273,7 @@ contract SpeedH_Stats {
         require(list.length < MAX_SHOE_SLOTS, "SpeedH_Stats: all slots occupied");
         require(!horseHasShoe[horseId][horseshoeId], "SpeedH_Stats: already equipped");
         require(!horseshoeEquipped[horseshoeId], "SpeedH_Stats: horseshoe in use");
+        require(horseshoeModule.isUseful(horseshoeId), "SpeedH_Stats: useless horseshoe");
 
         horseHasShoe[horseId][horseshoeId] = true;
         horseshoeEquipped[horseshoeId] = true;
@@ -269,8 +282,32 @@ contract SpeedH_Stats {
         emit HorseshoeEquipped(horseId, horseshoeId);
     }
 
+    function _registerHorseshoeStats(
+        uint256 horseshoeId,
+        uint256 imgCategory,
+        uint256 imgNumber,
+        PerformanceStats calldata bonusStats,
+        uint256 maxDurability,
+        uint256 level,
+        bool isPure
+    ) internal {
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
+        horseshoeModule.createHorseshoeStats(
+            horseshoeId,
+            imgCategory,
+            imgNumber,
+            bonusStats,
+            maxDurability,
+            level,
+            isPure
+        );
+        emit HorseshoeStats(horseshoeId, imgCategory, imgNumber, bonusStats, maxDurability, level, isPure);
+    }
+
     /// @notice Equip a horseshoe into one of the limited slots of the horse.
     function equipHorseshoe(uint256 horseId, uint256 horseshoeId) external {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         require(speedHorsesToken != address(0) && horseshoesToken != address(0), "SpeedH_Stats: tokens not set");
         require(IERC721Minimal(speedHorsesToken).ownerOf(horseId) == msg.sender, "SpeedH_Stats: not horse owner");
         require(IERC721Minimal(horseshoesToken).ownerOf(horseshoeId) == msg.sender, "SpeedH_Stats: not horseshoe owner");
@@ -282,6 +319,7 @@ contract SpeedH_Stats {
 
         // ensure horseshoe exists (will revert otherwise)
         horseshoeModule.getHorseshoe(horseshoeId);
+        require(horseshoeModule.isUseful(horseshoeId), "SpeedH_Stats: useless horseshoe");
 
         horseHasShoe[horseId][horseshoeId] = true;
         horseshoeEquipped[horseshoeId] = true;
@@ -292,6 +330,7 @@ contract SpeedH_Stats {
 
     /// @notice Unequip a horseshoe. Blocked if the horse is registered for racing.
     function unequipHorseshoe(uint256 horseId, uint256 horseshoeId) external {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         require(speedHorsesToken != address(0) && horseshoesToken != address(0), "SpeedH_Stats: tokens not set");
         require(IERC721Minimal(speedHorsesToken).ownerOf(horseId) == msg.sender, "SpeedH_Stats: not horse owner");
         require(horseHasShoe[horseId][horseshoeId], "SpeedH_Stats: not equipped");
@@ -331,6 +370,7 @@ contract SpeedH_Stats {
     /// @param horseId The horse NFT id
     /// @param lessPerShoe The durability amount to consume per equipped horseshoe
     function consumeEquippedDurability(uint256 horseId, uint256 lessPerShoe) external onlyFixtureManager {
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         require(lessPerShoe > 0, "SpeedH_Stats: invalid amount");
         uint256[] storage list = equippedHorseshoes[horseId];
         require(list.length > 0, "SpeedH_Stats: no horseshoes equipped");
@@ -347,16 +387,19 @@ contract SpeedH_Stats {
     // ---------------------------------------------------------------------
 
     function getBaseStats(uint256 horseId) public view returns (PerformanceStats memory) {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
         return data.baseStats;
     }
 
     function getAssignedStats(uint256 horseId) public view returns (PerformanceStats memory) {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
         return data.assignedStats;
     }
 
     function getEquipmentBonus(uint256 horseId) public view returns (PerformanceStats memory totalBonus) {
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         uint256[] storage list = equippedHorseshoes[horseId];
         totalBonus = PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0);
         for (uint256 i = 0; i < list.length; i++) {
@@ -365,12 +408,19 @@ contract SpeedH_Stats {
         }
     }
 
+    function getRandomVisual(uint256 entropy) external view returns (uint256, uint256) {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
+        return horseModule.getRandomVisual(entropy);
+    }
+
     function getRandomHorseshoeVisual(uint256 entropy) external view returns (uint256, uint256) {
         require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         return horseshoeModule.getRandomVisual(entropy);
     }
 
     function getPerformance(uint256 horseId) public view returns (PerformanceStats memory) {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         PerformanceStats memory baseStats = getBaseStats(horseId);
         PerformanceStats memory assigned = getAssignedStats(horseId);
         PerformanceStats memory equipment = getEquipmentBonus(horseId);
@@ -379,23 +429,29 @@ contract SpeedH_Stats {
     }
 
     function getHorsePerformance(uint256 horseId) public view returns (PerformanceStats memory) {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         PerformanceStats memory baseStats = getBaseStats(horseId);
         PerformanceStats memory assigned = getAssignedStats(horseId);
         return _addPerformance(baseStats, assigned);
-    }        
+    }
 
     function getTotalPoints(uint256 horseId) public view returns (uint256) {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
         uint256 equipmentPoints = _sumStats(getEquipmentBonus(horseId));
         return data.totalPoints + equipmentPoints;
     }
 
     function getHorseTotalPoints(uint256 horseId) public view returns (uint256) {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
         return data.totalPoints;
     }
 
     function getLevel(uint256 horseId) public view returns (UFix6) {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         uint256 total = getTotalPoints(horseId);
         if (total == 0) {
             return SpeedH_UFix6Lib.wrapRaw(0);
@@ -404,11 +460,14 @@ contract SpeedH_Stats {
     }
 
     function refreshHorseCache(uint256 horseId) external onlyHorseMinter {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         PerformanceStats memory performance = getPerformance(horseId);
         horseModule.setCacheStats(horseId, performance);
     }
 
     function hasFinishedResting(uint256 horseId) public view returns (bool) {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
         SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
         return block.timestamp >= data.restFinish;
     }
@@ -422,6 +481,8 @@ contract SpeedH_Stats {
 
     // returns all JSON metadata for the given horseId
     function horseTokenURI(uint256 horseId) external view returns (string memory) {
+        require(address(horseModule) != address(0), "SpeedH_Stats: horse module not set");
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
         PerformanceStats memory totalStats = getHorsePerformance(horseId);
 
@@ -461,6 +522,7 @@ contract SpeedH_Stats {
 
     // returns all JSON metadata for the given horseshoeId
     function horseshoeTokenURI(uint256 horseshoeId) external view returns (string memory) {
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
         SpeedH_Stats_Horseshoe.HorseshoeData memory data = horseshoeModule.getHorseshoe(horseshoeId);
         string memory attributes = '[';
         bool isFirst = true;
@@ -473,7 +535,7 @@ contract SpeedH_Stats {
         (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Luck", data.bonusStats.luck, isFirst);
         (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Curve Bonus", data.bonusStats.curveBonus, isFirst);
         (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Straight Bonus", data.bonusStats.straightBonus, isFirst);
-        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Durability", data.durabilityUsed, isFirst);
+        (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Durability", data.durabilityRemaining, isFirst);
         (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Max Durability", data.maxDurability, isFirst);
         (attributes, isFirst) = _appendAttributeIfNonZero(attributes, "Level", data.level, isFirst);
 
@@ -500,6 +562,11 @@ contract SpeedH_Stats {
         );
 
         return string(abi.encodePacked("data:application/json;utf8,", json));
+    }
+
+    function isHorseshoeUseful(uint256 horseshoeId) external view returns (bool) {
+        require(address(horseshoeModule) != address(0), "SpeedH_Stats: horseshoe module not set");
+        return horseshoeModule.isUseful(horseshoeId);
     }
 
     // ---------------------------------------------------------------------
