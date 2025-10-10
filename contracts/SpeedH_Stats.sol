@@ -7,6 +7,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { PerformanceStats } from "./SpeedH_StatsStructs.sol";
 import { SpeedH_Stats_Horse } from "./SpeedH_Stats_Horse.sol";
 import { SpeedH_Stats_Horseshoe } from "./SpeedH_Stats_Horseshoe.sol";
+import { UFix6, SpeedH_UFix6Lib } from "./SpeedH_UFix6Lib.sol";
 
 interface IFixtureManagerView {
     function isRegistered(uint256 horseId) external view returns (bool);
@@ -22,7 +23,7 @@ interface IERC721Minimal {
 contract SpeedH_Stats {
     using Strings for uint256;
 
-    string public constant version = "SpeedH_Stats-v1.0.2";
+    string public constant version = "SpeedH_Stats-v1.1.0";
 
     // ---------------------------------------------------------------------
     // Roles
@@ -139,7 +140,6 @@ contract SpeedH_Stats {
     event HorseWonPrize(uint256 indexed horseId, uint256 points);
 
     uint256 public constant BASE_RESTING_COOLDOWN = 1 days;
-    uint256 public constant LEVEL_STEP = 50;
     uint256 public constant FEEDING_COST_PER_POINT = 1 ether;
 
     function createHorseStats(
@@ -395,12 +395,17 @@ contract SpeedH_Stats {
         return data.totalPoints;
     }
 
-    function getLevel(uint256 horseId) public view returns (uint256) {
+    function getLevel(uint256 horseId) public view returns (UFix6) {
         uint256 total = getTotalPoints(horseId);
         if (total == 0) {
-            return 0;
+            return SpeedH_UFix6Lib.wrapRaw(0);
         }
-        return (total / LEVEL_STEP) + 1;
+        return SpeedH_UFix6Lib.log2_uint(total);
+    }
+
+    function refreshHorseCache(uint256 horseId) external onlyHorseMinter {
+        PerformanceStats memory performance = getPerformance(horseId);
+        horseModule.setCacheStats(horseId, performance);
     }
 
     function hasFinishedResting(uint256 horseId) public view returns (bool) {
@@ -444,7 +449,7 @@ contract SpeedH_Stats {
                 '"name":"Speed Horse #', horseId.toString(), '",',
                 '"description":"Composite statistics between the horse and its equipped horseshoes.",',
                 '"image":"ipfs://category/', categoryPath, '/', data.imgNumber.toString(), '",',
-                '"level":', getLevel(horseId).toString(), ',',
+                '"level":"', _ufix6ToString(getLevel(horseId)), '",',
                 '"totalPoints":', getTotalPoints(horseId).toString(), ',',
                 '"attributes":', attributes,
                 '}'
@@ -532,6 +537,35 @@ contract SpeedH_Stats {
         );
 
         return (updated, false);
+    }
+
+    function _ufix6ToString(UFix6 value) internal pure returns (string memory) {
+        uint256 rawValue = SpeedH_UFix6Lib.raw(value);
+        uint256 integerPart = rawValue / 1e6;
+        uint256 fractionalPart = rawValue % 1e6;
+
+        if (fractionalPart == 0) {
+            return integerPart.toString();
+        }
+
+        bytes memory fractionalBuffer = new bytes(6);
+        for (uint256 i = 0; i < 6; i++) {
+            uint256 digit = fractionalPart % 10;
+            fractionalBuffer[5 - i] = bytes1(uint8(48 + digit));
+            fractionalPart /= 10;
+        }
+
+        uint256 length = 6;
+        while (length > 0 && fractionalBuffer[length - 1] == bytes1("0")) {
+            length--;
+        }
+
+        bytes memory trimmed = new bytes(length);
+        for (uint256 j = 0; j < length; j++) {
+            trimmed[j] = fractionalBuffer[j];
+        }
+
+        return string(abi.encodePacked(integerPart.toString(), ".", string(trimmed)));
     }
 
     function _addPerformance(PerformanceStats memory a, PerformanceStats memory b)
