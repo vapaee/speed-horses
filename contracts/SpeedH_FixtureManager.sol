@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import { UFix6, SpeedH_UFix6Lib } from "./SpeedH_UFix6Lib.sol";
+
 interface IHorses {
-    function getLevel(uint256 horseId) external view returns (uint256 level);
+    function getLevel(uint256 horseId) external view returns (UFix6 level);
     function getTotalPoints(uint256 horseId) external view returns (uint256 points);
 }
 
@@ -119,8 +121,9 @@ contract SpeedH_FixtureManager {
     /// @param horseId Id of the horse
     function registerHorse(uint256 horseId) external {
         // Cobramos el costo de inscripción basado en el nivel del caballo
-        uint256 level = IHorses(horseStats).getLevel(horseId);
-        uint256 cost = level * RACE_HORSE_INSCRIPTION_COST_PER_LEVEL;
+        UFix6 level = IHorses(horseStats).getLevel(horseId);
+        uint256 levelInt = SpeedH_UFix6Lib.toUint(level);
+        uint256 cost = levelInt * RACE_HORSE_INSCRIPTION_COST_PER_LEVEL;
         IERC20(hayToken).transferFrom(msg.sender, address(this), cost);
 
         // Verificamos si el caballo ya está registrado
@@ -258,7 +261,7 @@ contract SpeedH_FixtureManager {
                 uint256 level = 0;
                 for (uint256 k = 0; k < tempRaces[j].horses.length; k++) {
                     uint256 horseId = tempRaces[j].horses[k];
-                    uint256 horseLevel = IHorses(horseStats).getLevel(horseId);
+                    uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(horseStats).getLevel(horseId));
                     if (horseLevel > level) {
                         level = horseLevel;
                     }
@@ -279,7 +282,7 @@ contract SpeedH_FixtureManager {
                 for (uint256 l = 0; l < tempRaces[j].horses.length; l++) {
                     uint256 horseId = tempRaces[j].horses[l];
                     uint256 horsePoints = IHorses(horseStats).getTotalPoints(horseId);
-                    uint256 level = IHorses(horseStats).getLevel(horseId);
+                    uint256 level = SpeedH_UFix6Lib.toUint(IHorses(horseStats).getLevel(horseId));
                     uint256 prize = level * CONSOLATION_PRIZE_PER_LEVEL;
                     notRacing[notRacingIndex] = SignedHorse({
                         horseId: horseId,

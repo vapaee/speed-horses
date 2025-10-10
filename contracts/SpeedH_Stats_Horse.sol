@@ -51,6 +51,7 @@ contract SpeedH_Stats_Horse {
         uint256 imgNumber;
         PerformanceStats baseStats;
         PerformanceStats assignedStats;
+        PerformanceStats cacheStats;
         uint256 totalPoints;
         uint256 unassignedPoints;
         uint256 restFinish;
@@ -99,6 +100,7 @@ contract SpeedH_Stats_Horse {
         h.imgNumber = imgNumber;
         h.baseStats = baseStats;
         h.assignedStats = PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0);
+        h.cacheStats = PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0);
         h.totalPoints = _sumStats(baseStats);
         h.unassignedPoints = 0;
         h.restFinish = 0;
@@ -122,6 +124,12 @@ contract SpeedH_Stats_Horse {
         HorseData storage h = horses[horseId];
         require(h.exists, "SpeedH_Stats_Horse: unknown horse");
         h.assignedStats = stats;
+    }
+
+    function setCacheStats(uint256 horseId, PerformanceStats calldata stats) external onlySpeedStats {
+        HorseData storage h = horses[horseId];
+        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
+        h.cacheStats = stats;
     }
 
     function setRestFinish(uint256 horseId, uint256 restFinish) external onlySpeedStats {
