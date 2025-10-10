@@ -184,6 +184,7 @@ contract SpeedH_FixtureManager {
     function _tryGenerateFixture() internal {
         require(horseStats != address(0), "SpeedH_FixtureManager: horse stats not set");
 
+        // Si no existe fixture activo creamos uno nuevo para iniciar la planificación
         // Caso inicial (primer fixture)
         if (currentFixture == 0) {
             // No fixture in progress, create a new one
@@ -199,6 +200,7 @@ contract SpeedH_FixtureManager {
 
         Fixture storage f = fixtures[currentFixture];
 
+        // Cancelamos cualquier edición cuando el fixture ya entró en ventana de confirmación
         // Check if fixture is already confirmed
         if (block.timestamp >= f.startTime - FIXTURE_CONFIRM_TIME) {
             if (!f.confirmed) {
@@ -210,17 +212,20 @@ contract SpeedH_FixtureManager {
             return;
         }
 
+        // No avanzamos si ya alcanzamos el cupo máximo para el fixture vigente
         // Check if fixture is full
         if (f.horsesCount >= MAX_FIXTURE_PARTICIPANTS) {
             // Fixture is full; do not modify
             return;
         }
 
+        // Si no hay caballos en espera terminamos inmediatamente
         uint256 totalQueue = horseList.length + pending.length;
         if (totalQueue == 0) {
             return;
         }
 
+        // Unificamos pendientes y recientes en una sola cola ordenada por puntos
         SignedHorse[] memory queue = new SignedHorse[](totalQueue);
         uint256 queueIndex;
         for (uint256 i = 0; i < pending.length; i++) {
@@ -235,15 +240,18 @@ contract SpeedH_FixtureManager {
         delete pending;
         delete horseList;
 
+        // Preparamos contenedores auxiliares para guardar lo que no entra en el fixture actual
         SignedHorse[] memory carryOver = new SignedHorse[](totalQueue);
         uint256 carryOverCount;
         uint256 processed;
 
+        // Recorremos la cola formando carreras siempre que haya cupo y fixtures disponibles
         while (
             processed < totalQueue &&
             f.races.length < MAX_FIXTURE_RACES &&
             f.horsesCount < MAX_FIXTURE_PARTICIPANTS
         ) {
+            // Seleccionamos un lote de caballos candidatos manteniendo coherencia de puntajes
             SignedHorse[] memory raceParticipants = new SignedHorse[](MAX_HORSES_PER_RACE);
             uint256 participantsCount;
             SignedHorse memory baseHorse = queue[processed];
@@ -262,6 +270,7 @@ contract SpeedH_FixtureManager {
                 }
             }
 
+            // Si no alcanzamos el mínimo, devolvemos esos caballos con su premio de consolación
             if (participantsCount < MIN_HORSES_PER_RACE) {
                 for (uint256 i = 0; i < participantsCount; i++) {
                     SignedHorse memory entry = raceParticipants[i];
@@ -273,6 +282,7 @@ contract SpeedH_FixtureManager {
                 continue;
             }
 
+            // Si el fixture casi no tiene espacios disponibles, devolvemos todos los candidatos
             uint256 availableSlots = MAX_FIXTURE_PARTICIPANTS - f.horsesCount;
             if (availableSlots < MIN_HORSES_PER_RACE) {
                 for (uint256 i = 0; i < participantsCount; i++) {
@@ -285,10 +295,12 @@ contract SpeedH_FixtureManager {
                 break;
             }
 
+            // Recortamos la lista si hay más candidatos que lugares restantes en el fixture
             if (participantsCount > availableSlots) {
                 participantsCount = availableSlots;
             }
 
+            // Revalidamos el mínimo tras el recorte y pagamos consolación si corresponde
             if (participantsCount < MIN_HORSES_PER_RACE) {
                 for (uint256 i = 0; i < participantsCount; i++) {
                     SignedHorse memory entry = raceParticipants[i];
@@ -300,6 +312,7 @@ contract SpeedH_FixtureManager {
                 break;
             }
 
+            // Instanciamos una nueva carrera y almacenamos los caballos asignados
             Race storage race = f.races.push();
             race.horses = new uint256[](participantsCount);
             uint256 maxLevel;
@@ -313,6 +326,7 @@ contract SpeedH_FixtureManager {
                 }
             }
 
+            // Calculamos parámetros de la carrera según nivel y posición en el fixture
             race.length = _calculateRaceLength(maxLevel, participantsCount);
             race.level = maxLevel;
             uint256 raceIdx = f.races.length - 1;
@@ -323,6 +337,7 @@ contract SpeedH_FixtureManager {
             f.horsesCount += participantsCount;
         }
 
+        // Todo lo que quedó sin procesar recibe premio y pasa al listado de pendientes
         while (processed < totalQueue) {
             SignedHorse memory entry = queue[processed];
             uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(horseStats).getLevel(entry.horseId));
@@ -332,10 +347,12 @@ contract SpeedH_FixtureManager {
             processed++;
         }
 
+        // Persistimos los caballos pendientes para el siguiente intento de generación
         for (uint256 i = 0; i < carryOverCount; i++) {
             pending.push(carryOver[i]);
         }
 
+        // Confirmamos automáticamente el fixture si se completó el cupo total
         if (f.horsesCount >= MAX_FIXTURE_PARTICIPANTS) {
             f.confirmed = true;
             emit FixtureFinalized(f.startTime);
