@@ -16,7 +16,7 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
     // Contract References
     // ---------------------------------------------------------------------
     address public admin;
-    address public horseMinter;
+    mapping(address => bool) private _horseMinters;
     address public horseStats;
     uint256 private _totalSupply;
 
@@ -29,7 +29,7 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
     }
 
     modifier onlyHorseMinter() {
-        require(msg.sender == horseMinter, "Not horseMinter");
+        require(_horseMinters[msg.sender], "Not horseMinter");
         _;
     }
 
@@ -39,8 +39,16 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
         _nextTokenId = 1;
     }
 
-    function setHorseMinter(address _minter) external onlyAdmin {
-        horseMinter = _minter;
+    event HorseMinterUpdated(address indexed minter, bool allowed);
+
+    function setHorseMinter(address minter, bool allowed) external onlyAdmin {
+        require(minter != address(0), "Invalid minter");
+        _horseMinters[minter] = allowed;
+        emit HorseMinterUpdated(minter, allowed);
+    }
+
+    function isHorseMinter(address account) external view returns (bool) {
+        return _horseMinters[account];
     }
 
     function setHorseStats(address _stats) external onlyAdmin {
