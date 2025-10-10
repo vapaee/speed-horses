@@ -44,6 +44,7 @@ contract SpeedH_FixtureManager {
     uint256 public constant RACE_HORSE_INSCRIPTION_COST_PER_LEVEL = 100 ether;
     uint256 public constant CONSOLATION_PRIZE_PER_LEVEL = 50 ether;
     uint256 public constant MAX_POINTS_DIFFERENCE_TOLERANCE = 100;
+    uint256 private constant UFIX6_SCALE = 1e6;
 
     // ---------------------------------------------------------------------
     // Structs
@@ -122,8 +123,8 @@ contract SpeedH_FixtureManager {
     function registerHorse(uint256 horseId) external {
         // Cobramos el costo de inscripción basado en el nivel del caballo
         UFix6 level = IHorses(horseStats).getLevel(horseId);
-        uint256 levelInt = SpeedH_UFix6Lib.toUint(level);
-        uint256 cost = levelInt * RACE_HORSE_INSCRIPTION_COST_PER_LEVEL;
+        uint256 levelScaled = SpeedH_UFix6Lib.raw(level);
+        uint256 cost = (levelScaled * RACE_HORSE_INSCRIPTION_COST_PER_LEVEL) / UFIX6_SCALE;
         IERC20(hayToken).transferFrom(msg.sender, address(this), cost);
 
         // Verificamos si el caballo ya está registrado
