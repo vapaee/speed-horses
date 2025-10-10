@@ -50,7 +50,7 @@ contract SpeedH_FixtureManager {
     uint256 public constant MIN_FIXTURE_PARTICIPANTS = MIN_FIXTURE_RACES * MIN_HORSES_PER_RACE;
     uint256 public constant RACE_HORSE_INSCRIPTION_COST_PER_LEVEL = 100 ether;
     uint256 public constant CONSOLATION_PRIZE_PER_LEVEL = 50 ether;
-    uint256 public constant MAX_POINTS_DIFFERENCE_TOLERANCE = 100;
+    uint256 public constant MAX_PERCENT_DIFFERENCE_TOLERANCE = 20;
     uint256 private constant UFIX6_SCALE = 1e6;
     uint256 public constant REQUIRED_HORSESHOES = 4;
 
@@ -260,7 +260,7 @@ contract SpeedH_FixtureManager {
                 SignedHorse memory currentHorse = queue[processed];
                 if (
                     participantsCount == 0 ||
-                    currentHorse.points - baseHorse.points <= MAX_POINTS_DIFFERENCE_TOLERANCE
+                    _isPointsDifferenceAcceptable(currentHorse, baseHorse)
                 ) {
                     raceParticipants[participantsCount] = currentHorse;
                     participantsCount++;
@@ -383,6 +383,18 @@ contract SpeedH_FixtureManager {
             wait = minWait + diffWait * proportionalWaiting;
         }
         return block.timestamp + wait;
+    }
+
+    function _isPointsDifferenceAcceptable(SignedHorse memory horseA, SignedHorse memory horseB)
+        internal
+        pure
+        returns (bool)
+    {
+        uint256 maxPoints = horseA.points >= horseB.points ? horseA.points : horseB.points;
+        uint256 minPoints = horseA.points < horseB.points ? horseA.points : horseB.points;
+        uint256 difference = maxPoints - minPoints;
+        uint256 allowedDifference = (maxPoints * MAX_PERCENT_DIFFERENCE_TOLERANCE) / 100;
+        return difference <= allowedDifference;
     }
 
     /// @dev Calculates race length based on level and number of participants.
