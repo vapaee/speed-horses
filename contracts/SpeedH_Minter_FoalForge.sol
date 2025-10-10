@@ -91,6 +91,9 @@ contract SpeedH_Minter_FoalForge {
     }
 
     function startHorseMint() external payable {
+        require(address(horseStats) != address(0), 'Horse stats not set');
+        require(address(speedHorses) != address(0), 'SpeedH_NFT_Horse not set');
+        require(address(horseshoes) != address(0), 'SpeedH_NFT_Horseshoe not set');
         require(pendingHorse[msg.sender].totalPoints == 0, 'Already minting a horse');
         require(msg.value == BASE_CREATION_COST, 'Incorrect TLOS amount');
 
@@ -100,6 +103,9 @@ contract SpeedH_Minter_FoalForge {
     }
 
     function randomizeHorse(bool keepImage, bool keepStats, bool keepShoes) external payable {
+        require(address(horseStats) != address(0), 'Horse stats not set');
+        require(address(speedHorses) != address(0), 'SpeedH_NFT_Horse not set');
+        require(address(horseshoes) != address(0), 'SpeedH_NFT_Horseshoe not set');
         require(!(keepImage && keepStats && keepShoes), 'Cannot lock everything');
 
         HorseBuild storage build = pendingHorse[msg.sender];
@@ -124,6 +130,8 @@ contract SpeedH_Minter_FoalForge {
         HorseBuild storage build = pendingHorse[msg.sender];
         require(build.totalPoints != 0, 'No horse to claim');
 
+        require(address(horseStats) != address(0), 'Horse stats not set');
+        require(address(speedHorses) != address(0), 'SpeedH_NFT_Horse not set');
         require(address(horseshoes) != address(0), 'SpeedH_NFT_Horseshoe not set');
 
         uint256 horseId = speedHorses.mint(msg.sender);
@@ -283,14 +291,17 @@ contract SpeedH_Minter_FoalForge {
     // ----------------------------------------------------
 
     function setHorseStats(address _stats) external onlyAdmin {
+        require(_stats != address(0), 'Invalid stats address');
         horseStats = ISpeedH_Stats_Horse(_stats);
     }
 
     function setSpeedHorses(address _horses) external onlyAdmin {
+        require(_horses != address(0), 'Invalid horses NFT');
         speedHorses = ISpeedH_NFT_Horse(_horses);
     }
 
     function setHorseshoes(address _horseshoes) external onlyAdmin {
+        require(_horseshoes != address(0), 'Invalid horseshoe NFT');
         horseshoes = ISpeedH_NFT_Horseshoe(_horseshoes);
     }
 

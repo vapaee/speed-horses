@@ -47,7 +47,7 @@ contract SpeedH_Stats_Horseshoe {
         // mechanics
         PerformanceStats bonusStats;
         uint256 maxDurability;
-        uint256 durabilityUsed;
+        uint256 durabilityRemaining;
         uint256 level;
         bool isPure;
         bool exists;
@@ -107,7 +107,7 @@ contract SpeedH_Stats_Horseshoe {
 
         data.bonusStats = bonusStats;
         data.maxDurability = maxDurability;
-        data.durabilityUsed = maxDurability; // as per your current semantics
+        data.durabilityRemaining = maxDurability;
         data.level = level;
         data.isPure = isPure;
         data.exists = true;
@@ -116,19 +116,25 @@ contract SpeedH_Stats_Horseshoe {
     function restore(uint256 horseshoeId) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
         require(data.exists, "SpeedH_Stats_Horseshoe: unknown horseshoe");
-        data.durabilityUsed = data.maxDurability;
+        data.durabilityRemaining = data.maxDurability;
     }
 
     function consume(uint256 horseshoeId, uint256 less) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
         require(data.exists, "SpeedH_Stats_Horseshoe: unknown horseshoe");
-        require(less > data.durabilityUsed, "SpeedH_Stats_Horseshoe: insufficient durability");
-        data.durabilityUsed = data.durabilityUsed - less;
+        require(less <= data.durabilityRemaining, "SpeedH_Stats_Horseshoe: insufficient durability");
+        data.durabilityRemaining = data.durabilityRemaining - less;
     }
 
     function getHorseshoe(uint256 horseshoeId) external view returns (HorseshoeData memory) {
         HorseshoeData memory data = horseshoes[horseshoeId];
         require(data.exists, "SpeedH_Stats_Horseshoe: unknown horseshoe");
         return data;
+    }
+
+    function isUseful(uint256 horseshoeId) external view returns (bool) {
+        HorseshoeData memory data = horseshoes[horseshoeId];
+        require(data.exists, "SpeedH_Stats_Horseshoe: unknown horseshoe");
+        return data.durabilityRemaining > 0;
     }
 }
