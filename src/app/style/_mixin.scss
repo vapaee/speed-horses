@@ -210,19 +210,36 @@
     order: 2;
 }
 
-@mixin landing-section {
+@mixin landing-section-base($direction: row) {
     display: flex;
-    justify-content: center;
+    flex-direction: $direction;
     align-items: stretch;
     gap: 20px;
     width: 100%;
-    flex-wrap: wrap;
     order: 1;
 }
 
+@mixin landing-section {
+    @include landing-section-base(row);
+    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+
+    > * {
+        flex: 0 0 auto;
+    }
+}
+
 @mixin landing-section-compact {
-    flex-direction: column;
-    align-items: stretch;
+    @include landing-section-base(column);
+    justify-content: flex-start;
+    overflow: visible;
+
+    > * {
+        width: 100%;
+    }
 }
 
 
