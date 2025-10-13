@@ -1,7 +1,7 @@
 @use 'mixin' as *;
 
 app-refuge {
-    @include page;
+    @include page--sections;
 }
 
 .p-refuge {
@@ -16,7 +16,7 @@ app-refuge {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 800px) {
     .p-refuge {
         &__landing {
             @include landing-section-compact;

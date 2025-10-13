@@ -15,6 +15,11 @@
     margin-right: auto;
 }
 
+@mixin page--sections {
+    @include page;
+    width: auto;
+}
+
 @mixin icon {
     color: var(--c-foreground-2);
     width: 26px;
@@ -213,7 +218,7 @@
 @mixin landing-section-base($direction: row) {
     display: flex;
     flex-direction: $direction;
-    align-items: stretch;
+    align-items: center;
     gap: 20px;
     width: 100%;
     order: 1;
@@ -228,7 +233,7 @@
     -webkit-overflow-scrolling: touch;
 
     > * {
-        flex: 0 0 auto;
+        flex: 0 1 auto;
     }
 }
 
@@ -238,7 +243,7 @@
     overflow: visible;
 
     > * {
-        width: 100%;
+        width: 80%;
     }
 }
 

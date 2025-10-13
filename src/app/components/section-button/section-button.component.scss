@@ -15,8 +15,8 @@ app-section-button {
     text-decoration: none;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    width: 320px;
-    max-width: 100%;
+    max-width: 300px;
+    
 
     &:hover {
         transform: translateY(-4px);
@@ -45,6 +45,7 @@ app-section-button {
 
 @media (max-width: 768px) {
     .section-button {
-        width: 100%;
+        width: auto;
+        max-width: 100%;
     }
 }

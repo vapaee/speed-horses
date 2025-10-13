@@ -16,7 +16,7 @@ app-shop {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 800px) {
     .p-shop {
         &__landing {
             @include landing-section-compact;
