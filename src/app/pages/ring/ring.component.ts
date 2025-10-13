@@ -4,15 +4,15 @@ import { UnderConstructionComponent } from '@app/components/under-construction/u
 
 @Component({
     standalone: true,
-    selector: 'app-paddock',
+    selector: 'app-ring',
     imports: [SharedModule, UnderConstructionComponent],
     template: `
-        <section class="p-paddock">
-            <span class="p-paddock__title">{{ 'PAGES.REFUGE.PADDOCK.NAME' | translate }}</span>
+        <section class="p-ring">
+            <span class="p-ring__title">{{ 'PAGES.REFUGE.RING.NAME' | translate }}</span>
             <app-under-construction></app-under-construction>
         </section>
     `,
-    styleUrls: ['./paddock.component.scss'],
+    styleUrls: ['./ring.component.scss'],
     encapsulation: ViewEncapsulation.None
 })
-export class PaddockPage {}
+export class RingPage {}

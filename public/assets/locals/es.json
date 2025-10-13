@@ -37,7 +37,7 @@
             "NAME": "Refugio",
             "MERGE": { "NAME": "Alquimia de Yunque" },
             "REPARE": { "NAME": "Redención de Hierro" },
-            "PADDOCK": { "NAME": "Establo" },
+            "RING": { "NAME": "Ring de Pre-Parada" },
             "INVENTORY": { "NAME": "Inventario" }
         }
     },
