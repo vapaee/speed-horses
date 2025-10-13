@@ -47,6 +47,8 @@
         },
         "REFUGE": {
             "NAME": "Rider's Refuge",
+            "MERGE": { "NAME": "Anvil Alchemy" },
+            "REPARE": { "NAME": "Iron Redemption" },
             "PADDOCK": { "NAME": "The Paddock" },
             "INVENTORY": { "NAME": "Inventory" }
         }
