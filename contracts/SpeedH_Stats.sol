@@ -511,7 +511,7 @@ contract SpeedH_Stats {
                 '"description":"Composite statistics between the horse and its equipped horseshoes.",',
                 '"image":"ipfs://category/', categoryPath, '/', data.imgNumber.toString(), '",',
                 '"level":"', _ufix6ToString(getLevel(horseId)), '",',
-                '"totalPoints":', getTotalPoints(horseId).toString(), ',',
+                '"totalPoints":', getHorseTotalPoints(horseId).toString(), ',',
                 '"attributes":', attributes,
                 '}'
             )
