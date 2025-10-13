@@ -35,6 +35,8 @@
         },
         "REFUGE": {
             "NAME": "Refugio",
+            "MERGE": { "NAME": "Alquimia de Yunque" },
+            "REPARE": { "NAME": "Redención de Hierro" },
             "PADDOCK": { "NAME": "Establo" },
             "INVENTORY": { "NAME": "Inventario" }
         }

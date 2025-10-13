@@ -25,6 +25,8 @@ export const routes: Routes = [
         path: 'refuge',
         loadComponent: () => import('@app/pages/refuge/refuge.component').then(m => m.RefugePage),
         children: [
+            { path: 'merge', loadComponent: () => import('@app/pages/merge/merge.component').then(m => m.MergePage) },
+            { path: 'repare', loadComponent: () => import('@app/pages/repare/repare.component').then(m => m.ReparePage) },
             { path: 'paddock', loadComponent: () => import('@app/pages/paddock/paddock.component').then(m => m.PaddockPage) },
             { path: 'inventory', loadComponent: () => import('@app/pages/inventory/inventory.component').then(m => m.InventoryPage) }
         ]

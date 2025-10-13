@@ -5,6 +5,18 @@
 
     <div class="p-refuge__landing" *ngIf="!outlet.isActivated">
         <app-section-button
+            [imageSrc]="'assets/images/section-gold--refuge-merge.png'"
+            [label]="('PAGES.REFUGE.MERGE.NAME' | translate)"
+            [link]="['/refuge', 'merge']"
+        ></app-section-button>
+
+        <app-section-button
+            [imageSrc]="'assets/images/section-gold--refuge-repare.png'"
+            [label]="('PAGES.REFUGE.REPARE.NAME' | translate)"
+            [link]="['/refuge', 'repare']"
+        ></app-section-button>
+
+        <app-section-button
             [imageSrc]="'assets/images/section-gold--refuge-paddock.png'"
             [label]="('PAGES.REFUGE.PADDOCK.NAME' | translate)"
             [link]="['/refuge', 'paddock']"
