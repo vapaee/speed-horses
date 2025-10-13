@@ -5,11 +5,33 @@ app-refuge {
 }
 
 .p-refuge {
-    &__tabs {
-        @include tabs;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+
+    &__outlet {
+        width: 100%;
+        order: 2;
     }
 
-    &__tabs-content {
-        @include tabs-content;
+    &__landing {
+        display: flex;
+        justify-content: center;
+        align-items: stretch;
+        gap: 20px;
+        width: 100%;
+        flex-wrap: wrap;
+        order: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .p-refuge {
+        &__landing {
+            flex-direction: column;
+            align-items: stretch;
+        }
     }
 }

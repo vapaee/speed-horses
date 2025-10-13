@@ -1,0 +1,19 @@
+<section class="p-refuge">
+    <div class="p-refuge__outlet">
+        <router-outlet #outlet="outlet"></router-outlet>
+    </div>
+
+    <div class="p-refuge__landing" *ngIf="!outlet.isActivated">
+        <app-section-button
+            [imageSrc]="'assets/images/gold--section-refuge-paddock.png'"
+            [label]="('PAGES.REFUGE.PADDOCK.NAME' | translate)"
+            [link]="['/refuge', 'paddock']"
+        ></app-section-button>
+
+        <app-section-button
+            [imageSrc]="'assets/images/gold--section-refuge-inventory.png'"
+            [label]="('PAGES.REFUGE.INVENTORY.NAME' | translate)"
+            [link]="['/refuge', 'inventory']"
+        ></app-section-button>
+    </div>
+</section>
