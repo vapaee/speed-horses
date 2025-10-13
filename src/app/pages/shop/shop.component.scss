@@ -5,33 +5,21 @@ app-shop {
 }
 
 .p-shop {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    width: 100%;
+    @include landing-container;
 
     &__outlet {
-        width: 100%;
-        order: 2;
+        @include landing-outlet;
     }
 
     &__landing {
-        display: flex;
-        justify-content: center;
-        align-items: stretch;
-        gap: 20px;
-        width: 100%;
-        flex-wrap: wrap;
-        order: 1;
+        @include landing-section;
     }
 }
 
 @media (max-width: 768px) {
     .p-shop {
         &__landing {
-            flex-direction: column;
-            align-items: stretch;
+            @include landing-section-compact;
         }
     }
 }
