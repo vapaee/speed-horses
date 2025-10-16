@@ -59,7 +59,7 @@
                 </div>
                 <!-- buy more button -->
                 <div class="p-forge__buy-more">
-                    <button class="p-forge__buy-more-btn">{{ 'PAGES.HORSES.FORGE.BUY-MORE' | translate }}</button>
+                    <button class="p-forge__buy-more-btn" (click)="onBuyExtraPoints()">{{ 'PAGES.HORSES.FORGE.BUY-MORE' | translate }}</button>
                 </div>
             </div>
         </div>
@@ -90,11 +90,11 @@
                 <!-- buy more button -->
                 <div class="p-forge__row p-forge__row--buttons">
                     <div class="p-forge__shuffle">
-                        <button class="p-forge__shuffle-btn">{{ 'PAGES.HORSES.FORGE.SHUFFLE' | translate }}</button>
+                        <button class="p-forge__shuffle-btn" (click)="onRandomizeFoal()">{{ 'PAGES.HORSES.FORGE.SHUFFLE' | translate }}</button>
                     </div>
                     <!-- forge button -->
                     <div class="p-forge__forge">
-                        <button class="p-forge__forge-btn">{{ 'PAGES.HORSES.FORGE.FORGE' | translate }}</button>
+                        <button class="p-forge__forge-btn" (click)="onClaimHorse()">{{ 'PAGES.HORSES.FORGE.FORGE' | translate }}</button>
                     </div>
                 </div>
             </div>

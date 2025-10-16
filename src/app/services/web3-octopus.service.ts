@@ -22,6 +22,8 @@ import {
 } from '@vapaee/w3o-ethereum';
 
 import { SpeedHorsesW3oServices } from '@app/types';
+import { SpeedHorsesService } from './w3o/speed-horses.service';
+import { environment } from '../../environments/environment';
 
 // declare the window.v3o object which is used to store the instance of Web3Octopus so any javascript code can access it through window.v3o
 declare global {
@@ -67,6 +69,11 @@ export class Web3OctopusService implements OnDestroy {
             // paths must match the keys in the IMyServices interface
             const services: W3oService[] = [
                 new EthereumTokensService('ethereum.tokens', context),
+                new SpeedHorsesService(
+                    'ethereum.speed-horses',
+                    { foalForgeAddresses: environment.speedHorsesContracts?.foalForge },
+                    context
+                ),
             ];
             octopus.registerServices(services);
             octopus.init(
