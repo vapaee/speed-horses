@@ -61,8 +61,8 @@ contract SpeedH_Minter_FoalForge {
     uint256 public constant EXTRA_POINTS_PER_PACKAGE = 10;
     uint256 public constant HORSESHOES_PER_HORSE = 4;
     uint256 public constant STARTER_HORSESHOE_DURABILITY = 100;
-    uint256 public constant STARTER_HORSESHOE_LEVEL = 3;
-    uint256 public constant STARTER_HORSESHOE_POINTS = 8;
+    uint256 public constant STARTER_HORSESHOE_LEVEL = 2;
+    uint256 public constant STARTER_HORSESHOE_POINTS = 4;
 
     struct PendingHorseshoe {
         uint256 imgCategory;
