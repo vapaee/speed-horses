@@ -53,11 +53,6 @@ export class Web3OctopusService implements OnDestroy {
                 chain: new EthereumChainSupport(context, [
                     // Metamask wallet
                     new EthereumWalletMetamask(context),
-                    // Metakeep wallet
-                    // new EthereumWalletMetakeep({
-                    //     appName: 'Web3 Octopus Wallet',
-                    //     appId: 'd190c88f-1bb5-4e16-bc48-96dbf33b77e0',
-                    // } as MetakeepOptions, context)
                 ]),
                 networks: [
                     new TelosEVMNetwork({}, context),
@@ -70,7 +65,7 @@ export class Web3OctopusService implements OnDestroy {
             const services: W3oService[] = [
                 new EthereumTokensService('ethereum.tokens', context),
                 new SpeedHorsesService(
-                    'ethereum.speed-horses',
+                    'ethereum.speedhorses',
                     { foalForgeAddresses: environment.speedHorsesContracts?.foalForge },
                     context
                 ),

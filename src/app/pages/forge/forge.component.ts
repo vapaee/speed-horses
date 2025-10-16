@@ -56,9 +56,8 @@ export class ForgePage implements OnInit, OnDestroy {
                 return;
             }
             const service = this.getSpeedHorsesService();
-            const context = this.logger.method('subscribeFoal', { address: session.address });
-            this.foalSub = service.getCurrentFoal$(session.authenticator, context).subscribe(foal => {
-                console.log('[ForgePage] current foal', foal);
+            this.foalSub = service.getCurrentFoal$(session.authenticator).subscribe(foal => {
+                this.logger.log('[ForgePage] current foal', foal);
             });
         });
 

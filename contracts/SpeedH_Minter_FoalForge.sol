@@ -35,12 +35,12 @@ interface ISpeedH_NFT_Horseshoe {
 }
 
 /**
- * Título: SpeedH_Minter_FoalForge
- * Brief: Coordinador del proceso de creación de caballos que cobra tarifas en TLOS y genera las combinaciones iniciales de categorías de imagen y estadísticas para cada jugador antes de acuñar el NFT y registrar sus atributos definitivos. Gestiona el flujo de construcción incremental, contabiliza los paquetes de puntos extra adquiridos y comunica los resultados al contrato de estadísticas y al ERC-721 del juego.
- * API: ofrece funciones públicas que modelan el proceso de minteo en etapas (`startHorseMint`, `randomizeHorse`, `buyExtraPoints`, `claimHorse`), cada una avanzando el estado del caballo pendiente y validando pagos y límites; incluye utilidades pseudoaleatorias para categorías de imagen y estadísticas (`_randomHorseStats`, `_randomVisual`, `_randomizeAll`) utilizadas durante dicho proceso. El administrador conecta dependencias y gestiona fondos mediante `setHorseStats`, `setSpeedHorses` y `withdrawTLOS`, completando así el circuito operativo del minter.
+ * Title: SpeedH_Minter_FoalForge
+ * Brief: Orchestrates horse creation, charges TLOS fees, generates initial visuals and stats,
+ *        and coordinates with stats and NFTs. Provides staged minting API and pseudo-random helpers.
  */
 contract SpeedH_Minter_FoalForge {
-    string public version = "SpeedH_Minter_FoalForge-v1.1.0";
+    string public version = 'SpeedH_Minter_FoalForge-v1.1.0';
 
     // ---------------------------------------------------------------------
     // Contract References
@@ -53,9 +53,9 @@ contract SpeedH_Minter_FoalForge {
     // ---------------------------------------------------------------------
     // Constants
     // ---------------------------------------------------------------------
-    uint256 public constant BASE_CREATION_COST = 600 ether; // en TLOS
-    uint256 public constant RANDOMIZE_COST = 100 ether;     // en TLOS
-    uint256 public constant EXTRA_POINTS_COST = 200 ether;  // en TLOS
+    uint256 public constant BASE_CREATION_COST = 600 ether; // in TLOS
+    uint256 public constant RANDOMIZE_COST = 100 ether;     // in TLOS
+    uint256 public constant EXTRA_POINTS_COST = 200 ether;  // in TLOS
     uint256 public constant MAX_EXTRA_PACKAGES = 4;
     uint256 public constant BASE_INITIAL_POINTS = 60;
     uint256 public constant EXTRA_POINTS_PER_PACKAGE = 10;
@@ -90,6 +90,10 @@ contract SpeedH_Minter_FoalForge {
         admin = msg.sender;
     }
 
+    // ---------------------------------------------------------------------
+    // Public API
+    // ---------------------------------------------------------------------
+
     function startHorseMint() external payable {
         require(address(horseStats) != address(0), 'Horse stats not set');
         require(address(speedHorses) != address(0), 'SpeedH_NFT_Horse not set');
@@ -97,9 +101,11 @@ contract SpeedH_Minter_FoalForge {
         require(pendingHorse[msg.sender].totalPoints == 0, 'Already minting a horse');
         require(msg.value == BASE_CREATION_COST, 'Incorrect TLOS amount');
 
+        // Generate new randomized build (image, stats, shoes)
         HorseBuild memory newHorse = _randomizeAll(BASE_INITIAL_POINTS, false, false, false);
 
-        pendingHorse[msg.sender] = newHorse;
+        // Store field-by-field (no direct assignment)
+        _applyBuildToStorage(msg.sender, newHorse);
     }
 
     function randomizeHorse(bool keepImage, bool keepStats, bool keepShoes) external payable {
@@ -112,7 +118,11 @@ contract SpeedH_Minter_FoalForge {
         require(build.totalPoints != 0, 'No horse to randomize');
         require(msg.value == RANDOMIZE_COST, 'Incorrect TLOS amount');
 
-        pendingHorse[msg.sender] = _randomizeAll(build.totalPoints, keepImage, keepStats, keepShoes);
+        // Generate new randomized build based on keep-flags
+        HorseBuild memory newBuild = _randomizeAll(build.totalPoints, keepImage, keepStats, keepShoes);
+
+        // Store field-by-field via the same helper
+        _applyBuildToStorage(msg.sender, newBuild);
     }
 
     function buyExtraPoints() external payable {
@@ -156,7 +166,31 @@ contract SpeedH_Minter_FoalForge {
     }
 
     // ----------------------------------------------------
-    // Random Helpers (pseudo-random, no para mainnet)
+    // Internal helpers
+    // ----------------------------------------------------
+
+    /**
+     * @dev Copy-by-fields writer to storage to avoid direct struct assignment.
+     *      Keeps behavior consistent between start and randomize flows.
+     */
+    function _applyBuildToStorage(address user, HorseBuild memory newBuild) private {
+        HorseBuild storage dst = pendingHorse[user];
+
+        // copy scalars
+        dst.imgCategory = newBuild.imgCategory;
+        dst.imgNumber = newBuild.imgNumber;
+        dst.baseStats = newBuild.baseStats;
+        dst.totalPoints = newBuild.totalPoints;
+        dst.extraPackagesBought = newBuild.extraPackagesBought;
+
+        // copy fixed-size array items
+        for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
+            dst.horseshoes[i] = newBuild.horseshoes[i];
+        }
+    }
+
+    // ----------------------------------------------------
+    // Random Helpers (pseudo-random, not for mainnet)
     // ----------------------------------------------------
 
     function _randomizeAll(uint256 totalPoints, bool keepImage, bool keepStats, bool keepShoes) internal view returns (HorseBuild memory) {
@@ -173,7 +207,9 @@ contract SpeedH_Minter_FoalForge {
         }
 
         // Randomize Horse Stats
-        PerformanceStats memory stats = keepStats && hasPending ? pendingHorse[msg.sender].baseStats : _randomHorseStats(totalPoints);
+        PerformanceStats memory stats = (keepStats && hasPending)
+            ? pendingHorse[msg.sender].baseStats
+            : _randomHorseStats(totalPoints);
 
         // Randomize Horseshoes
         PendingHorseshoe[HORSESHOES_PER_HORSE] memory shoes;
@@ -201,15 +237,17 @@ contract SpeedH_Minter_FoalForge {
     function _randomVisual(uint256 totalPoints) internal view returns (uint256 imgCategory, uint256 imgNumber) {
         require(address(horseStats) != address(0), 'Horse stats not set');
         require(address(horseshoes) != address(0), 'Horseshoe NFT not set');
-        uint256 entropy = uint256(keccak256(
-            abi.encodePacked(
-                msg.sender,
-                block.timestamp,
-                block.prevrandao,
-                totalPoints,
-                speedHorses.nextTokenId()
+        uint256 entropy = uint256(
+            keccak256(
+                abi.encodePacked(
+                    msg.sender,
+                    block.timestamp,
+                    block.prevrandao,
+                    totalPoints,
+                    speedHorses.nextTokenId()
+                )
             )
-        ));
+        );
         return horseStats.getRandomVisual(entropy);
     }
 
@@ -262,12 +300,12 @@ contract SpeedH_Minter_FoalForge {
 
     function _randomHorseshoeStats(uint256 entropy) internal pure returns (PerformanceStats memory) {
         uint256 firstIndex = entropy % 8;
-        uint256 secondIndex = uint256(keccak256(abi.encodePacked(entropy, "shoe-second"))) % 8;
+        uint256 secondIndex = uint256(keccak256(abi.encodePacked(entropy, 'shoe-second'))) % 8;
         if (secondIndex == firstIndex) {
             secondIndex = (secondIndex + 1) % 8;
         }
 
-        uint256 firstPoints = (uint256(keccak256(abi.encodePacked(entropy, "shoe-points"))) % (STARTER_HORSESHOE_POINTS - 1)) + 1;
+        uint256 firstPoints = (uint256(keccak256(abi.encodePacked(entropy, 'shoe-points'))) % (STARTER_HORSESHOE_POINTS - 1)) + 1;
         uint256 secondPoints = STARTER_HORSESHOE_POINTS - firstPoints;
 
         uint256[8] memory distribution;

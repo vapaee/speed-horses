@@ -12,8 +12,9 @@ import {
 import { BehaviorSubject, Observable, Subject, firstValueFrom, from, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { ethers } from 'ethers';
-import { EthereumTokensService, EthereumNetwork, EthereumTransaction, EthereumContractAbi } from '@vapaee/w3o-ethereum';
-import { EthereumContract } from '@vapaee/w3o-ethereum/lib/classes/EthereumContract';
+import { EthereumTokensService, EthereumNetwork, EthereumTransaction, EthereumContractAbi, EthereumContract } from '@vapaee/w3o-ethereum';
+
+
 
 const logger = new W3oContextFactory('SpeedHorsesService');
 
@@ -102,7 +103,7 @@ export class SpeedHorsesService extends W3oService {
         logger.info('SpeedHorsesService OK!', this.w3oId);
     }
 
-    public getCurrentFoal$(auth: W3oAuthenticator, parent: W3oContext): BehaviorSubject<SpeedHorsesFoal | null> {
+    public getCurrentFoal$(auth: W3oAuthenticator, parent?: W3oContext): BehaviorSubject<SpeedHorsesFoal | null> {
         const context = logger.method('getCurrentFoal$', { auth }, parent);
         const subject = this.getFoalSubject(auth, context);
         this.refreshCurrentFoal(auth, context).subscribe({
