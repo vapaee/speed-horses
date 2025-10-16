@@ -1,0 +1,19 @@
+<section class="p-horses">
+    <div class="p-horses__outlet">
+        <router-outlet #outlet="outlet"></router-outlet>
+    </div>
+
+    <div class="p-horses__landing" *ngIf="!outlet.isActivated">
+        <app-section-button
+            [imageSrc]="'assets/images/section-gold--horses-forge.png'"
+            [label]="('PAGES.HORSES.FORGE.NAME' | translate)"
+            [link]="['/horses', 'forge']"
+        ></app-section-button>
+
+        <app-section-button
+            [imageSrc]="'assets/images/section-gold--horses-trading.png'"
+            [label]="('PAGES.HORSES.TRADING.NAME' | translate)"
+            [link]="['/horses', 'trading']"
+        ></app-section-button>
+    </div>
+</section>

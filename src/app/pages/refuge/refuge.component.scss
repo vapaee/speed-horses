@@ -1,15 +1,25 @@
 @use 'mixin' as *;
 
 app-refuge {
-    @include page;
+    @include page--sections;
 }
 
 .p-refuge {
-    &__tabs {
-        @include tabs;
+    @include landing-container;
+
+    &__outlet {
+        @include landing-outlet;
     }
 
-    &__tabs-content {
-        @include tabs-content;
+    &__landing {
+        @include landing-section;
+    }
+}
+
+@media (max-width: 800px) {
+    .p-refuge {
+        &__landing {
+            @include landing-section-compact;
+        }
     }
 }

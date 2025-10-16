@@ -10,9 +10,14 @@
     flex-shrink: 0;
     // size
     width: 1200px;
-    max-width: calc(100vw - 10px);
+    max-width: calc(100vw - 40px);
     margin-left: auto;
     margin-right: auto;
+}
+
+@mixin page--sections {
+    @include page;
+    width: auto;
 }
 
 @mixin icon {
@@ -183,20 +188,63 @@
     color: var(--c-foreground-0);
 }
 
-// Rows ----
-@mixin tabs-content-row {
+@mixin flex-section-row($margin-bottom: 16px, $align-items: stretch) {
     display: flex;
     flex-direction: row;
-    margin-bottom: 16px;
-    align-items: stretch;
+    margin-bottom: $margin-bottom;
+    align-items: $align-items;
 }
 
-// Columns ----
-@mixin tabs-content-column {
+@mixin flex-section-column($grow: 1, $padding: 0px 5px) {
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
-    padding: 0px 5px;
+    flex-grow: $grow;
+    padding: $padding;
+}
+
+@mixin landing-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+@mixin landing-outlet {
+    width: 100%;
+    order: 2;
+}
+
+@mixin landing-section-base($direction: row) {
+    display: flex;
+    flex-direction: $direction;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    order: 1;
+}
+
+@mixin landing-section {
+    @include landing-section-base(row);
+    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+
+    > * {
+        flex: 0 1 auto;
+    }
+}
+
+@mixin landing-section-compact {
+    @include landing-section-base(column);
+    justify-content: flex-start;
+    overflow: visible;
+
+    > * {
+        width: 80%;
+    }
 }
 
 

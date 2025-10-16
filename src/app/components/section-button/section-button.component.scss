@@ -1,0 +1,51 @@
+app-section-button {
+    display: block;
+}
+
+.section-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--c-background-4);
+    background-color: var(--c-background-1);
+    color: var(--c-foreground-1);
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    max-width: 300px;
+    
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--c-accent-0);
+        outline-offset: 4px;
+    }
+}
+
+.section-button__image {
+    width: 100%;
+    border-radius: 8px;
+    background-color: var(--c-background-0);
+    object-fit: contain;
+}
+
+.section-button__label {
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--c-foreground-1);
+}
+
+@media (max-width: 768px) {
+    .section-button {
+        width: auto;
+        max-width: 100%;
+    }
+}
