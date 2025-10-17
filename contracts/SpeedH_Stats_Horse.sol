@@ -4,6 +4,15 @@ pragma solidity ^0.8.20;
 import { PerformanceStats } from "./SpeedH_StatsStructs.sol";
 import { SpeedH_VisualsLib } from "./SpeedH_VisualsLib.sol";
 
+error NotOwner();
+error NotController();
+error InvalidController();
+error InvalidOwner();
+error HorseAlreadyExists();
+error InvalidImage();
+error HorseNotFound();
+error InsufficientPoints();
+
 /**
  * Title: SpeedH_Stats_Horse
  * Brief: Persistent storage for horses: visuals, aggregated stats, points ledger and rest cooldown.
@@ -20,12 +29,12 @@ contract SpeedH_Stats_Horse {
     string public version = "SpeedH_Stats_Horse-v1.0.0";
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "SpeedH_Stats_Horse: not owner");
+        if (msg.sender != owner) revert NotOwner();
         _;
     }
 
     modifier onlySpeedStats() {
-        require(msg.sender == _contractStats, "SpeedH_Stats_Horse: only controller");
+        if (msg.sender != _contractStats) revert NotController();
         _;
     }
 
@@ -34,12 +43,12 @@ contract SpeedH_Stats_Horse {
     }
 
     function setContractStats(address contractStats) external onlyOwner {
-        require(contractStats != address(0), "SpeedH_Stats_Horse: invalid controller");
+        if (contractStats == address(0)) revert InvalidController();
         _contractStats = contractStats;
     }
 
     function transferOwnership(address newOwner) external onlyOwner {
-        require(newOwner != address(0), "SpeedH_Stats_Horse: invalid owner");
+        if (newOwner == address(0)) revert InvalidOwner();
         owner = newOwner;
     }
 
@@ -92,13 +101,10 @@ contract SpeedH_Stats_Horse {
         PerformanceStats calldata stats
     ) external onlySpeedStats {
         HorseData storage h = horses[horseId];
-        require(!h.exists, "SpeedH_Stats_Horse: horse exists");
+        if (h.exists) revert HorseAlreadyExists();
 
         SpeedH_VisualsLib.ImgCategoryData storage cat = horseVisuals.imgCategories[imgCategory];
-        require(
-            cat.exists && imgNumber >= 1 && imgNumber <= cat.maxImgNumber,
-            "SpeedH_Stats_Horse: invalid image"
-        );
+        if (!(cat.exists && imgNumber >= 1 && imgNumber <= cat.maxImgNumber)) revert InvalidImage();
 
         h.exists = true;
         h.imgCategory = imgCategory;
@@ -112,33 +118,33 @@ contract SpeedH_Stats_Horse {
 
     function addPoints(uint256 horseId, uint256 points) external onlySpeedStats {
         HorseData storage h = horses[horseId];
-        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
+        if (!h.exists) revert HorseNotFound();
         h.totalPoints += points;
         h.unassignedPoints += points;
     }
 
     function consumeUnassigned(uint256 horseId, uint256 points) external onlySpeedStats {
         HorseData storage h = horses[horseId];
-        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
-        require(h.unassignedPoints >= points, "SpeedH_Stats_Horse: not enough points");
+        if (!h.exists) revert HorseNotFound();
+        if (h.unassignedPoints < points) revert InsufficientPoints();
         h.unassignedPoints -= points;
     }
 
     function setStats(uint256 horseId, PerformanceStats calldata stats) external onlySpeedStats {
         HorseData storage h = horses[horseId];
-        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
+        if (!h.exists) revert HorseNotFound();
         h.stats = stats;
     }
 
     function setCacheStats(uint256 horseId, PerformanceStats calldata stats) external onlySpeedStats {
         HorseData storage h = horses[horseId];
-        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
+        if (!h.exists) revert HorseNotFound();
         h.cacheStats = stats;
     }
 
     function setRestFinish(uint256 horseId, uint256 restFinish) external onlySpeedStats {
         HorseData storage h = horses[horseId];
-        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
+        if (!h.exists) revert HorseNotFound();
         h.restFinish = restFinish;
     }
 
@@ -148,7 +154,7 @@ contract SpeedH_Stats_Horse {
 
     function getHorse(uint256 horseId) external view returns (HorseData memory) {
         HorseData memory h = horses[horseId];
-        require(h.exists, "SpeedH_Stats_Horse: unknown horse");
+        if (!h.exists) revert HorseNotFound();
         return h;
     }
 

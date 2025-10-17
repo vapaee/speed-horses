@@ -4,6 +4,16 @@ pragma solidity ^0.8.20;
 import { PerformanceStats } from "./SpeedH_StatsStructs.sol";
 import { SpeedH_VisualsLib } from "./SpeedH_VisualsLib.sol";
 
+error NotOwner();
+error NotController();
+error InvalidController();
+error InvalidOwner();
+error HorseshoeAlreadyExists();
+error InvalidDurability();
+error InvalidImage();
+error HorseshoeNotFound();
+error InsufficientDurability();
+
 /**
  * Title: SpeedH_Stats_Horseshoe
  * Brief: Lifecycle and storage of horseshoes: bonus stats, durability, and visuals.
@@ -17,12 +27,12 @@ contract SpeedH_Stats_Horseshoe {
     string public version = "SpeedH_Stats_Horseshoe-v1.0.0";
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "SpeedH_Stats_Horseshoe: not owner");
+        if (msg.sender != owner) revert NotOwner();
         _;
     }
 
     modifier onlySpeedStats() {
-        require(msg.sender == _contractStats, "SpeedH_Stats_Horseshoe: only controller");
+        if (msg.sender != _contractStats) revert NotController();
         _;
     }
 
@@ -31,12 +41,12 @@ contract SpeedH_Stats_Horseshoe {
     }
 
     function setContractStats(address contractStats) external onlyOwner {
-        require(contractStats != address(0), "SpeedH_Stats_Horseshoe: invalid controller");
+        if (contractStats == address(0)) revert InvalidController();
         _contractStats = contractStats;
     }
 
     function transferOwnership(address newOwner) external onlyOwner {
-        require(newOwner != address(0), "SpeedH_Stats_Horseshoe: invalid owner");
+        if (newOwner == address(0)) revert InvalidOwner();
         owner = newOwner;
     }
 
@@ -96,11 +106,11 @@ contract SpeedH_Stats_Horseshoe {
         bool isPure
     ) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
-        require(!data.exists, "SpeedH_Stats_Horseshoe: horseshoe exists");
-        require(maxDurability > 0, "SpeedH_Stats_Horseshoe: invalid durability");
+        if (data.exists) revert HorseshoeAlreadyExists();
+        if (maxDurability == 0) revert InvalidDurability();
 
         SpeedH_VisualsLib.ImgCategoryData storage cat = shoeVisuals.imgCategories[imgCategory];
-        require(cat.exists && imgNumber >= 1 && imgNumber <= cat.maxImgNumber, "SpeedH_Stats_Horseshoe: invalid image");
+        if (!(cat.exists && imgNumber >= 1 && imgNumber <= cat.maxImgNumber)) revert InvalidImage();
 
         data.imgCategory = imgCategory;
         data.imgNumber = imgNumber;
@@ -115,26 +125,26 @@ contract SpeedH_Stats_Horseshoe {
 
     function restore(uint256 horseshoeId) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
-        require(data.exists, "SpeedH_Stats_Horseshoe: unknown horseshoe");
+        if (!data.exists) revert HorseshoeNotFound();
         data.durabilityRemaining = data.maxDurability;
     }
 
     function consume(uint256 horseshoeId, uint256 less) external onlySpeedStats {
         HorseshoeData storage data = horseshoes[horseshoeId];
-        require(data.exists, "SpeedH_Stats_Horseshoe: unknown horseshoe");
-        require(less <= data.durabilityRemaining, "SpeedH_Stats_Horseshoe: insufficient durability");
+        if (!data.exists) revert HorseshoeNotFound();
+        if (less > data.durabilityRemaining) revert InsufficientDurability();
         data.durabilityRemaining = data.durabilityRemaining - less;
     }
 
     function getHorseshoe(uint256 horseshoeId) external view returns (HorseshoeData memory) {
         HorseshoeData memory data = horseshoes[horseshoeId];
-        require(data.exists, "SpeedH_Stats_Horseshoe: unknown horseshoe");
+        if (!data.exists) revert HorseshoeNotFound();
         return data;
     }
 
     function isUseful(uint256 horseshoeId) external view returns (bool) {
         HorseshoeData memory data = horseshoes[horseshoeId];
-        require(data.exists, "SpeedH_Stats_Horseshoe: unknown horseshoe");
+        if (!data.exists) revert HorseshoeNotFound();
         return data.durabilityRemaining > 0;
     }
 }

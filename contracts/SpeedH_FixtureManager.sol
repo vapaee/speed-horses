@@ -6,6 +6,15 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 
 import { UFix6, SpeedH_UFix6Lib } from "./SpeedH_UFix6Lib.sol";
 
+error NotAdmin();
+error InvalidStatsAddress();
+error InvalidHayToken();
+error HorseStatsNotSet();
+error HayTokenNotSet();
+error IncompleteHorseshoes();
+error HorseshoeWornOut();
+error HorseAlreadyRegistered();
+
 interface IHorses {
     function getLevel(uint256 horseId) external view returns (UFix6 level);
     function getTotalPoints(uint256 horseId) external view returns (uint256 points);
@@ -106,7 +115,7 @@ contract SpeedH_FixtureManager {
     // ---------------------------------------------------------------------
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, "Not admin");
+        if (msg.sender != admin) revert NotAdmin();
         _;
     }
 
@@ -115,12 +124,12 @@ contract SpeedH_FixtureManager {
     }
 
     function setContractStats(address contractStats) external onlyAdmin {
-        require(contractStats != address(0), "SpeedH_FixtureManager: invalid stats");
+        if (contractStats == address(0)) revert InvalidStatsAddress();
         _contractStats = contractStats;
     }
 
     function setContractHayToken(address contractHayToken) external onlyAdmin {
-        require(contractHayToken != address(0), "SpeedH_FixtureManager: invalid HAY token");
+        if (contractHayToken == address(0)) revert InvalidHayToken();
         _contractHayToken = contractHayToken;
     }
 
@@ -131,16 +140,13 @@ contract SpeedH_FixtureManager {
     /// @notice Registers a horse for the next available fixture.
     /// @param horseId Id of the horse
     function registerHorse(uint256 horseId) external {
-        require(_contractStats != address(0), "SpeedH_FixtureManager: horse stats not set");
-        require(_contractHayToken != address(0), "SpeedH_FixtureManager: HAY token not set");
+        if (_contractStats == address(0)) revert HorseStatsNotSet();
+        if (_contractHayToken == address(0)) revert HayTokenNotSet();
 
         uint256[] memory equipped = IHorses(_contractStats).getEquippedHorseshoes(horseId);
-        require(equipped.length == REQUIRED_HORSESHOES, "SpeedH_FixtureManager: incomplete horseshoes");
+        if (equipped.length != REQUIRED_HORSESHOES) revert IncompleteHorseshoes();
         for (uint256 j = 0; j < equipped.length; j++) {
-            require(
-                IHorses(_contractStats).isHorseshoeUseful(equipped[j]),
-                "SpeedH_FixtureManager: worn horseshoe"
-            );
+            if (!IHorses(_contractStats).isHorseshoeUseful(equipped[j])) revert HorseshoeWornOut();
         }
 
         // Cobramos el costo de inscripción basado en el nivel del caballo
@@ -150,7 +156,7 @@ contract SpeedH_FixtureManager {
         IERC20(_contractHayToken).safeTransferFrom(msg.sender, address(this), cost);
 
         // Verificamos si el caballo ya está registrado
-        require(!registered[horseId], "Horse already registered");
+        if (registered[horseId]) revert HorseAlreadyRegistered();
 
         // Incluimos el caballo en la lista de inscriptos
         uint256 points = IHorses(_contractStats).getTotalPoints(horseId);
@@ -182,7 +188,7 @@ contract SpeedH_FixtureManager {
     ///      in the order they arrive, respecting basic constraints but does
     ///      not fully implement the algorithm described in the specification.
     function _tryGenerateFixture() internal {
-        require(_contractStats != address(0), "SpeedH_FixtureManager: horse stats not set");
+        if (_contractStats == address(0)) revert HorseStatsNotSet();
 
         // Si no existe fixture activo creamos uno nuevo para iniciar la planificación
         // Caso inicial (primer fixture)
@@ -415,7 +421,6 @@ contract SpeedH_FixtureManager {
     // TODO: verificar si es útil esta función
     /*function _truncateRegistered(uint256 count) internal {
         if (count == 0) return;
-        require(count <= registered.length, "Too many to remove");
 
         for (uint256 i = count; i < registered.length; i++) {
             registered[i - count] = registered[i];
