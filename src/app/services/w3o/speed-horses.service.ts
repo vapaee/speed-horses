@@ -11,7 +11,7 @@ import {
 } from '@vapaee/w3o-core';
 import { BehaviorSubject, Observable, Subject, firstValueFrom, from, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
-import { ethers } from 'ethers';
+import { parseEther } from 'ethers';
 import { EthereumTokensService, EthereumNetwork, EthereumTransaction, EthereumContractAbi, EthereumContract } from '@vapaee/w3o-ethereum';
 
 
@@ -28,9 +28,9 @@ const FOAL_FORGE_ABI = [
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-const BASE_CREATION_COST = ethers.utils.parseEther('600');
-const RANDOMIZE_COST = ethers.utils.parseEther('100');
-const EXTRA_POINTS_COST = ethers.utils.parseEther('200');
+const BASE_CREATION_COST = parseEther('600');
+const RANDOMIZE_COST = parseEther('100');
+const EXTRA_POINTS_COST = parseEther('200');
 
 const DEFAULT_CONTRACT_ADDRESSES: Record<string, string> = {
     '40': ZERO_ADDRESS,
@@ -259,20 +259,27 @@ export class SpeedHorsesService extends W3oService {
         if (value == null) {
             return 0;
         }
-        if (ethers.BigNumber.isBigNumber(value)) {
-            return value.toNumber();
-        }
-        if (typeof value === 'string') {
-            return Number(value);
+        if (typeof value === 'bigint') {
+            const asNumber = Number(value);
+            return Number.isFinite(asNumber) ? asNumber : 0;
         }
         if (typeof value === 'number') {
             return value;
         }
-        try {
-            return Number(value.toString());
-        } catch (error) {
-            return 0;
+        if (typeof value === 'string') {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : 0;
         }
+        if (typeof (value as { toString?: () => string })?.toString === 'function') {
+            try {
+                const str = (value as { toString: () => string }).toString();
+                const parsed = Number(str);
+                return Number.isFinite(parsed) ? parsed : 0;
+            } catch (error) {
+                void error;
+            }
+        }
+        return 0;
     }
 
     private getFoalSubject(auth: W3oAuthenticator, parent: W3oContext): BehaviorSubject<SpeedHorsesFoal> {
