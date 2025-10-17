@@ -32,10 +32,10 @@ export class ForgePage implements OnInit, OnDestroy {
     totalPoints = 60;
     color = "black";
     name = "Speedy Gonzales";
-    baseStats: StatsPack;
+    horseStats: StatsPack;
     horseshoes: StatsPack[];
     lock_horseshoes = false;
-    lock_basestats = false;
+    lock_stats = false;
     lock_picture = false;
     private readonly logger = new W3oContextFactory('ForgePage');
     private sessionSub?: Subscription;
@@ -83,7 +83,7 @@ export class ForgePage implements OnInit, OnDestroy {
         const curveBonus = this.translate.instant('PROPERTIES.curveBonus');
         const straightBonus = this.translate.instant('PROPERTIES.straightBonus');
 
-        this.baseStats = {
+        this.horseStats = {
             total: 60,
             stats: [
                 { field: 'power', display: power, value: 20},
@@ -133,9 +133,9 @@ export class ForgePage implements OnInit, OnDestroy {
     onRandomizeFoal(): void {
         this.withAuth(
             'onRandomizeFoal',
-            { keepImage: this.lock_picture, keepStats: this.lock_basestats, keepShoes: this.lock_horseshoes },
+            { keepImage: this.lock_picture, keepStats: this.lock_stats, keepShoes: this.lock_horseshoes },
             (service, auth, context) => {
-                service.randomizeFoal(auth, this.lock_picture, this.lock_basestats, this.lock_horseshoes, context).subscribe({
+                service.randomizeFoal(auth, this.lock_picture, this.lock_stats, this.lock_horseshoes, context).subscribe({
                     next: foal => console.log('[ForgePage] randomizeFoal result', foal),
                     error: error => context.error('randomizeFoal error', error),
                 });
