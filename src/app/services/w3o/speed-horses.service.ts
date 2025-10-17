@@ -11,7 +11,7 @@ import {
 } from '@vapaee/w3o-core';
 import { BehaviorSubject, Observable, Subject, firstValueFrom, from, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
-import { ethers } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { EthereumTokensService, EthereumNetwork, EthereumTransaction, EthereumContractAbi, EthereumContract } from '@vapaee/w3o-ethereum';
 
 
@@ -28,9 +28,9 @@ const FOAL_FORGE_ABI = [
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-const BASE_CREATION_COST = ethers.utils.parseEther('600');
-const RANDOMIZE_COST = ethers.utils.parseEther('100');
-const EXTRA_POINTS_COST = ethers.utils.parseEther('200');
+const BASE_CREATION_COST = utils.parseEther('600');
+const RANDOMIZE_COST = utils.parseEther('100');
+const EXTRA_POINTS_COST = utils.parseEther('200');
 
 const DEFAULT_CONTRACT_ADDRESSES: Record<string, string> = {
     '40': ZERO_ADDRESS,
@@ -259,8 +259,11 @@ export class SpeedHorsesService extends W3oService {
         if (value == null) {
             return 0;
         }
-        if (ethers.BigNumber.isBigNumber(value)) {
+        if (BigNumber.isBigNumber(value)) {
             return value.toNumber();
+        }
+        if (typeof value === 'bigint') {
+            return Number(value);
         }
         if (typeof value === 'string') {
             return Number(value);
