@@ -34,6 +34,8 @@ interface ISpeedH_NFT_Horseshoe_Escrow is IERC721 {
  *         refund of the initial fee.
  */
 contract SpeedH_Minter_IronRedemption {
+    string public version = "SpeedH_Minter_IronRedemption-v1.0.0";
+
     // ---------------------------------------------------------------------
     // Configuration
     // ---------------------------------------------------------------------
@@ -47,8 +49,6 @@ contract SpeedH_Minter_IronRedemption {
     uint256 public randomizeHayCost = 20 ether;
     uint256 public maxPercentError = 25; // maximum loss percentage
     uint256 public cancelRefundBps = 8500; // 85%
-
-    string public constant version = "SpeedH_Minter_IronRedemption-v1.0.0";
 
     struct RepairPreview {
         PerformanceStats stats;

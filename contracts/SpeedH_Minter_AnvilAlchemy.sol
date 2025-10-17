@@ -35,6 +35,8 @@ interface ISpeedH_NFT_Horseshoe_MintBurn is IERC721 {
  *         Cancellation is supported, returning the deposited NFTs and most of the upfront cost.
  */
 contract SpeedH_Minter_AnvilAlchemy {
+    string public version = "SpeedH_Minter_AnvilAlchemy-v1.0.0";
+
     // ---------------------------------------------------------------------
     // Configuration
     // ---------------------------------------------------------------------
@@ -49,8 +51,6 @@ contract SpeedH_Minter_AnvilAlchemy {
     uint256 public parentError = 10; // expressed in percentage points
     uint256 public fusionStatsPool = 20;
     uint256 public cancelRefundBps = 8000; // 80%
-
-    string public constant version = "SpeedH_Minter_AnvilAlchemy-v1.0.0";
 
     // ---------------------------------------------------------------------
     // Process bookkeeping
