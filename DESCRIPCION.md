@@ -12,7 +12,27 @@ La aplicación está pensada para dos tipos de usuarios:
 
 Estos son los contratos que componen el sistema:
 
-// TODO: Aquí hay que hacer un listado excausito de todos los contratos bajo la carpeta de contracts y explicar brevemente cual es su rol 
+**Contratos**
+
+* **SpeedH_FixtureManager.sol**: Administra las inscripciones de caballos, arma los fixtures de carreras y coordina el cobro de HAY y la configuración de premios. 
+* **SpeedH_HayToken.sol**: Implementa el token ERC-20 HAY utilizado internamente para pagos, inscripciones y recompensas.
+* **SpeedH_HayTokenOFT.sol**: Variante omnichain del token HAY basada en LayerZero para habilitar transferencias entre distintas redes.
+* **SpeedH_Metadata_Horse.sol**: Genera dinámicamente el JSON de metadatos para los NFTs de caballos a partir de sus estadísticas compuestas.
+* **SpeedH_Metadata_Horseshoe.sol**: Construye los metadatos de los NFTs de herraduras reflejando sus bonos, durabilidad y pureza.
+* **SpeedH_Minter_AnvilAlchemy.sol**: Orquesta el proceso de fusión de dos herraduras en una nueva pieza de mayor nivel con pagos y reintentos.
+* **SpeedH_Minter_FoalForge.sol**: Gestiona el flujo de creación de un caballo inicial, cobrando tasas, generando estadísticas y acuñando los NFTs relacionados.
+* **SpeedH_Minter_IronRedemption.sol**: Maneja la reparación de herraduras existentes, bloqueando el NFT, aplicando degradaciones y acuñando reemplazos.
+* **SpeedH_NFT_Horse.sol**: Contrato ERC-721 que representa a los caballos, controlando la acuñación y bloqueando transferencias cuando aplica la lógica de juego.
+* **SpeedH_NFT_Horseshoe.sol**: Contrato ERC-721 para las herraduras equipables, con controles de minteo y transferencias según el estado de equipamiento.
+* **SpeedH_Stats.sol**: Coordinador central que integra los módulos de estadísticas de caballos y herraduras, administra dependencias y expone las operaciones del juego.
+* **SpeedH_Stats_Horse.sol**: Almacena y muta los datos de cada caballo, incluyendo visuales, puntos, descansos y estadísticas asignadas.
+* **SpeedH_Stats_Horseshoe.sol**: Lleva el registro de las herraduras, su durabilidad, estadísticas de bono y visuales disponibles.
+* **SpeedH_StatsStructs.sol**: Define las estructuras de datos compartidas para estadísticas de performance y atributos de enfriamiento usados en todo el sistema.
+
+**Librerías y utilidades**
+
+* **SpeedH_UFix6Lib.sol**: Biblioteca de aritmética en punto fijo de seis decimales utilizada para cálculos de nivel y escalados de estadísticas.
+* **SpeedH_VisualsLib.sol**: Biblioteca que gestiona categorías de imágenes y selección pseudoaleatoria de visuales para caballos y herraduras.
 
 Cada contrato cumple un rol específico y trabaja en coordinación con los demás para mantener la lógica del juego de forma descentralizada y transparente.
 
