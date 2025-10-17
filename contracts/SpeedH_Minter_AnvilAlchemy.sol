@@ -42,9 +42,9 @@ contract SpeedH_Minter_AnvilAlchemy {
     // ---------------------------------------------------------------------
 
     address public admin;
-    ISpeedH_Stats_Fusion public speedStats;
-    ISpeedH_NFT_Horseshoe_MintBurn public horseshoeNft;
-    IERC20 public hayToken;
+    ISpeedH_Stats_Fusion public _contractStats;
+    ISpeedH_NFT_Horseshoe_MintBurn public _contractNFTHorseshoe;
+    IERC20 public _contractHayToken;
 
     uint256 public fusionTlosCost = 400 ether;
     uint256 public randomizeHayCost = 40 ether;
@@ -122,16 +122,16 @@ contract SpeedH_Minter_AnvilAlchemy {
         admin = newAdmin;
     }
 
-    function setSpeedStats(address stats) external onlyAdmin {
-        speedStats = ISpeedH_Stats_Fusion(stats);
+    function setContractStats(address contractStats) external onlyAdmin {
+        _contractStats = ISpeedH_Stats_Fusion(contractStats);
     }
 
-    function setHorseshoeNft(address nft) external onlyAdmin {
-        horseshoeNft = ISpeedH_NFT_Horseshoe_MintBurn(nft);
+    function setContractNFTHorseshoe(address contractNFTHorseshoe) external onlyAdmin {
+        _contractNFTHorseshoe = ISpeedH_NFT_Horseshoe_MintBurn(contractNFTHorseshoe);
     }
 
-    function setHayToken(address token) external onlyAdmin {
-        hayToken = IERC20(token);
+    function setContractHayToken(address contractHayToken) external onlyAdmin {
+        _contractHayToken = IERC20(contractHayToken);
     }
 
     function setFusionTlosCost(uint256 cost) external onlyAdmin {
@@ -162,7 +162,7 @@ contract SpeedH_Minter_AnvilAlchemy {
     }
 
     function withdrawHAY(address to, uint256 amount) external onlyAdmin {
-        require(hayToken.transfer(to, amount), "AnvilAlchemy: hay transfer failed");
+        require(_contractHayToken.transfer(to, amount), "AnvilAlchemy: hay transfer failed");
     }
 
     // ---------------------------------------------------------------------
@@ -170,30 +170,33 @@ contract SpeedH_Minter_AnvilAlchemy {
     // ---------------------------------------------------------------------
 
     function startFusion(uint256 fatherId, uint256 motherId) external payable returns (uint256 fusionId) {
-        require(address(speedStats) != address(0), "AnvilAlchemy: stats not set");
-        require(address(horseshoeNft) != address(0), "AnvilAlchemy: nft not set");
+        require(address(_contractStats) != address(0), "AnvilAlchemy: stats not set");
+        require(address(_contractNFTHorseshoe) != address(0), "AnvilAlchemy: nft not set");
         require(msg.value == fusionTlosCost, "AnvilAlchemy: incorrect TLOS");
         require(fatherId != motherId, "AnvilAlchemy: distinct parents");
 
-        SpeedH_Stats_Horseshoe horseshoeModule = speedStats.horseshoeModule();
+        SpeedH_Stats_Horseshoe horseshoeModule = _contractStats.horseshoeModule();
         SpeedH_Stats_Horseshoe.HorseshoeData memory father = horseshoeModule.getHorseshoe(fatherId);
         SpeedH_Stats_Horseshoe.HorseshoeData memory mother = horseshoeModule.getHorseshoe(motherId);
 
         require(father.maxDurability > 0 && mother.maxDurability > 0, "AnvilAlchemy: invalid parents");
-        require(!speedStats.isHorseshoeEquipped(fatherId) && !speedStats.isHorseshoeEquipped(motherId), "AnvilAlchemy: equipped");
         require(
-            horseshoeNft.getApproved(fatherId) == address(this)
-                || horseshoeNft.isApprovedForAll(msg.sender, address(this)),
+            !_contractStats.isHorseshoeEquipped(fatherId) && !_contractStats.isHorseshoeEquipped(motherId),
+            "AnvilAlchemy: equipped"
+        );
+        require(
+            _contractNFTHorseshoe.getApproved(fatherId) == address(this)
+                || _contractNFTHorseshoe.isApprovedForAll(msg.sender, address(this)),
             "AnvilAlchemy: father not approved"
         );
         require(
-            horseshoeNft.getApproved(motherId) == address(this)
-                || horseshoeNft.isApprovedForAll(msg.sender, address(this)),
+            _contractNFTHorseshoe.getApproved(motherId) == address(this)
+                || _contractNFTHorseshoe.isApprovedForAll(msg.sender, address(this)),
             "AnvilAlchemy: mother not approved"
         );
 
-        horseshoeNft.transferFrom(msg.sender, address(this), fatherId);
-        horseshoeNft.transferFrom(msg.sender, address(this), motherId);
+        _contractNFTHorseshoe.transferFrom(msg.sender, address(this), fatherId);
+        _contractNFTHorseshoe.transferFrom(msg.sender, address(this), motherId);
 
         fusionId = nextFusionId++;
         FusionProcess storage process = _fusions[fusionId];
@@ -209,11 +212,14 @@ contract SpeedH_Minter_AnvilAlchemy {
         FusionProcess storage process = _fusions[fusionId];
         require(!process.finalized, "AnvilAlchemy: finalized");
         require(process.owner == msg.sender, "AnvilAlchemy: not owner");
-        require(address(hayToken) != address(0), "AnvilAlchemy: hay not set");
+        require(address(_contractHayToken) != address(0), "AnvilAlchemy: hay not set");
 
-        require(hayToken.transferFrom(msg.sender, address(this), randomizeHayCost), "AnvilAlchemy: hay payment failed");
+        require(
+            _contractHayToken.transferFrom(msg.sender, address(this), randomizeHayCost),
+            "AnvilAlchemy: hay payment failed"
+        );
 
-        SpeedH_Stats_Horseshoe horseshoeModule = speedStats.horseshoeModule();
+        SpeedH_Stats_Horseshoe horseshoeModule = _contractStats.horseshoeModule();
         SpeedH_Stats_Horseshoe.HorseshoeData memory father = horseshoeModule.getHorseshoe(process.fatherId);
         SpeedH_Stats_Horseshoe.HorseshoeData memory mother = horseshoeModule.getHorseshoe(process.motherId);
 
@@ -238,11 +244,11 @@ contract SpeedH_Minter_AnvilAlchemy {
         process.finalized = true;
         process.hasPreview = false;
 
-        horseshoeNft.burn(fatherId);
-        horseshoeNft.burn(motherId);
+        _contractNFTHorseshoe.burn(fatherId);
+        _contractNFTHorseshoe.burn(motherId);
 
-        uint256 newId = horseshoeNft.mint(owner);
-        speedStats.registerHorseshoeStats(
+        uint256 newId = _contractNFTHorseshoe.mint(owner);
+        _contractStats.registerHorseshoeStats(
             newId,
             preview.imgCategory,
             preview.imgNumber,
@@ -270,8 +276,8 @@ contract SpeedH_Minter_AnvilAlchemy {
         uint256 motherId = process.motherId;
         uint256 paidTlos = process.paidTlos;
 
-        horseshoeNft.transferFrom(address(this), owner, fatherId);
-        horseshoeNft.transferFrom(address(this), owner, motherId);
+        _contractNFTHorseshoe.transferFrom(address(this), owner, fatherId);
+        _contractNFTHorseshoe.transferFrom(address(this), owner, motherId);
 
         uint256 refund = (paidTlos * cancelRefundBps) / 10_000;
         if (refund > 0) {
@@ -319,7 +325,7 @@ contract SpeedH_Minter_AnvilAlchemy {
         bool isPure = father.isPure && mother.isPure && father.level == mother.level;
         uint256 level = (father.level > mother.level ? father.level : mother.level) + 1;
 
-        (uint256 imgCategory, uint256 imgNumber) = speedStats.getRandomHorseshoeVisual(visualEntropy);
+        (uint256 imgCategory, uint256 imgNumber) = _contractStats.getRandomHorseshoeVisual(visualEntropy);
 
         return FusionPreview({
             stats: combined,

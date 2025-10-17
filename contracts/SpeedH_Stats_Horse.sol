@@ -16,7 +16,7 @@ contract SpeedH_Stats_Horse {
     // Roles
     // ---------------------------------------------------------------------
     address public owner;
-    address public speedStats;
+    address public _contractStats;
     string public version = "SpeedH_Stats_Horse-v1.0.0";
 
     modifier onlyOwner() {
@@ -25,7 +25,7 @@ contract SpeedH_Stats_Horse {
     }
 
     modifier onlySpeedStats() {
-        require(msg.sender == speedStats, "SpeedH_Stats_Horse: only controller");
+        require(msg.sender == _contractStats, "SpeedH_Stats_Horse: only controller");
         _;
     }
 
@@ -33,9 +33,9 @@ contract SpeedH_Stats_Horse {
         owner = msg.sender;
     }
 
-    function setSpeedStats(address controller) external onlyOwner {
-        require(controller != address(0), "SpeedH_Stats_Horse: invalid controller");
-        speedStats = controller;
+    function setContractStats(address contractStats) external onlyOwner {
+        require(contractStats != address(0), "SpeedH_Stats_Horse: invalid controller");
+        _contractStats = contractStats;
     }
 
     function transferOwnership(address newOwner) external onlyOwner {
