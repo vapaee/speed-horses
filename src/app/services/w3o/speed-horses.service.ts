@@ -19,7 +19,7 @@ import { EthereumTokensService, EthereumNetwork, EthereumTransaction, EthereumCo
 const logger = new W3oContextFactory('SpeedHorsesService');
 
 const FOAL_FORGE_ABI = [
-    'function pendingHorse(address owner) view returns (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) baseStats, uint256 totalPoints, uint8 extraPackagesBought, (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) bonusStats)[4] horseshoes)',
+    'function pendingHorse(address owner) view returns (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) stats, uint256 totalPoints, uint8 extraPackagesBought, (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) bonusStats)[4] horseshoes)',
     'function startHorseMint() payable',
     'function randomizeHorse(bool keepImage, bool keepStats, bool keepShoes) payable',
     'function buyExtraPoints() payable',
@@ -57,7 +57,7 @@ export interface SpeedHorsesHorseshoe {
 export interface SpeedHorsesFoalData {
     imgCategory: number;
     imgNumber: number;
-    baseStats: SpeedHorsesPerformanceStats;
+    stats: SpeedHorsesPerformanceStats;
     totalPoints: number;
     extraPackagesBought: number;
     horseshoes: SpeedHorsesHorseshoe[];
@@ -222,12 +222,12 @@ export class SpeedHorsesService extends W3oService {
         if (!totalPointsValue) {
             return null;
         }
-        const baseStatsRaw = raw.baseStats ?? raw[2];
+        const statsRaw = raw.stats ?? raw[2];
         const horseshoesRaw = raw.horseshoes ?? raw[5] ?? [];
         return {
             imgCategory: this.toNumber(raw.imgCategory ?? raw[0]),
             imgNumber: this.toNumber(raw.imgNumber ?? raw[1]),
-            baseStats: this.parsePerformanceStats(baseStatsRaw),
+            stats: this.parsePerformanceStats(statsRaw),
             totalPoints: totalPointsValue,
             extraPackagesBought: this.toNumber(raw.extraPackagesBought ?? raw[4]),
             horseshoes: (horseshoesRaw as any[]).map(shoe => this.parseHorseshoe(shoe)),

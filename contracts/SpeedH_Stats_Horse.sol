@@ -6,7 +6,7 @@ import { SpeedH_VisualsLib } from "./SpeedH_VisualsLib.sol";
 
 /**
  * Title: SpeedH_Stats_Horse
- * Brief: Persistent storage for horses: visuals, base/assigned stats, points ledger and rest cooldown.
+ * Brief: Persistent storage for horses: visuals, aggregated stats, points ledger and rest cooldown.
  *        Uses SpeedH_VisualsLib for category administration and random selection.
  */
 contract SpeedH_Stats_Horse {
@@ -49,8 +49,7 @@ contract SpeedH_Stats_Horse {
     struct HorseData {
         uint256 imgCategory;
         uint256 imgNumber;
-        PerformanceStats baseStats;
-        PerformanceStats assignedStats;
+        PerformanceStats stats;
         PerformanceStats cacheStats;
         uint256 totalPoints;
         uint256 unassignedPoints;
@@ -90,7 +89,7 @@ contract SpeedH_Stats_Horse {
         uint256 horseId,
         uint256 imgCategory,
         uint256 imgNumber,
-        PerformanceStats calldata baseStats
+        PerformanceStats calldata stats
     ) external onlySpeedStats {
         HorseData storage h = horses[horseId];
         require(!h.exists, "SpeedH_Stats_Horse: horse exists");
@@ -104,10 +103,9 @@ contract SpeedH_Stats_Horse {
         h.exists = true;
         h.imgCategory = imgCategory;
         h.imgNumber = imgNumber;
-        h.baseStats = baseStats;
-        h.assignedStats = PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0);
+        h.stats = stats;
         h.cacheStats = PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0);
-        h.totalPoints = _sumStats(baseStats);
+        h.totalPoints = _sumStats(stats);
         h.unassignedPoints = 0;
         h.restFinish = 0;
     }
@@ -126,10 +124,10 @@ contract SpeedH_Stats_Horse {
         h.unassignedPoints -= points;
     }
 
-    function setAssignedStats(uint256 horseId, PerformanceStats calldata stats) external onlySpeedStats {
+    function setStats(uint256 horseId, PerformanceStats calldata stats) external onlySpeedStats {
         HorseData storage h = horses[horseId];
         require(h.exists, "SpeedH_Stats_Horse: unknown horse");
-        h.assignedStats = stats;
+        h.stats = stats;
     }
 
     function setCacheStats(uint256 horseId, PerformanceStats calldata stats) external onlySpeedStats {

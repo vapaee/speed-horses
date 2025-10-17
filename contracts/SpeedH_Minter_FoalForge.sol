@@ -8,7 +8,7 @@ interface ISpeedH_Stats_Horse {
         uint256 horseId,
         uint256 imgCategory,
         uint256 imgNumber,
-        PerformanceStats calldata baseStats
+        PerformanceStats calldata stats
     ) external;
     function getRandomVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber);
     function getRandomHorseshoeVisual(uint256 entropy) external view returns (uint256 imgCategory, uint256 imgNumber);
@@ -73,7 +73,7 @@ contract SpeedH_Minter_FoalForge {
     struct HorseBuild {
         uint256 imgCategory;
         uint256 imgNumber;
-        PerformanceStats baseStats;
+        PerformanceStats stats;
         uint256 totalPoints;
         uint8 extraPackagesBought;
         PendingHorseshoe[HORSESHOES_PER_HORSE] horseshoes;
@@ -133,7 +133,7 @@ contract SpeedH_Minter_FoalForge {
 
         build.extraPackagesBought += 1;
         build.totalPoints = BASE_INITIAL_POINTS + (build.extraPackagesBought * EXTRA_POINTS_PER_PACKAGE);
-        build.baseStats = _randomHorseStats(build.totalPoints);
+        build.stats = _randomHorseStats(build.totalPoints);
     }
 
     function claimHorse() external {
@@ -145,7 +145,7 @@ contract SpeedH_Minter_FoalForge {
         require(address(horseshoes) != address(0), 'SpeedH_NFT_Horseshoe not set');
 
         uint256 horseId = speedHorses.mint(msg.sender);
-        horseStats.createHorseStats(horseId, build.imgCategory, build.imgNumber, build.baseStats);
+        horseStats.createHorseStats(horseId, build.imgCategory, build.imgNumber, build.stats);
 
         for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
             PendingHorseshoe memory shoe = build.horseshoes[i];
@@ -179,7 +179,7 @@ contract SpeedH_Minter_FoalForge {
         // copy scalars
         dst.imgCategory = newBuild.imgCategory;
         dst.imgNumber = newBuild.imgNumber;
-        dst.baseStats = newBuild.baseStats;
+        dst.stats = newBuild.stats;
         dst.totalPoints = newBuild.totalPoints;
         dst.extraPackagesBought = newBuild.extraPackagesBought;
 
@@ -208,7 +208,7 @@ contract SpeedH_Minter_FoalForge {
 
         // Randomize Horse Stats
         PerformanceStats memory stats = (keepStats && hasPending)
-            ? pendingHorse[msg.sender].baseStats
+            ? pendingHorse[msg.sender].stats
             : _randomHorseStats(totalPoints);
 
         // Randomize Horseshoes
@@ -224,7 +224,7 @@ contract SpeedH_Minter_FoalForge {
         HorseBuild memory build;
         build.imgCategory = imgCategory;
         build.imgNumber = imgNumber;
-        build.baseStats = stats;
+        build.stats = stats;
         build.totalPoints = totalPoints;
         build.extraPackagesBought = hasPending ? pendingHorse[msg.sender].extraPackagesBought : 0;
         for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {

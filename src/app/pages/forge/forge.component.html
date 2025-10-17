@@ -44,7 +44,7 @@
 
             <!-- stats list -->
             <div class="p-forge__row p-forge__row--stats">
-                <app-stats class="p-forge__stats" [statspack]="baseStats"></app-stats>
+                <app-stats class="p-forge__stats" [statspack]="horseStats"></app-stats>
             </div>
 
             <!-- buttons -->
@@ -52,7 +52,7 @@
                 <!-- lock button -->
                 <div class="p-forge__lock">
                     <app-lock-switch
-                        [(ngModel)]="lock_basestats"
+                        [(ngModel)]="lock_stats"
                         lockedText="{{ 'PAGES.HORSES.FORGE.STATS-LOCKED' | translate }}"
                         unlockedText="{{ 'PAGES.HORSES.FORGE.STATS-UNLOCKED' | translate }}"
                     ></app-lock-switch>

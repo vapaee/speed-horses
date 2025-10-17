@@ -45,7 +45,7 @@ error HorseshoeMetadataNotSet();
 error ModuleNotGranted();
 
 /// @title SpeedH_Stats
-/// @notice Central coordinator that composes horse stats (base + assigned + equipped horseshoes)
+/// @notice Central coordinator that composes horse stats (aggregated base + assigned + equipped horseshoes)
 ///         while delegating storage/mutations to modules.
 contract SpeedH_Stats {
     using SafeERC20 for IERC20;
@@ -220,8 +220,8 @@ contract SpeedH_Stats {
     // ---------------------------------------------------------------------
     // Horse lifecycle
     // ---------------------------------------------------------------------
-    event HorseCreated(uint256 indexed horseId, uint256 imgCategory, uint256 imgNumber, PerformanceStats baseStats);
-    event HorseAssigned(uint256 indexed horseId, PerformanceStats newAssigned, uint256 spentPoints);
+    event HorseCreated(uint256 indexed horseId, uint256 imgCategory, uint256 imgNumber, PerformanceStats stats);
+    event HorseAssigned(uint256 indexed horseId, PerformanceStats newStats, uint256 spentPoints);
     event HorseRestStarted(uint256 indexed horseId, uint256 restFinish);
     event HorseWonPrize(uint256 indexed horseId, uint256 points);
 
@@ -232,12 +232,12 @@ contract SpeedH_Stats {
         uint256 horseId,
         uint256 imgCategory,
         uint256 imgNumber,
-        PerformanceStats calldata baseStats
+        PerformanceStats calldata stats
     ) external {
         _requireHorseMinter();
         _requireHorseModule();
-        horseModule.createHorseStats(horseId, imgCategory, imgNumber, baseStats);
-        emit HorseCreated(horseId, imgCategory, imgNumber, baseStats);
+        horseModule.createHorseStats(horseId, imgCategory, imgNumber, stats);
+        emit HorseCreated(horseId, imgCategory, imgNumber, stats);
     }
 
     function setRacePrize(uint256 horseId, uint256 points) external {
@@ -263,8 +263,8 @@ contract SpeedH_Stats {
         horseModule.consumeUnassigned(horseId, totalToAssign);
         IERC20(hayToken).safeTransferFrom(msg.sender, address(this), totalToAssign * FEEDING_COST_PER_POINT);
 
-        PerformanceStats memory updated = _addPerformance(data.assignedStats, additional);
-        horseModule.setAssignedStats(horseId, updated);
+        PerformanceStats memory updated = _addPerformance(data.stats, additional);
+        horseModule.setStats(horseId, updated);
 
         emit HorseAssigned(horseId, updated, totalToAssign);
     }
@@ -467,16 +467,10 @@ contract SpeedH_Stats {
     // Views consumed by the ecosystem
     // ---------------------------------------------------------------------
 
-    function getBaseStats(uint256 horseId) public view returns (PerformanceStats memory) {
+    function getHorseStats(uint256 horseId) public view returns (PerformanceStats memory) {
         _requireHorseModule();
         SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
-        return data.baseStats;
-    }
-
-    function getAssignedStats(uint256 horseId) public view returns (PerformanceStats memory) {
-        _requireHorseModule();
-        SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
-        return data.assignedStats;
+        return data.stats;
     }
 
     function getEquipmentBonus(uint256 horseId) public view returns (PerformanceStats memory totalBonus) {
@@ -502,18 +496,13 @@ contract SpeedH_Stats {
     function getPerformance(uint256 horseId) public view returns (PerformanceStats memory) {
         _requireHorseModule();
         _requireHorseshoeModule();
-        PerformanceStats memory baseStats = getBaseStats(horseId);
-        PerformanceStats memory assigned = getAssignedStats(horseId);
+        PerformanceStats memory horseStats = getHorseStats(horseId);
         PerformanceStats memory equipment = getEquipmentBonus(horseId);
-        PerformanceStats memory total = _addPerformance(baseStats, assigned);
-        return _addPerformance(total, equipment);
+        return _addPerformance(horseStats, equipment);
     }
 
     function getHorsePerformance(uint256 horseId) public view returns (PerformanceStats memory) {
-        _requireHorseModule();
-        PerformanceStats memory baseStats = getBaseStats(horseId);
-        PerformanceStats memory assigned = getAssignedStats(horseId);
-        return _addPerformance(baseStats, assigned);
+        return getHorseStats(horseId);
     }
 
     function getTotalPoints(uint256 horseId) public view returns (uint256) {
