@@ -1,5 +1,5 @@
 // src/prueba.ts
-import { ethers } from 'ethers'
+import { BrowserProvider, type BigNumberish } from 'ethers'
 
 const TELOS_CHAIN_ID_HEX = '0x28' // 40 in decimal
 // Telos EVM Mainnet network parameters
@@ -18,7 +18,7 @@ const TELOS_NETWORK_PARAMS = {
 export type EthereumAddress = `0x${string}`
 
 // Instanciación básica para navegador
-let provider = new ethers.providers.Web3Provider(window.ethereum!)
+let provider = new BrowserProvider(window.ethereum!)
 
 async function ensureTelosNetwork() {
     console.log('ensureTelosNetwork()');
@@ -29,7 +29,7 @@ async function ensureTelosNetwork() {
     const currentChainId = await provider.send('eth_chainId', [])
     if (currentChainId === TELOS_CHAIN_ID_HEX) {
         console.log('Ya estás conectado a la red Telos EVM');
-        provider = new ethers.providers.Web3Provider(window.ethereum!);
+        provider = new BrowserProvider(window.ethereum!);
         return
     }
 
@@ -44,7 +44,7 @@ async function ensureTelosNetwork() {
         }
     }
 
-    provider = new ethers.providers.Web3Provider(window.ethereum!);
+    provider = new BrowserProvider(window.ethereum!);
 }
 
 // 1. Solicitar conexión con MetaMask y obtener cuentas
@@ -52,7 +52,7 @@ export async function connectWallet(): Promise<EthereumAddress[]> {
     console.log('connectWallet()');
     await ensureTelosNetwork()
     await provider.send('eth_requestAccounts', [])
-    const signer = provider.getSigner()
+    const signer = await provider.getSigner()
     const address = await signer.getAddress()
     return [address as EthereumAddress]
 }
@@ -60,7 +60,7 @@ export async function connectWallet(): Promise<EthereumAddress[]> {
 // 2. Firmar un mensaje para login
 export async function signMessage(address: EthereumAddress, msg: string): Promise<string> {
     await ensureTelosNetwork()
-    const signer = provider.getSigner(address)
+    const signer = await provider.getSigner(address)
     const signature = await signer.signMessage(msg)
     return signature
 }
@@ -68,21 +68,22 @@ export async function signMessage(address: EthereumAddress, msg: string): Promis
 // 3. Firmar y enviar ETH
 export async function sendEth(
     to: EthereumAddress,
-    amountWei: ethers.BigNumberish
+    amountWei: BigNumberish
 ): Promise<string> {
     await ensureTelosNetwork()
-    const signer = provider.getSigner();
+    const signer = await provider.getSigner();
     const from: EthereumAddress = await signer.getAddress() as EthereumAddress;
-    console.log(`Enviando ${amountWei} wei desde ${from} a ${to}`);
+    const amountLog = typeof amountWei === 'bigint' ? amountWei.toString() : String(amountWei);
+    console.log(`Enviando ${amountLog} wei desde ${from} a ${to}`);
     const tx = await signer.sendTransaction({
         to,
-        value: ethers.BigNumber.from(amountWei),
+        value: amountWei,
     })
     await tx.wait()
     return tx.hash
 }
 
 // 4. Leer balance de cualquier dirección
-export async function readBalance(address: EthereumAddress): Promise<ethers.BigNumber> {
+export async function readBalance(address: EthereumAddress): Promise<bigint> {
     return provider.getBalance(address)
 }
