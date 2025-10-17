@@ -136,9 +136,9 @@ contract SpeedH_FixtureManager {
 
         uint256[] memory equipped = IHorses(horseStats).getEquippedHorseshoes(horseId);
         require(equipped.length == REQUIRED_HORSESHOES, "SpeedH_FixtureManager: incomplete horseshoes");
-        for (uint256 i = 0; i < equipped.length; i++) {
+        for (uint256 j = 0; j < equipped.length; j++) {
             require(
-                IHorses(horseStats).isHorseshoeUseful(equipped[i]),
+                IHorses(horseStats).isHorseshoeUseful(equipped[j]),
                 "SpeedH_FixtureManager: worn horseshoe"
             );
         }
