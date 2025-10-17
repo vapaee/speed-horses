@@ -4,6 +4,14 @@ pragma solidity ^0.8.20;
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
+error NotAdmin();
+error NotHorseMinter();
+error InvalidMinter();
+error StatsNotSet();
+error TokenDoesNotExist();
+error HorseStillResting();
+error HorseRegisteredForRacing();
+
 /**
  * Título: SpeedH_NFT_Horse
  * Brief: Contrato ERC-721 que representa a los caballos del juego, delega la generación de metadatos y controles de transferencia al módulo de estadísticas y garantiza que sólo el administrador y el minter autorizado puedan acuñar o gestionar los tokens. Administra referencias cruzadas a los contratos que definen atributos y respeta las restricciones de descanso y registro en carreras antes de permitir movimientos.
@@ -24,12 +32,12 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
     uint256 private _nextTokenId;
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, "Not admin");
+        if (msg.sender != admin) revert NotAdmin();
         _;
     }
 
     modifier onlyHorseMinter() {
-        require(_contractMinters[msg.sender], "Not horseMinter");
+        if (!_contractMinters[msg.sender]) revert NotHorseMinter();
         _;
     }
 
@@ -42,7 +50,7 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
     event ContractMinterUpdated(address indexed contractMinter, bool allowed);
 
     function setContractMinter(address contractMinter, bool allowed) external onlyAdmin {
-        require(contractMinter != address(0), "Invalid minter");
+        if (contractMinter == address(0)) revert InvalidMinter();
         _contractMinters[contractMinter] = allowed;
         emit ContractMinterUpdated(contractMinter, allowed);
     }
@@ -73,18 +81,18 @@ contract SpeedH_NFT_Horse is ERC721, Ownable {
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(ownerOf(tokenId) != address(0), "Token does not exist");
-        require(_contractStats != address(0), "horseStats not set");
+        if (_ownerOf(tokenId) == address(0)) revert TokenDoesNotExist();
+        if (_contractStats == address(0)) revert StatsNotSet();
         return StatsBase(_contractStats).horseTokenURI(tokenId);
     }
 
     function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
         address from = _ownerOf(tokenId);
         if (from != address(0) && to != address(0)) {
-            require(_contractStats != address(0), "horseStats not set");
+            if (_contractStats == address(0)) revert StatsNotSet();
             StatsBase stats = StatsBase(_contractStats);
-            require(stats.hasFinishedResting(tokenId), "Horse still resting");
-            require(!stats.isRegisteredForRacing(tokenId), "Horse is registered for racing");
+            if (!stats.hasFinishedResting(tokenId)) revert HorseStillResting();
+            if (stats.isRegisteredForRacing(tokenId)) revert HorseRegisteredForRacing();
         }
         address previousOwner = super._update(to, tokenId, auth);
 

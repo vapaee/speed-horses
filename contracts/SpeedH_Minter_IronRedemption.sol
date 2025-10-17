@@ -7,6 +7,26 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { PerformanceStats } from "./SpeedH_StatsStructs.sol";
 import { SpeedH_Stats_Horseshoe } from "./SpeedH_Stats_Horseshoe.sol";
 
+error NotAdmin();
+error RepairNotFound();
+error InvalidAdmin();
+error InvalidPercent();
+error InvalidRefundBps();
+error InsufficientBalance();
+error HayTransferFailed();
+error StatsNotSet();
+error NftNotSet();
+error IncorrectTlosPayment();
+error UnknownHorseshoe();
+error HorseshoeEquipped();
+error ApprovalMissing();
+error RepairFinalized();
+error RepairAlreadyProcessed();
+error NotRepairOwner();
+error HayNotSet();
+error HayPaymentFailed();
+error PreviewMissing();
+
 interface ISpeedH_Stats_Repair {
     function horseshoeModule() external view returns (SpeedH_Stats_Horseshoe);
     function isHorseshoeEquipped(uint256 horseshoeId) external view returns (bool);
@@ -83,12 +103,12 @@ contract SpeedH_Minter_IronRedemption {
     event RepairCancelled(uint256 indexed repairId);
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, "IronRedemption: not admin");
+        if (msg.sender != admin) revert NotAdmin();
         _;
     }
 
     modifier validRepair(uint256 repairId) {
-        require(_repairs[repairId].owner != address(0), "IronRedemption: unknown repair");
+        if (_repairs[repairId].owner == address(0)) revert RepairNotFound();
         _;
     }
 
@@ -101,7 +121,7 @@ contract SpeedH_Minter_IronRedemption {
     // ---------------------------------------------------------------------
 
     function setAdmin(address newAdmin) external onlyAdmin {
-        require(newAdmin != address(0), "IronRedemption: invalid admin");
+        if (newAdmin == address(0)) revert InvalidAdmin();
         admin = newAdmin;
     }
 
@@ -126,22 +146,22 @@ contract SpeedH_Minter_IronRedemption {
     }
 
     function setMaxPercentError(uint256 value) external onlyAdmin {
-        require(value <= 100, "IronRedemption: invalid percent");
+        if (value > 100) revert InvalidPercent();
         maxPercentError = value;
     }
 
     function setCancelRefund(uint256 refundBps) external onlyAdmin {
-        require(refundBps <= 10_000, "IronRedemption: invalid bps");
+        if (refundBps > 10_000) revert InvalidRefundBps();
         cancelRefundBps = refundBps;
     }
 
     function withdrawTLOS(address payable to, uint256 amount) external onlyAdmin {
-        require(address(this).balance >= amount, "IronRedemption: insufficient balance");
+        if (address(this).balance < amount) revert InsufficientBalance();
         to.transfer(amount);
     }
 
     function withdrawHAY(address to, uint256 amount) external onlyAdmin {
-        require(_contractHayToken.transfer(to, amount), "IronRedemption: hay transfer failed");
+        if (!_contractHayToken.transfer(to, amount)) revert HayTransferFailed();
     }
 
     // ---------------------------------------------------------------------
@@ -149,19 +169,18 @@ contract SpeedH_Minter_IronRedemption {
     // ---------------------------------------------------------------------
 
     function startRepair(uint256 tokenId) external payable returns (uint256 repairId) {
-        require(address(_contractStats) != address(0), "IronRedemption: stats not set");
-        require(address(_contractNFTHorseshoe) != address(0), "IronRedemption: nft not set");
-        require(msg.value == repairTlosCost, "IronRedemption: incorrect TLOS");
+        if (address(_contractStats) == address(0)) revert StatsNotSet();
+        if (address(_contractNFTHorseshoe) == address(0)) revert NftNotSet();
+        if (msg.value != repairTlosCost) revert IncorrectTlosPayment();
 
         SpeedH_Stats_Horseshoe horseshoeModule = _contractStats.horseshoeModule();
         SpeedH_Stats_Horseshoe.HorseshoeData memory data = horseshoeModule.getHorseshoe(tokenId);
-        require(data.maxDurability > 0, "IronRedemption: unknown horseshoe");
-        require(!_contractStats.isHorseshoeEquipped(tokenId), "IronRedemption: equipped");
-        require(
-            _contractNFTHorseshoe.getApproved(tokenId) == address(this)
-                || _contractNFTHorseshoe.isApprovedForAll(msg.sender, address(this)),
-            "IronRedemption: approval missing"
-        );
+        if (data.maxDurability == 0) revert UnknownHorseshoe();
+        if (_contractStats.isHorseshoeEquipped(tokenId)) revert HorseshoeEquipped();
+        if (
+            _contractNFTHorseshoe.getApproved(tokenId) != address(this)
+                && !_contractNFTHorseshoe.isApprovedForAll(msg.sender, address(this))
+        ) revert ApprovalMissing();
 
         _contractNFTHorseshoe.transferFrom(msg.sender, address(this), tokenId);
 
@@ -186,14 +205,13 @@ contract SpeedH_Minter_IronRedemption {
 
     function randomizeRepair(uint256 repairId) external validRepair(repairId) {
         RepairProcess storage process = _repairs[repairId];
-        require(!process.finalized, "IronRedemption: finalized");
-        require(process.owner == msg.sender, "IronRedemption: not owner");
-        require(address(_contractHayToken) != address(0), "IronRedemption: hay not set");
+        if (process.finalized) revert RepairFinalized();
+        if (process.owner != msg.sender) revert NotRepairOwner();
+        if (address(_contractHayToken) == address(0)) revert HayNotSet();
 
-        require(
-            _contractHayToken.transferFrom(msg.sender, address(this), randomizeHayCost),
-            "IronRedemption: hay payment failed"
-        );
+        if (!_contractHayToken.transferFrom(msg.sender, address(this), randomizeHayCost)) {
+            revert HayPaymentFailed();
+        }
 
         uint256 errorPct = _nextEntropy(process) % (maxPercentError + 1);
         RepairPreview memory base = process.baseline;
@@ -218,9 +236,9 @@ contract SpeedH_Minter_IronRedemption {
 
     function claimRepair(uint256 repairId) external validRepair(repairId) {
         RepairProcess storage process = _repairs[repairId];
-        require(process.owner == msg.sender, "IronRedemption: not owner");
-        require(!process.finalized, "IronRedemption: already done");
-        require(process.hasPreview, "IronRedemption: no preview");
+        if (process.owner != msg.sender) revert NotRepairOwner();
+        if (process.finalized) revert RepairAlreadyProcessed();
+        if (!process.hasPreview) revert PreviewMissing();
 
         uint256 tokenId = process.tokenId;
         RepairPreview memory preview = process.preview;
@@ -249,8 +267,8 @@ contract SpeedH_Minter_IronRedemption {
 
     function cancelRepair(uint256 repairId) external validRepair(repairId) {
         RepairProcess storage process = _repairs[repairId];
-        require(process.owner == msg.sender, "IronRedemption: not owner");
-        require(!process.finalized, "IronRedemption: already done");
+        if (process.owner != msg.sender) revert NotRepairOwner();
+        if (process.finalized) revert RepairAlreadyProcessed();
 
         process.finalized = true;
         process.hasPreview = false;

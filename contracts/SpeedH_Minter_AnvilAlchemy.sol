@@ -7,6 +7,28 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { PerformanceStats } from "./SpeedH_StatsStructs.sol";
 import { SpeedH_Stats_Horseshoe } from "./SpeedH_Stats_Horseshoe.sol";
 
+error NotAdmin();
+error FusionNotFound();
+error InvalidAdmin();
+error InvalidErrorMargin();
+error InvalidRefundBps();
+error InsufficientBalance();
+error HayTransferFailed();
+error StatsNotSet();
+error NftNotSet();
+error IncorrectTlosPayment();
+error SameParents();
+error InvalidParents();
+error ParentsEquipped();
+error FatherNotApproved();
+error MotherNotApproved();
+error FusionFinalized();
+error FusionAlreadyProcessed();
+error NotFusionOwner();
+error HayNotSet();
+error HayPaymentFailed();
+error PreviewMissing();
+
 interface ISpeedH_Stats_Fusion {
     function horseshoeModule() external view returns (SpeedH_Stats_Horseshoe);
     function isHorseshoeEquipped(uint256 horseshoeId) external view returns (bool);
@@ -100,12 +122,12 @@ contract SpeedH_Minter_AnvilAlchemy {
     // ---------------------------------------------------------------------
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, "AnvilAlchemy: not admin");
+        if (msg.sender != admin) revert NotAdmin();
         _;
     }
 
     modifier validFusion(uint256 fusionId) {
-        require(_fusions[fusionId].owner != address(0), "AnvilAlchemy: unknown fusion");
+        if (_fusions[fusionId].owner == address(0)) revert FusionNotFound();
         _;
     }
 
@@ -118,7 +140,7 @@ contract SpeedH_Minter_AnvilAlchemy {
     // ---------------------------------------------------------------------
 
     function setAdmin(address newAdmin) external onlyAdmin {
-        require(newAdmin != address(0), "AnvilAlchemy: invalid admin");
+        if (newAdmin == address(0)) revert InvalidAdmin();
         admin = newAdmin;
     }
 
@@ -143,7 +165,7 @@ contract SpeedH_Minter_AnvilAlchemy {
     }
 
     function setParentError(uint256 errorMargin) external onlyAdmin {
-        require(errorMargin <= 50, "AnvilAlchemy: invalid error");
+        if (errorMargin > 50) revert InvalidErrorMargin();
         parentError = errorMargin;
     }
 
@@ -152,17 +174,17 @@ contract SpeedH_Minter_AnvilAlchemy {
     }
 
     function setCancelRefund(uint256 refundBps) external onlyAdmin {
-        require(refundBps <= 10_000, "AnvilAlchemy: invalid bps");
+        if (refundBps > 10_000) revert InvalidRefundBps();
         cancelRefundBps = refundBps;
     }
 
     function withdrawTLOS(address payable to, uint256 amount) external onlyAdmin {
-        require(address(this).balance >= amount, "AnvilAlchemy: insufficient balance");
+        if (address(this).balance < amount) revert InsufficientBalance();
         to.transfer(amount);
     }
 
     function withdrawHAY(address to, uint256 amount) external onlyAdmin {
-        require(_contractHayToken.transfer(to, amount), "AnvilAlchemy: hay transfer failed");
+        if (!_contractHayToken.transfer(to, amount)) revert HayTransferFailed();
     }
 
     // ---------------------------------------------------------------------
@@ -170,30 +192,27 @@ contract SpeedH_Minter_AnvilAlchemy {
     // ---------------------------------------------------------------------
 
     function startFusion(uint256 fatherId, uint256 motherId) external payable returns (uint256 fusionId) {
-        require(address(_contractStats) != address(0), "AnvilAlchemy: stats not set");
-        require(address(_contractNFTHorseshoe) != address(0), "AnvilAlchemy: nft not set");
-        require(msg.value == fusionTlosCost, "AnvilAlchemy: incorrect TLOS");
-        require(fatherId != motherId, "AnvilAlchemy: distinct parents");
+        if (address(_contractStats) == address(0)) revert StatsNotSet();
+        if (address(_contractNFTHorseshoe) == address(0)) revert NftNotSet();
+        if (msg.value != fusionTlosCost) revert IncorrectTlosPayment();
+        if (fatherId == motherId) revert SameParents();
 
         SpeedH_Stats_Horseshoe horseshoeModule = _contractStats.horseshoeModule();
         SpeedH_Stats_Horseshoe.HorseshoeData memory father = horseshoeModule.getHorseshoe(fatherId);
         SpeedH_Stats_Horseshoe.HorseshoeData memory mother = horseshoeModule.getHorseshoe(motherId);
 
-        require(father.maxDurability > 0 && mother.maxDurability > 0, "AnvilAlchemy: invalid parents");
-        require(
-            !_contractStats.isHorseshoeEquipped(fatherId) && !_contractStats.isHorseshoeEquipped(motherId),
-            "AnvilAlchemy: equipped"
-        );
-        require(
-            _contractNFTHorseshoe.getApproved(fatherId) == address(this)
-                || _contractNFTHorseshoe.isApprovedForAll(msg.sender, address(this)),
-            "AnvilAlchemy: father not approved"
-        );
-        require(
-            _contractNFTHorseshoe.getApproved(motherId) == address(this)
-                || _contractNFTHorseshoe.isApprovedForAll(msg.sender, address(this)),
-            "AnvilAlchemy: mother not approved"
-        );
+        if (!(father.maxDurability > 0 && mother.maxDurability > 0)) revert InvalidParents();
+        if (
+            _contractStats.isHorseshoeEquipped(fatherId) || _contractStats.isHorseshoeEquipped(motherId)
+        ) revert ParentsEquipped();
+        if (
+            _contractNFTHorseshoe.getApproved(fatherId) != address(this)
+                && !_contractNFTHorseshoe.isApprovedForAll(msg.sender, address(this))
+        ) revert FatherNotApproved();
+        if (
+            _contractNFTHorseshoe.getApproved(motherId) != address(this)
+                && !_contractNFTHorseshoe.isApprovedForAll(msg.sender, address(this))
+        ) revert MotherNotApproved();
 
         _contractNFTHorseshoe.transferFrom(msg.sender, address(this), fatherId);
         _contractNFTHorseshoe.transferFrom(msg.sender, address(this), motherId);
@@ -210,14 +229,13 @@ contract SpeedH_Minter_AnvilAlchemy {
 
     function randomizeFusion(uint256 fusionId, bool keepStats) external validFusion(fusionId) {
         FusionProcess storage process = _fusions[fusionId];
-        require(!process.finalized, "AnvilAlchemy: finalized");
-        require(process.owner == msg.sender, "AnvilAlchemy: not owner");
-        require(address(_contractHayToken) != address(0), "AnvilAlchemy: hay not set");
+        if (process.finalized) revert FusionFinalized();
+        if (process.owner != msg.sender) revert NotFusionOwner();
+        if (address(_contractHayToken) == address(0)) revert HayNotSet();
 
-        require(
-            _contractHayToken.transferFrom(msg.sender, address(this), randomizeHayCost),
-            "AnvilAlchemy: hay payment failed"
-        );
+        if (!_contractHayToken.transferFrom(msg.sender, address(this), randomizeHayCost)) {
+            revert HayPaymentFailed();
+        }
 
         SpeedH_Stats_Horseshoe horseshoeModule = _contractStats.horseshoeModule();
         SpeedH_Stats_Horseshoe.HorseshoeData memory father = horseshoeModule.getHorseshoe(process.fatherId);
@@ -232,9 +250,9 @@ contract SpeedH_Minter_AnvilAlchemy {
 
     function claimFusion(uint256 fusionId) external validFusion(fusionId) {
         FusionProcess storage process = _fusions[fusionId];
-        require(process.owner == msg.sender, "AnvilAlchemy: not owner");
-        require(!process.finalized, "AnvilAlchemy: already done");
-        require(process.hasPreview, "AnvilAlchemy: no preview");
+        if (process.owner != msg.sender) revert NotFusionOwner();
+        if (process.finalized) revert FusionAlreadyProcessed();
+        if (!process.hasPreview) revert PreviewMissing();
 
         uint256 fatherId = process.fatherId;
         uint256 motherId = process.motherId;
@@ -265,8 +283,8 @@ contract SpeedH_Minter_AnvilAlchemy {
 
     function cancelFusion(uint256 fusionId) external validFusion(fusionId) {
         FusionProcess storage process = _fusions[fusionId];
-        require(process.owner == msg.sender, "AnvilAlchemy: not owner");
-        require(!process.finalized, "AnvilAlchemy: already done");
+        if (process.owner != msg.sender) revert NotFusionOwner();
+        if (process.finalized) revert FusionAlreadyProcessed();
 
         process.finalized = true;
         process.hasPreview = false;
