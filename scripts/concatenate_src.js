@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const srcDirectory = './contracts';
+const srcDirectory = './src';
 const filePrefix = 'speed-horses';
 const outputFiles = {
     js:   `${filePrefix}_javascript.js`,
