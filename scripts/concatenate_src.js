@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const srcDirectory = './src';
+const srcDirectory = './contracts';
 const filePrefix = 'speed-horses';
 const outputFiles = {
     js:   `${filePrefix}_javascript.js`,
@@ -15,7 +15,7 @@ const outputFiles = {
     tree: `${filePrefix}_files_tree.txt`,
     cpp:  `${filePrefix}_cpp_code.cpp`,
     hpp:  `${filePrefix}_hpp_code.hpp`,
-    sol:  `${filePrefix}_hpp_code.sol`,
+    sol:  `${filePrefix}_solidity_code.sol`,
 };
 
 // Estado para saber si hemos escrito el comentario inicial
