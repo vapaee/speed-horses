@@ -41,9 +41,9 @@ contract SpeedH_Minter_IronRedemption {
     // ---------------------------------------------------------------------
 
     address public admin;
-    ISpeedH_Stats_Repair public speedStats;
-    ISpeedH_NFT_Horseshoe_Escrow public horseshoeNft;
-    IERC20 public hayToken;
+    ISpeedH_Stats_Repair public _contractStats;
+    ISpeedH_NFT_Horseshoe_Escrow public _contractNFTHorseshoe;
+    IERC20 public _contractHayToken;
 
     uint256 public repairTlosCost = 200 ether;
     uint256 public randomizeHayCost = 20 ether;
@@ -105,16 +105,16 @@ contract SpeedH_Minter_IronRedemption {
         admin = newAdmin;
     }
 
-    function setSpeedStats(address stats) external onlyAdmin {
-        speedStats = ISpeedH_Stats_Repair(stats);
+    function setContractStats(address contractStats) external onlyAdmin {
+        _contractStats = ISpeedH_Stats_Repair(contractStats);
     }
 
-    function setHorseshoeNft(address nft) external onlyAdmin {
-        horseshoeNft = ISpeedH_NFT_Horseshoe_Escrow(nft);
+    function setContractNFTHorseshoe(address contractNFTHorseshoe) external onlyAdmin {
+        _contractNFTHorseshoe = ISpeedH_NFT_Horseshoe_Escrow(contractNFTHorseshoe);
     }
 
-    function setHayToken(address token) external onlyAdmin {
-        hayToken = IERC20(token);
+    function setContractHayToken(address contractHayToken) external onlyAdmin {
+        _contractHayToken = IERC20(contractHayToken);
     }
 
     function setRepairTlosCost(uint256 cost) external onlyAdmin {
@@ -141,7 +141,7 @@ contract SpeedH_Minter_IronRedemption {
     }
 
     function withdrawHAY(address to, uint256 amount) external onlyAdmin {
-        require(hayToken.transfer(to, amount), "IronRedemption: hay transfer failed");
+        require(_contractHayToken.transfer(to, amount), "IronRedemption: hay transfer failed");
     }
 
     // ---------------------------------------------------------------------
@@ -149,21 +149,21 @@ contract SpeedH_Minter_IronRedemption {
     // ---------------------------------------------------------------------
 
     function startRepair(uint256 tokenId) external payable returns (uint256 repairId) {
-        require(address(speedStats) != address(0), "IronRedemption: stats not set");
-        require(address(horseshoeNft) != address(0), "IronRedemption: nft not set");
+        require(address(_contractStats) != address(0), "IronRedemption: stats not set");
+        require(address(_contractNFTHorseshoe) != address(0), "IronRedemption: nft not set");
         require(msg.value == repairTlosCost, "IronRedemption: incorrect TLOS");
 
-        SpeedH_Stats_Horseshoe horseshoeModule = speedStats.horseshoeModule();
+        SpeedH_Stats_Horseshoe horseshoeModule = _contractStats.horseshoeModule();
         SpeedH_Stats_Horseshoe.HorseshoeData memory data = horseshoeModule.getHorseshoe(tokenId);
         require(data.maxDurability > 0, "IronRedemption: unknown horseshoe");
-        require(!speedStats.isHorseshoeEquipped(tokenId), "IronRedemption: equipped");
+        require(!_contractStats.isHorseshoeEquipped(tokenId), "IronRedemption: equipped");
         require(
-            horseshoeNft.getApproved(tokenId) == address(this)
-                || horseshoeNft.isApprovedForAll(msg.sender, address(this)),
+            _contractNFTHorseshoe.getApproved(tokenId) == address(this)
+                || _contractNFTHorseshoe.isApprovedForAll(msg.sender, address(this)),
             "IronRedemption: approval missing"
         );
 
-        horseshoeNft.transferFrom(msg.sender, address(this), tokenId);
+        _contractNFTHorseshoe.transferFrom(msg.sender, address(this), tokenId);
 
         repairId = nextRepairId++;
         RepairProcess storage process = _repairs[repairId];
@@ -188,9 +188,12 @@ contract SpeedH_Minter_IronRedemption {
         RepairProcess storage process = _repairs[repairId];
         require(!process.finalized, "IronRedemption: finalized");
         require(process.owner == msg.sender, "IronRedemption: not owner");
-        require(address(hayToken) != address(0), "IronRedemption: hay not set");
+        require(address(_contractHayToken) != address(0), "IronRedemption: hay not set");
 
-        require(hayToken.transferFrom(msg.sender, address(this), randomizeHayCost), "IronRedemption: hay payment failed");
+        require(
+            _contractHayToken.transferFrom(msg.sender, address(this), randomizeHayCost),
+            "IronRedemption: hay payment failed"
+        );
 
         uint256 errorPct = _nextEntropy(process) % (maxPercentError + 1);
         RepairPreview memory base = process.baseline;
@@ -226,10 +229,10 @@ contract SpeedH_Minter_IronRedemption {
         process.finalized = true;
         process.hasPreview = false;
 
-        horseshoeNft.burn(tokenId);
+        _contractNFTHorseshoe.burn(tokenId);
 
-        uint256 newId = horseshoeNft.mint(owner);
-        speedStats.registerHorseshoeStats(
+        uint256 newId = _contractNFTHorseshoe.mint(owner);
+        _contractStats.registerHorseshoeStats(
             newId,
             preview.imgCategory,
             preview.imgNumber,
@@ -256,7 +259,7 @@ contract SpeedH_Minter_IronRedemption {
         uint256 tokenId = process.tokenId;
         uint256 paidTlos = process.paidTlos;
 
-        horseshoeNft.transferFrom(address(this), owner, tokenId);
+        _contractNFTHorseshoe.transferFrom(address(this), owner, tokenId);
 
         uint256 refund = (paidTlos * cancelRefundBps) / 10_000;
         if (refund > 0) {

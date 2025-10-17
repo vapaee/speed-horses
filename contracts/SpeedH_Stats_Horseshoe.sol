@@ -13,7 +13,7 @@ contract SpeedH_Stats_Horseshoe {
     using SpeedH_VisualsLib for SpeedH_VisualsLib.VisualSpace;
 
     address public owner;
-    address public speedStats;
+    address public _contractStats;
     string public version = "SpeedH_Stats_Horseshoe-v1.0.0";
 
     modifier onlyOwner() {
@@ -22,7 +22,7 @@ contract SpeedH_Stats_Horseshoe {
     }
 
     modifier onlySpeedStats() {
-        require(msg.sender == speedStats, "SpeedH_Stats_Horseshoe: only controller");
+        require(msg.sender == _contractStats, "SpeedH_Stats_Horseshoe: only controller");
         _;
     }
 
@@ -30,9 +30,9 @@ contract SpeedH_Stats_Horseshoe {
         owner = msg.sender;
     }
 
-    function setSpeedStats(address controller) external onlyOwner {
-        require(controller != address(0), "SpeedH_Stats_Horseshoe: invalid controller");
-        speedStats = controller;
+    function setContractStats(address contractStats) external onlyOwner {
+        require(contractStats != address(0), "SpeedH_Stats_Horseshoe: invalid controller");
+        _contractStats = contractStats;
     }
 
     function transferOwnership(address newOwner) external onlyOwner {

@@ -42,7 +42,6 @@ error InvalidAmount();
 error NoHorseshoesEquipped();
 error HorseMetadataNotSet();
 error HorseshoeMetadataNotSet();
-error ModuleNotGranted();
 
 /// @title SpeedH_Stats
 /// @notice Central coordinator that composes horse stats (aggregated base + assigned + equipped horseshoes)
@@ -56,14 +55,14 @@ contract SpeedH_Stats {
     // Roles
     // ---------------------------------------------------------------------
     address public admin;
-    address public fixtureManager;
-    mapping(address => bool) private _horseMinters;
-    address public hayToken;
-    address public speedHorsesToken;
-    address public horseshoesToken;
+    address public _contractFixtureManager;
+    mapping(address => bool) private _contractMinters;
+    address public _contractHayToken;
+    address public _contractNFTHorse;
+    address public _contractNFTHorseshoe;
 
-    SpeedH_Metadata_Horse public horseMetadata;
-    SpeedH_Metadata_Horseshoe public horseshoeMetadata;
+    SpeedH_Metadata_Horse public _contractMetadataHorse;
+    SpeedH_Metadata_Horseshoe public _contractMetadataHorseshoe;
 
     constructor() {
         admin = msg.sender;
@@ -74,39 +73,39 @@ contract SpeedH_Stats {
     }
 
     function _requireHorseMinter() internal view {
-        if (!_horseMinters[msg.sender]) revert NotHorseMinter();
+        if (!_contractMinters[msg.sender]) revert NotHorseMinter();
     }
 
     function _requireFixtureManager() internal view {
-        if (msg.sender != fixtureManager) revert NotFixtureManager();
+        if (msg.sender != _contractFixtureManager) revert NotFixtureManager();
     }
 
     function _requireHorseModule() internal view {
-        if (address(horseModule) == address(0)) revert HorseModuleNotSet();
+        if (address(_contractStatsHorse) == address(0)) revert HorseModuleNotSet();
     }
 
     function _requireHorseshoeModule() internal view {
-        if (address(horseshoeModule) == address(0)) revert HorseshoeModuleNotSet();
+        if (address(_contractStatsHorseshoe) == address(0)) revert HorseshoeModuleNotSet();
     }
 
     function _requireHorseMetadata() internal view {
-        if (address(horseMetadata) == address(0)) revert HorseMetadataNotSet();
+        if (address(_contractMetadataHorse) == address(0)) revert HorseMetadataNotSet();
     }
 
     function _requireHorseshoeMetadata() internal view {
-        if (address(horseshoeMetadata) == address(0)) revert HorseshoeMetadataNotSet();
+        if (address(_contractMetadataHorseshoe) == address(0)) revert HorseshoeMetadataNotSet();
     }
 
     function _requireTokensConfigured() internal view {
-        if (speedHorsesToken == address(0) || horseshoesToken == address(0)) revert TokensNotConfigured();
+        if (_contractNFTHorse == address(0) || _contractNFTHorseshoe == address(0)) revert TokensNotConfigured();
     }
 
     function _requireHorseToken() internal view {
-        if (speedHorsesToken == address(0)) revert HorseTokenNotSet();
+        if (_contractNFTHorse == address(0)) revert HorseTokenNotSet();
     }
 
     function _requireHayToken() internal view {
-        if (hayToken == address(0)) revert HayTokenNotSet();
+        if (_contractHayToken == address(0)) revert HayTokenNotSet();
     }
 
     // ----------------------------------------------------
@@ -119,75 +118,71 @@ contract SpeedH_Stats {
         admin = newAdmin;
     }
 
-    event HorseMinterUpdated(address indexed minter, bool allowed);
+    event ContractMinterUpdated(address indexed contractMinter, bool allowed);
 
-    function setHorseMinter(address minter, bool allowed) external {
+    function setContractMinter(address contractMinter, bool allowed) external {
         _requireAdmin();
-        if (minter == address(0)) revert ZeroAddress();
-        _horseMinters[minter] = allowed;
-        emit HorseMinterUpdated(minter, allowed);
+        if (contractMinter == address(0)) revert ZeroAddress();
+        _contractMinters[contractMinter] = allowed;
+        emit ContractMinterUpdated(contractMinter, allowed);
     }
 
     function isHorseMinter(address minter) external view returns (bool) {
-        return _horseMinters[minter];
+        return _contractMinters[minter];
     }
 
-    function setFixtureManager(address _fixture) external {
+    function setContractFixtureManager(address contractFixtureManager) external {
         _requireAdmin();
-        if (_fixture == address(0)) revert ZeroAddress();
-        fixtureManager = _fixture;
+        if (contractFixtureManager == address(0)) revert ZeroAddress();
+        _contractFixtureManager = contractFixtureManager;
     }
 
-    function setHayToken(address _hay) external {
+    function setContractHayToken(address contractHayToken) external {
         _requireAdmin();
-        if (_hay == address(0)) revert ZeroAddress();
-        hayToken = _hay;
+        if (contractHayToken == address(0)) revert ZeroAddress();
+        _contractHayToken = contractHayToken;
     }
 
-    function setSpeedHorses(address _token) external {
+    function setContractNFTHorse(address contractNFTHorse) external {
         _requireAdmin();
-        if (_token == address(0)) revert ZeroAddress();
-        speedHorsesToken = _token;
+        if (contractNFTHorse == address(0)) revert ZeroAddress();
+        _contractNFTHorse = contractNFTHorse;
     }
 
-    function setHorseshoes(address _token) external {
+    function setContractNFTHorseshoe(address contractNFTHorseshoe) external {
         _requireAdmin();
-        if (_token == address(0)) revert ZeroAddress();
-        horseshoesToken = _token;
+        if (contractNFTHorseshoe == address(0)) revert ZeroAddress();
+        _contractNFTHorseshoe = contractNFTHorseshoe;
     }
 
     // ---------------------------------------------------------------------
     // Module wiring
     // ---------------------------------------------------------------------
-    SpeedH_Stats_Horse public horseModule;
-    SpeedH_Stats_Horseshoe public horseshoeModule;
+    SpeedH_Stats_Horse public _contractStatsHorse;
+    SpeedH_Stats_Horseshoe public _contractStatsHorseshoe;
 
-    function setHorseModule(address module) external {
+    function setContractStatsHorse(address contractStatsHorse) external {
         _requireAdmin();
-        if (module == address(0)) revert ZeroAddress();
-        SpeedH_Stats_Horse candidate = SpeedH_Stats_Horse(module);
-        if (candidate.speedStats() != address(this)) revert ModuleNotGranted();
-        horseModule = candidate;
+        if (contractStatsHorse == address(0)) revert ZeroAddress();
+        _contractStatsHorse = SpeedH_Stats_Horse(contractStatsHorse);
     }
 
-    function setHorseshoeModule(address module) external {
+    function setContractStatsHorseshoe(address contractStatsHorseshoe) external {
         _requireAdmin();
-        if (module == address(0)) revert ZeroAddress();
-        SpeedH_Stats_Horseshoe candidate = SpeedH_Stats_Horseshoe(module);
-        if (candidate.speedStats() != address(this)) revert ModuleNotGranted();
-        horseshoeModule = candidate;
+        if (contractStatsHorseshoe == address(0)) revert ZeroAddress();
+        _contractStatsHorseshoe = SpeedH_Stats_Horseshoe(contractStatsHorseshoe);
     }
 
-    function setHorseMetadata(address metadata) external {
+    function setContractMetadataHorse(address contractMetadataHorse) external {
         _requireAdmin();
-        if (metadata == address(0)) revert ZeroAddress();
-        horseMetadata = SpeedH_Metadata_Horse(metadata);
+        if (contractMetadataHorse == address(0)) revert ZeroAddress();
+        _contractMetadataHorse = SpeedH_Metadata_Horse(contractMetadataHorse);
     }
 
-    function setHorseshoeMetadata(address metadata) external {
+    function setContractMetadataHorseshoe(address contractMetadataHorseshoe) external {
         _requireAdmin();
-        if (metadata == address(0)) revert ZeroAddress();
-        horseshoeMetadata = SpeedH_Metadata_Horseshoe(metadata);
+        if (contractMetadataHorseshoe == address(0)) revert ZeroAddress();
+        _contractMetadataHorseshoe = SpeedH_Metadata_Horseshoe(contractMetadataHorseshoe);
     }
 
 
@@ -197,24 +192,24 @@ contract SpeedH_Stats {
     function setHorseImgCategory(uint256 imgCategory, string calldata name, uint256 maxImgNumber) external {
         _requireAdmin();
         _requireHorseModule();
-        horseModule.setImgCategory(imgCategory, name, maxImgNumber);
+        _contractStatsHorse.setImgCategory(imgCategory, name, maxImgNumber);
     }
 
     function getHorseImgCategoryIds() external view returns (uint256[] memory) {
         _requireHorseModule();
-        return horseModule.getImgCategoryIds();
+        return _contractStatsHorse.getImgCategoryIds();
     }
     function setHorseshoeImgCategory(uint256 imgCategory, string calldata name, uint256 maxImgNumber)
         external
     {
         _requireAdmin();
         _requireHorseshoeModule();
-        horseshoeModule.setImgCategory(imgCategory, name, maxImgNumber);
+        _contractStatsHorseshoe.setImgCategory(imgCategory, name, maxImgNumber);
     }
 
     function getHorseshoeImgCategoryIds() external view returns (uint256[] memory) {
         _requireHorseshoeModule();
-        return horseshoeModule.getImgCategoryIds();
+        return _contractStatsHorseshoe.getImgCategoryIds();
     }
 
     // ---------------------------------------------------------------------
@@ -236,16 +231,16 @@ contract SpeedH_Stats {
     ) external {
         _requireHorseMinter();
         _requireHorseModule();
-        horseModule.createHorseStats(horseId, imgCategory, imgNumber, stats);
+        _contractStatsHorse.createHorseStats(horseId, imgCategory, imgNumber, stats);
         emit HorseCreated(horseId, imgCategory, imgNumber, stats);
     }
 
     function setRacePrize(uint256 horseId, uint256 points) external {
         _requireFixtureManager();
         _requireHorseModule();
-        horseModule.addPoints(horseId, points);
+        _contractStatsHorse.addPoints(horseId, points);
         uint256 newRest = block.timestamp + BASE_RESTING_COOLDOWN;
-        horseModule.setRestFinish(horseId, newRest);
+        _contractStatsHorse.setRestFinish(horseId, newRest);
         emit HorseWonPrize(horseId, points);
         emit HorseRestStarted(horseId, newRest);
     }
@@ -256,15 +251,15 @@ contract SpeedH_Stats {
         uint256 totalToAssign = _sumStats(additional);
         if (totalToAssign == 0) revert NothingToAssign();
 
-        SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
+        SpeedH_Stats_Horse.HorseData memory data = _contractStatsHorse.getHorse(horseId);
         _requireHorseToken();
-        if (IERC721Minimal(speedHorsesToken).ownerOf(horseId) != msg.sender) revert NotHorseOwner();
+        if (IERC721Minimal(_contractNFTHorse).ownerOf(horseId) != msg.sender) revert NotHorseOwner();
 
-        horseModule.consumeUnassigned(horseId, totalToAssign);
-        IERC20(hayToken).safeTransferFrom(msg.sender, address(this), totalToAssign * FEEDING_COST_PER_POINT);
+        _contractStatsHorse.consumeUnassigned(horseId, totalToAssign);
+        IERC20(_contractHayToken).safeTransferFrom(msg.sender, address(this), totalToAssign * FEEDING_COST_PER_POINT);
 
         PerformanceStats memory updated = _addPerformance(data.stats, additional);
-        horseModule.setStats(horseId, updated);
+        _contractStatsHorse.setStats(horseId, updated);
 
         emit HorseAssigned(horseId, updated, totalToAssign);
     }
@@ -344,16 +339,16 @@ contract SpeedH_Stats {
         );
 
         // Will revert if the horse does not exist
-        horseModule.getHorse(horseId);
+        _contractStatsHorse.getHorse(horseId);
 
-        address horseOwner = IERC721Minimal(speedHorsesToken).ownerOf(horseId);
-        if (horseOwner != IERC721Minimal(horseshoesToken).ownerOf(horseshoeId)) revert MismatchedOwner();
+        address horseOwner = IERC721Minimal(_contractNFTHorse).ownerOf(horseId);
+        if (horseOwner != IERC721Minimal(_contractNFTHorseshoe).ownerOf(horseshoeId)) revert MismatchedOwner();
 
         uint256[] storage list = equippedHorseshoes[horseId];
         if (list.length >= MAX_SHOE_SLOTS) revert SlotsFull();
         if (horseHasShoe[horseId][horseshoeId]) revert AlreadyEquipped();
         if (horseshoeEquipped[horseshoeId]) revert HorseshoeInUse();
-        if (!horseshoeModule.isUseful(horseshoeId)) revert HorseshoeNotUseful();
+        if (!_contractStatsHorseshoe.isUseful(horseshoeId)) revert HorseshoeNotUseful();
 
         horseHasShoe[horseId][horseshoeId] = true;
         horseshoeEquipped[horseshoeId] = true;
@@ -372,7 +367,7 @@ contract SpeedH_Stats {
         bool isPure
     ) internal {
         _requireHorseshoeModule();
-        horseshoeModule.createHorseshoeStats(
+        _contractStatsHorseshoe.createHorseshoeStats(
             horseshoeId,
             imgCategory,
             imgNumber,
@@ -389,8 +384,8 @@ contract SpeedH_Stats {
         _requireHorseModule();
         _requireHorseshoeModule();
         _requireTokensConfigured();
-        if (IERC721Minimal(speedHorsesToken).ownerOf(horseId) != msg.sender) revert NotHorseOwner();
-        if (IERC721Minimal(horseshoesToken).ownerOf(horseshoeId) != msg.sender) revert NotHorseshoeOwner();
+        if (IERC721Minimal(_contractNFTHorse).ownerOf(horseId) != msg.sender) revert NotHorseOwner();
+        if (IERC721Minimal(_contractNFTHorseshoe).ownerOf(horseshoeId) != msg.sender) revert NotHorseshoeOwner();
         if (horseHasShoe[horseId][horseshoeId]) revert AlreadyEquipped();
         if (horseshoeEquipped[horseshoeId]) revert HorseshoeInUse();
 
@@ -398,8 +393,8 @@ contract SpeedH_Stats {
         if (list.length >= MAX_SHOE_SLOTS) revert SlotsFull();
 
         // ensure horseshoe exists (will revert otherwise)
-        horseshoeModule.getHorseshoe(horseshoeId);
-        if (!horseshoeModule.isUseful(horseshoeId)) revert HorseshoeNotUseful();
+        _contractStatsHorseshoe.getHorseshoe(horseshoeId);
+        if (!_contractStatsHorseshoe.isUseful(horseshoeId)) revert HorseshoeNotUseful();
 
         horseHasShoe[horseId][horseshoeId] = true;
         horseshoeEquipped[horseshoeId] = true;
@@ -412,7 +407,7 @@ contract SpeedH_Stats {
     function unequipHorseshoe(uint256 horseId, uint256 horseshoeId) external {
         _requireHorseModule();
         _requireTokensConfigured();
-        if (IERC721Minimal(speedHorsesToken).ownerOf(horseId) != msg.sender) revert NotHorseOwner();
+        if (IERC721Minimal(_contractNFTHorse).ownerOf(horseId) != msg.sender) revert NotHorseOwner();
         if (!horseHasShoe[horseId][horseshoeId]) revert NotEquipped();
 
         // Block unequip while registered for racing
@@ -459,7 +454,7 @@ contract SpeedH_Stats {
         // Iterate and consume durability on each equipped horseshoe.
         // This call will revert if SpeedH_Stats_Horseshoe' internal checks fail.
         for (uint256 i = 0; i < list.length; i++) {
-            horseshoeModule.consume(list[i], lessPerShoe);
+            _contractStatsHorseshoe.consume(list[i], lessPerShoe);
         }
     }
 
@@ -469,7 +464,7 @@ contract SpeedH_Stats {
 
     function getHorseStats(uint256 horseId) public view returns (PerformanceStats memory) {
         _requireHorseModule();
-        SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
+        SpeedH_Stats_Horse.HorseData memory data = _contractStatsHorse.getHorse(horseId);
         return data.stats;
     }
 
@@ -478,19 +473,19 @@ contract SpeedH_Stats {
         uint256[] storage list = equippedHorseshoes[horseId];
         totalBonus = PerformanceStats(0, 0, 0, 0, 0, 0, 0, 0);
         for (uint256 i = 0; i < list.length; i++) {
-            SpeedH_Stats_Horseshoe.HorseshoeData memory shoe = horseshoeModule.getHorseshoe(list[i]);
+            SpeedH_Stats_Horseshoe.HorseshoeData memory shoe = _contractStatsHorseshoe.getHorseshoe(list[i]);
             totalBonus = _addPerformance(totalBonus, shoe.bonusStats);
         }
     }
 
     function getRandomVisual(uint256 entropy) external view returns (uint256, uint256) {
         _requireHorseModule();
-        return horseModule.getRandomVisual(entropy);
+        return _contractStatsHorse.getRandomVisual(entropy);
     }
 
     function getRandomHorseshoeVisual(uint256 entropy) external view returns (uint256, uint256) {
         _requireHorseshoeModule();
-        return horseshoeModule.getRandomVisual(entropy);
+        return _contractStatsHorseshoe.getRandomVisual(entropy);
     }
 
     function getPerformance(uint256 horseId) public view returns (PerformanceStats memory) {
@@ -508,14 +503,14 @@ contract SpeedH_Stats {
     function getTotalPoints(uint256 horseId) public view returns (uint256) {
         _requireHorseModule();
         _requireHorseshoeModule();
-        SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
+        SpeedH_Stats_Horse.HorseData memory data = _contractStatsHorse.getHorse(horseId);
         uint256 equipmentPoints = _sumStats(getEquipmentBonus(horseId));
         return data.totalPoints + equipmentPoints;
     }
 
     function getHorseTotalPoints(uint256 horseId) public view returns (uint256) {
         _requireHorseModule();
-        SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
+        SpeedH_Stats_Horse.HorseData memory data = _contractStatsHorse.getHorse(horseId);
         return data.totalPoints;
     }
 
@@ -534,20 +529,20 @@ contract SpeedH_Stats {
         _requireHorseModule();
         _requireHorseshoeModule();
         PerformanceStats memory performance = getPerformance(horseId);
-        horseModule.setCacheStats(horseId, performance);
+        _contractStatsHorse.setCacheStats(horseId, performance);
     }
 
     function hasFinishedResting(uint256 horseId) public view returns (bool) {
         _requireHorseModule();
-        SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
+        SpeedH_Stats_Horse.HorseData memory data = _contractStatsHorse.getHorse(horseId);
         return block.timestamp >= data.restFinish;
     }
 
     function isRegisteredForRacing(uint256 horseId) public view returns (bool) {
-        if (fixtureManager == address(0)) {
+        if (_contractFixtureManager == address(0)) {
             return false;
         }
-        return IFixtureManagerView(fixtureManager).isRegistered(horseId);
+        return IFixtureManagerView(_contractFixtureManager).isRegistered(horseId);
     }
 
     // returns all JSON metadata for the given horseId
@@ -555,24 +550,24 @@ contract SpeedH_Stats {
         _requireHorseModule();
         _requireHorseshoeModule();
         _requireHorseMetadata();
-        SpeedH_Stats_Horse.HorseData memory data = horseModule.getHorse(horseId);
+        SpeedH_Stats_Horse.HorseData memory data = _contractStatsHorse.getHorse(horseId);
         PerformanceStats memory totalStats = getHorsePerformance(horseId);
-        string memory categoryName = horseModule.getImgCategoryName(data.imgCategory);
-        return horseMetadata.tokenURI(horseId, data, totalStats, getLevel(horseId), categoryName);
+        string memory categoryName = _contractStatsHorse.getImgCategoryName(data.imgCategory);
+        return _contractMetadataHorse.tokenURI(horseId, data, totalStats, getLevel(horseId), categoryName);
     }
 
     // returns all JSON metadata for the given horseshoeId
     function horseshoeTokenURI(uint256 horseshoeId) external view returns (string memory) {
         _requireHorseshoeModule();
         _requireHorseshoeMetadata();
-        SpeedH_Stats_Horseshoe.HorseshoeData memory data = horseshoeModule.getHorseshoe(horseshoeId);
-        string memory categoryName = horseshoeModule.getImgCategoryName(data.imgCategory);
-        return horseshoeMetadata.tokenURI(horseshoeId, data, categoryName);
+        SpeedH_Stats_Horseshoe.HorseshoeData memory data = _contractStatsHorseshoe.getHorseshoe(horseshoeId);
+        string memory categoryName = _contractStatsHorseshoe.getImgCategoryName(data.imgCategory);
+        return _contractMetadataHorseshoe.tokenURI(horseshoeId, data, categoryName);
     }
 
     function isHorseshoeUseful(uint256 horseshoeId) external view returns (bool) {
         _requireHorseshoeModule();
-        return horseshoeModule.isUseful(horseshoeId);
+        return _contractStatsHorseshoe.isUseful(horseshoeId);
     }
 
     // ---------------------------------------------------------------------

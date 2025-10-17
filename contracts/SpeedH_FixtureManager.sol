@@ -19,7 +19,7 @@ interface IHorses {
 /**
  * Título: SpeedH_FixtureManager
  * Brief: Orquestador de las carreras que se encarga de recibir inscripciones, organizar caballos por puntaje y armar las tandas de competencias respetando capacidades, tiempos y compensaciones. Administra el ciclo de vida de cada fixture desde su creación hasta su confirmación, calculando longitudes de pista y premios de consolación mientras coordina con el contrato de estadísticas y el token HAY.
- * API: los jugadores interactúan mediante `registerHorse`, que dispara internamente `_tryGenerateFixture` para avanzar en el proceso de armado; el contrato expone utilidades privadas (`_calculateNextStartTime`, `_calculateRaceLength`, `_min`) que determinan horarios y distancias de las carreras, y mantiene getters como `isRegistered` para consultas externas. Las funciones administrativas (`setHorseStats`, `setHayToken`) conectan las dependencias necesarias, completando el flujo de preparación de fixtures antes de las simulaciones de carrera.
+ * API: los jugadores interactúan mediante `registerHorse`, que dispara internamente `_tryGenerateFixture` para avanzar en el proceso de armado; el contrato expone utilidades privadas (`_calculateNextStartTime`, `_calculateRaceLength`, `_min`) que determinan horarios y distancias de las carreras, y mantiene getters como `isRegistered` para consultas externas. Las funciones administrativas (`setContractStats`, `setContractHayToken`) conectan las dependencias necesarias, completando el flujo de preparación de fixtures antes de las simulaciones de carrera.
  */
 contract SpeedH_FixtureManager {
     using SafeERC20 for IERC20;
@@ -30,8 +30,8 @@ contract SpeedH_FixtureManager {
     // Contract References
     // ---------------------------------------------------------------------
     address public admin;
-    address public horseStats;
-    address public hayToken;
+    address public _contractStats;
+    address public _contractHayToken;
 
     // ---------------------------------------------------------------------
     // Constants
@@ -114,14 +114,14 @@ contract SpeedH_FixtureManager {
         admin = msg.sender;
     }
 
-    function setHorseStats(address _stats) external onlyAdmin {
-        require(_stats != address(0), "SpeedH_FixtureManager: invalid stats");
-        horseStats = _stats;
+    function setContractStats(address contractStats) external onlyAdmin {
+        require(contractStats != address(0), "SpeedH_FixtureManager: invalid stats");
+        _contractStats = contractStats;
     }
 
-    function setHayToken(address _token) external onlyAdmin {
-        require(_token != address(0), "SpeedH_FixtureManager: invalid HAY token");
-        hayToken = _token;
+    function setContractHayToken(address contractHayToken) external onlyAdmin {
+        require(contractHayToken != address(0), "SpeedH_FixtureManager: invalid HAY token");
+        _contractHayToken = contractHayToken;
     }
 
     // ---------------------------------------------------------------------
@@ -131,29 +131,29 @@ contract SpeedH_FixtureManager {
     /// @notice Registers a horse for the next available fixture.
     /// @param horseId Id of the horse
     function registerHorse(uint256 horseId) external {
-        require(horseStats != address(0), "SpeedH_FixtureManager: horse stats not set");
-        require(hayToken != address(0), "SpeedH_FixtureManager: HAY token not set");
+        require(_contractStats != address(0), "SpeedH_FixtureManager: horse stats not set");
+        require(_contractHayToken != address(0), "SpeedH_FixtureManager: HAY token not set");
 
-        uint256[] memory equipped = IHorses(horseStats).getEquippedHorseshoes(horseId);
+        uint256[] memory equipped = IHorses(_contractStats).getEquippedHorseshoes(horseId);
         require(equipped.length == REQUIRED_HORSESHOES, "SpeedH_FixtureManager: incomplete horseshoes");
         for (uint256 j = 0; j < equipped.length; j++) {
             require(
-                IHorses(horseStats).isHorseshoeUseful(equipped[j]),
+                IHorses(_contractStats).isHorseshoeUseful(equipped[j]),
                 "SpeedH_FixtureManager: worn horseshoe"
             );
         }
 
         // Cobramos el costo de inscripción basado en el nivel del caballo
-        UFix6 level = IHorses(horseStats).getLevel(horseId);
+        UFix6 level = IHorses(_contractStats).getLevel(horseId);
         uint256 levelScaled = SpeedH_UFix6Lib.raw(level);
         uint256 cost = (levelScaled * RACE_HORSE_INSCRIPTION_COST_PER_LEVEL) / UFIX6_SCALE;
-        IERC20(hayToken).safeTransferFrom(msg.sender, address(this), cost);
+        IERC20(_contractHayToken).safeTransferFrom(msg.sender, address(this), cost);
 
         // Verificamos si el caballo ya está registrado
         require(!registered[horseId], "Horse already registered");
 
         // Incluimos el caballo en la lista de inscriptos
-        uint256 points = IHorses(horseStats).getTotalPoints(horseId);
+        uint256 points = IHorses(_contractStats).getTotalPoints(horseId);
         horseList.push(SignedHorse({horseId: horseId, points: points, prize: 0}));
 
         // Ordenamos el array de inscriptos por puntaje (buble sort simplificado)
@@ -182,7 +182,7 @@ contract SpeedH_FixtureManager {
     ///      in the order they arrive, respecting basic constraints but does
     ///      not fully implement the algorithm described in the specification.
     function _tryGenerateFixture() internal {
-        require(horseStats != address(0), "SpeedH_FixtureManager: horse stats not set");
+        require(_contractStats != address(0), "SpeedH_FixtureManager: horse stats not set");
 
         // Si no existe fixture activo creamos uno nuevo para iniciar la planificación
         // Caso inicial (primer fixture)
@@ -274,7 +274,7 @@ contract SpeedH_FixtureManager {
             if (participantsCount < MIN_HORSES_PER_RACE) {
                 for (uint256 i = 0; i < participantsCount; i++) {
                     SignedHorse memory entry = raceParticipants[i];
-                    uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(horseStats).getLevel(entry.horseId));
+                    uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(_contractStats).getLevel(entry.horseId));
                     entry.prize = horseLevel * CONSOLATION_PRIZE_PER_LEVEL;
                     carryOver[carryOverCount] = entry;
                     carryOverCount++;
@@ -287,7 +287,7 @@ contract SpeedH_FixtureManager {
             if (availableSlots < MIN_HORSES_PER_RACE) {
                 for (uint256 i = 0; i < participantsCount; i++) {
                     SignedHorse memory entry = raceParticipants[i];
-                    uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(horseStats).getLevel(entry.horseId));
+                    uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(_contractStats).getLevel(entry.horseId));
                     entry.prize = horseLevel * CONSOLATION_PRIZE_PER_LEVEL;
                     carryOver[carryOverCount] = entry;
                     carryOverCount++;
@@ -304,7 +304,7 @@ contract SpeedH_FixtureManager {
             if (participantsCount < MIN_HORSES_PER_RACE) {
                 for (uint256 i = 0; i < participantsCount; i++) {
                     SignedHorse memory entry = raceParticipants[i];
-                    uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(horseStats).getLevel(entry.horseId));
+                    uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(_contractStats).getLevel(entry.horseId));
                     entry.prize = horseLevel * CONSOLATION_PRIZE_PER_LEVEL;
                     carryOver[carryOverCount] = entry;
                     carryOverCount++;
@@ -320,7 +320,7 @@ contract SpeedH_FixtureManager {
             for (uint256 i = 0; i < participantsCount; i++) {
                 SignedHorse memory entry = raceParticipants[i];
                 race.horses[i] = entry.horseId;
-                uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(horseStats).getLevel(entry.horseId));
+                uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(_contractStats).getLevel(entry.horseId));
                 if (horseLevel > maxLevel) {
                     maxLevel = horseLevel;
                 }
@@ -340,7 +340,7 @@ contract SpeedH_FixtureManager {
         // Todo lo que quedó sin procesar recibe premio y pasa al listado de pendientes
         while (processed < totalQueue) {
             SignedHorse memory entry = queue[processed];
-            uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(horseStats).getLevel(entry.horseId));
+            uint256 horseLevel = SpeedH_UFix6Lib.toUint(IHorses(_contractStats).getLevel(entry.horseId));
             entry.prize = horseLevel * CONSOLATION_PRIZE_PER_LEVEL;
             carryOver[carryOverCount] = entry;
             carryOverCount++;
