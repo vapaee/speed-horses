@@ -10,7 +10,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
  * API: expone funciones administrativas para definir los contratos auxiliares (`setHorseMinter`, `setHorseStats`), un punto de acuñación protegido (`mint`) y la consulta de metadatos (`tokenURI`). Además, sobreescribe `_update` para integrarse en el flujo de juego, verificando en las transferencias que el caballo haya terminado de descansar y que no esté inscrito en competencias, siendo esta validación una etapa previa a cualquier intercambio entre jugadores.
  */
 contract SpeedH_NFT_Horse is ERC721, Ownable {
-    string public version = "SpeedH_NFT_Horse-v1.1.0";
+    string public version = "SpeedH_NFT_Horse-v1.0.0";
 
     // ---------------------------------------------------------------------
     // Contract References

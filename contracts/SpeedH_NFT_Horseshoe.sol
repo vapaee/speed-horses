@@ -15,11 +15,11 @@ import './SpeedH_NFT_Horse.sol';
  * que delega en el contrato `SpeedH_Minter_FoalForge`. Hereda de `ERC721` y `Ownable` para integrarse sin fricción con el resto de módulos on-chain.
  */
 contract SpeedH_NFT_Horseshoe is ERC721, Ownable {
+    string public version = "SpeedH_NFT_Horseshoe-v1.0.0";
+
     // ---------------------------------------------------------------------
     // Storage
     // ---------------------------------------------------------------------
-
-    string public version = 'SpeedH_NFT_Horseshoe-v1.1.0';
 
     address public admin;
     address public horseStats;

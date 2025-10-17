@@ -10,6 +10,8 @@ import { UFix6, SpeedH_UFix6Lib } from "./SpeedH_UFix6Lib.sol";
 contract SpeedH_Metadata_Horse {
     using Strings for uint256;
 
+    string public version = "SpeedH_Metadata_Horse-v1.0.0";
+
     function tokenURI(
         uint256 horseId,
         SpeedH_Stats_Horse.HorseData calldata data,

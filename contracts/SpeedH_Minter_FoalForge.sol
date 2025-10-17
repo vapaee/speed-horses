@@ -40,7 +40,7 @@ interface ISpeedH_NFT_Horseshoe {
  *        and coordinates with stats and NFTs. Provides staged minting API and pseudo-random helpers.
  */
 contract SpeedH_Minter_FoalForge {
-    string public version = 'SpeedH_Minter_FoalForge-v1.1.0';
+    string public version = "SpeedH_Minter_FoalForge-v1.0.0";
 
     // ---------------------------------------------------------------------
     // Contract References

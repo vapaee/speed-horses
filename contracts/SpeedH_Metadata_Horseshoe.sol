@@ -8,6 +8,8 @@ import { SpeedH_Stats_Horseshoe } from "./SpeedH_Stats_Horseshoe.sol";
 contract SpeedH_Metadata_Horseshoe {
     using Strings for uint256;
 
+    string public version = "SpeedH_Metadata_Horseshoe-v1.0.0";
+
     function tokenURI(
         uint256 horseshoeId,
         SpeedH_Stats_Horseshoe.HorseshoeData calldata data,

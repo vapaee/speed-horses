@@ -50,7 +50,7 @@ error ModuleNotGranted();
 contract SpeedH_Stats {
     using SafeERC20 for IERC20;
 
-    string public constant version = "SpeedH_Stats-v1.1.0";
+    string public version = "SpeedH_Stats-v1.0.0";
 
     // ---------------------------------------------------------------------
     // Roles
