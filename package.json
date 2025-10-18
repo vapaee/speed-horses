@@ -9,6 +9,7 @@
         "postinstall": "npm --prefix contracts install && cd ../web3-octopus && npm i",
         "src": "node scripts/concatenate_src.js",
         "build:contracts": "npm --prefix contracts run build:contracts",
+        "deploy:check": "npm --prefix contracts run deploy:check",
         "deploy:testnet": "npm --prefix contracts run deploy:testnet",
         "deploy:mainnet": "npm --prefix contracts run deploy:mainnet"
     },

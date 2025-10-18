@@ -1,4 +1,4 @@
-// 4 spaces indent, English names/comments, single quotes
+// contracts/scripts/helpers.ts
 import * as fs from 'fs';
 import * as path from 'path';
 import { utils, providers, ContractTransaction, BigNumber } from 'ethers';
@@ -39,6 +39,7 @@ export const startLogFile = (): string => {
 };
 
 export const appendLog = (filePath: string, line: LogLine): void => {
+    console.log(line);
     fs.appendFileSync(filePath, `${line}\n`);
 };
 

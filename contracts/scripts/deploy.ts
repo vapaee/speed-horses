@@ -1,13 +1,39 @@
-// 4 spaces indent, vars/comments in English, single quotes
+// contracts/scripts/deploy.ts
 import * as fs from 'fs';
 import { ethers } from 'hardhat';
 import { appendLog, startLogFile, fmtAddr, logBalance, txResult } from './helpers';
 
 type DeployedContracts = Record<string, string>;
 
+function failNoDeployer(): never {
+    const tips: string[] = [
+        'No signer available for the selected network.',
+        '',
+        'How to fix:',
+        '1) Ensure PRIVATE_KEY_FILE is set and points to a readable file with a single private key (no spaces, no quotes).',
+        '   Example content: 0x<hex-64>',
+        '   Example path:    ./scripts/pk.testnet',
+        '2) The key must have funds on the target network (to deploy later).',
+        '3) If you see this while running from monorepo root, remember the script runs inside contracts/.',
+        '   Try absolute path or verify the relative path is correct.',
+        '4) In hardhat.config.ts, accounts are only added if the file is found. If not found, getSigners() is empty.',
+        '',
+        'Quick checks:',
+        '• echo $PRIVATE_KEY_FILE',
+        '• ls -l ./contracts/scripts | grep pk',
+        '• cat ./contracts/scripts/pk.testnet  (should output a single hex key)',
+    ];
+    console.error(tips.join('\n'));
+    process.exit(1);
+}
+
 async function main(): Promise<void> {
     const [deployer] = await ethers.getSigners();
     const provider = ethers.provider;
+
+    if (!deployer) {
+        failNoDeployer();
+    }
 
     const logFile = startLogFile();
     appendLog(logFile, '## Deployer');

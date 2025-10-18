@@ -5,6 +5,7 @@
         "clear": "rm -rf node_modules artifacts cache typechain",
         "info": "hardhat --help",
         "build:contracts": "TELOS_EVM_TESTNET_RPC=https://rpc.testnet.telos.net TELOS_EVM_MAINNET_RPC=https://rpc.telos.net hardhat compile",
+        "deploy:check": "PRIVATE_KEY_FILE=./scripts/pk.testnet NETWORK_NAME=telosTestnet TELOS_EVM_TESTNET_RPC=https://rpc.testnet.telos.net hardhat run scripts/check-accounts.ts --network telosTestnet",
         "deploy:testnet": "PRIVATE_KEY_FILE=./scripts/pk.testnet NETWORK_NAME=telosTestnet TELOS_EVM_TESTNET_RPC=https://rpc.testnet.telos.net hardhat run scripts/deploy.ts --network telosTestnet",
         "deploy:mainnet": "PRIVATE_KEY_FILE=./scripts/pk.mainnet NETWORK_NAME=telosMainnet TELOS_EVM_MAINNET_RPC=https://rpc.telos.net hardhat run scripts/deploy.ts --network telosMainnet"
     },
