@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "type": "module",
     "scripts": {
+        "clear": "rm -rf node_modules artifacts cache typechain",
         "build:contracts": "hardhat compile",
         "deploy:testnet": "PRIVATE_KEY_FILE=./scripts/pk.testnet NETWORK_NAME=telosTestnet hardhat run scripts/deploy.ts --network telosTestnet",
         "deploy:mainnet": "PRIVATE_KEY_FILE=./scripts/pk.mainnet NETWORK_NAME=telosMainnet hardhat run scripts/deploy.ts --network telosMainnet"
