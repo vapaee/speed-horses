@@ -36,8 +36,16 @@ yarn-error.log
 /libpeerconnection.log
 testem.log
 /typings
+Notas.txt
 
 # System files
 .DS_Store
 Thumbs.db
-Notas.txt
+
+# Deployment and blockchain artifacts
+.env
+/scripts/pk.*
+/scripts/logs/
+artifacts/
+cache/
+/scripts/addresses.*.json
