@@ -1,13 +1,17 @@
-// 4 spaces indent, vars/comments in English, single quotes
+// 4 spaces indent, English names/comments, single quotes
 import * as fs from 'fs';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
-import { ethers } from 'ethers';
+import { utils, providers, ContractTransaction, BigNumber } from 'ethers';
 
-export type LogLine = string;
+type LogLine = string;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Works in both CJS and ESM transpiled outputs
+const getHere = (): string => {
+    // __dirname exists in CJS, which is your current setup
+    return __dirname;
+};
+
+const here = getHere();
 
 const pad = (value: number): string => String(value).padStart(2, '0');
 
@@ -17,7 +21,7 @@ export const nowTs = (): string => {
 };
 
 export const startLogFile = (): string => {
-    const directory = path.resolve(__dirname, 'logs');
+    const directory = path.resolve(here, 'logs');
     if (!fs.existsSync(directory)) {
         fs.mkdirSync(directory, { recursive: true });
     }
@@ -40,7 +44,7 @@ export const appendLog = (filePath: string, line: LogLine): void => {
 
 export const fmtAddr = (label: string, address: string): string => `- **${label}**: \`${address}\``;
 
-export const fmtBigintWeiToTlos = (value: string | number | ethers.BigNumber): string => {
+export const fmtBigintWeiToTlos = (value: BigNumber): string => {
     return utils.formatEther(value);
 };
 
@@ -48,8 +52,8 @@ export const logBalance = async (
     filePath: string,
     provider: providers.Provider,
     account: string,
-    previous?: ethers.BigNumber
-): Promise<ethers.BigNumber> => {
+    previous?: BigNumber
+): Promise<BigNumber> => {
     const balance = await provider.getBalance(account);
     const humanReadable = utils.formatEther(balance);
     if (previous !== undefined) {
