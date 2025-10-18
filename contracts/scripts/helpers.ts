@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { formatEther, type Provider, type ContractTransactionResponse } from 'ethers';
 
 export type LogLine = string;
@@ -12,7 +13,7 @@ export const nowTs = (): string => {
 };
 
 export const startLogFile = (): string => {
-    const directory = path.resolve('./scripts/logs');
+    const directory = path.resolve(__dirname, 'logs');
     if (!fs.existsSync(directory)) {
         fs.mkdirSync(directory, { recursive: true });
     }
@@ -72,3 +73,6 @@ export const txResult = async (
         throw error;
     }
 };
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+

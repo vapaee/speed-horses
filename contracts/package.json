@@ -1,0 +1,18 @@
+{
+    "name": "speed-horses-contracts",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "build:contracts": "hardhat compile",
+        "deploy:testnet": "PRIVATE_KEY_FILE=./scripts/pk.testnet NETWORK_NAME=telosTestnet hardhat run scripts/deploy.ts --network telosTestnet",
+        "deploy:mainnet": "PRIVATE_KEY_FILE=./scripts/pk.mainnet NETWORK_NAME=telosMainnet hardhat run scripts/deploy.ts --network telosMainnet"
+    },
+    "devDependencies": {
+        "hardhat": "^3.0.7",
+        "@nomicfoundation/hardhat-ethers": "^4.0.2",
+        "ethers": "^6.13.4",
+        "dotenv": "^17.2.3",
+        "ts-node": "^10.9.2",
+        "typescript": "5.8.3"
+    }
+}

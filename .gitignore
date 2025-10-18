@@ -49,3 +49,9 @@ Thumbs.db
 artifacts/
 cache/
 /scripts/addresses.*.json
+/contracts/node_modules
+/contracts/cache/
+/contracts/artifacts/
+/contracts/scripts/pk.*
+/contracts/scripts/logs/
+/contracts/scripts/addresses.*.json
