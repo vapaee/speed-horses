@@ -1,9 +1,13 @@
+// 4 spaces indent, vars/comments in English, single quotes
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { formatEther, type Provider, type ContractTransactionResponse } from 'ethers';
+import { ethers } from 'ethers';
 
 export type LogLine = string;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const pad = (value: number): string => String(value).padStart(2, '0');
 
@@ -36,20 +40,22 @@ export const appendLog = (filePath: string, line: LogLine): void => {
 
 export const fmtAddr = (label: string, address: string): string => `- **${label}**: \`${address}\``;
 
-export const fmtBigintWeiToTlos = (value: bigint): string => formatEther(value);
+export const fmtBigintWeiToTlos = (value: string | number | ethers.BigNumber): string => {
+    return utils.formatEther(value);
+};
 
 export const logBalance = async (
     filePath: string,
-    provider: Provider,
+    provider: providers.Provider,
     account: string,
-    previous?: bigint
-): Promise<bigint> => {
+    previous?: ethers.BigNumber
+): Promise<ethers.BigNumber> => {
     const balance = await provider.getBalance(account);
-    const humanReadable = fmtBigintWeiToTlos(balance);
+    const humanReadable = utils.formatEther(balance);
     if (previous !== undefined) {
-        const diff = balance - previous;
-        const sign = diff > 0n ? '+' : '';
-        const diffHuman = fmtBigintWeiToTlos(diff);
+        const diff = balance.sub(previous);
+        const sign = diff.gt(0) ? '+' : '';
+        const diffHuman = utils.formatEther(diff);
         appendLog(filePath, `> **Balance**: \`${humanReadable} TLOS\`  (**Δ** \`${sign}${diffHuman} TLOS\`)`);
     } else {
         appendLog(filePath, `> **Balance**: \`${humanReadable} TLOS\``);
@@ -60,12 +66,12 @@ export const logBalance = async (
 export const txResult = async (
     filePath: string,
     title: string,
-    txPromise: Promise<ContractTransactionResponse>
+    txPromise: Promise<ContractTransaction>
 ): Promise<void> => {
     try {
         const tx = await txPromise;
         const receipt = await tx.wait();
-        const gasUsed = receipt?.gasUsed ? receipt.gasUsed.toString() : 'n/a';
+        const gasUsed = receipt && receipt.gasUsed ? receipt.gasUsed.toString() : 'n/a';
         appendLog(filePath, `- ✅ ${title} — tx: \`${tx.hash}\`, gasUsed: \`${gasUsed}\``);
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -73,6 +79,3 @@ export const txResult = async (
         throw error;
     }
 };
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
