@@ -198,33 +198,39 @@ export class SpeedHorsesService extends W3oService {
     }
 
     private fetchCurrentFoal(auth: W3oAuthenticator, parent: W3oContext): Observable<SpeedHorsesFoal> {
-        const context = logger.method('fetchCurrentFoal', {}, parent);
         const address = auth.session.address;
+        const context = logger.method('fetchCurrentFoal', {address}, parent);
         if (!address) {
             return of(null);
         }
+
         const network = this.getEthereumNetwork(auth);
+        console.log('fetchCurrentFoal ---- contract.pendingHorse(address)  ---');
         const contract = this.getFoalForgeContract(auth, context).getReadOnlyContract(network.provider);
         return from(contract.pendingHorse(address)).pipe(
-            map((raw: any) => this.parseFoal(raw)),
+            tap(raw => console.log('fetchCurrentFoal ---- raw foal ---', {raw})),
+            map((raw: any) => this.parseFoal(raw, context)),
             catchError(error => {
                 context.error('fetchCurrentFoal error', error);
                 return of(null);
             })
         );
+
     }
 
-    private parseFoal(raw: any): SpeedHorsesFoal {
+    private parseFoal(raw: any, parent: W3oContext): SpeedHorsesFoal | null {
+        const context = logger.method('parseFoal', { raw }, parent);
+        let result: SpeedHorsesFoal | null = null;
         if (!raw) {
-            return null;
+            return result;
         }
         const totalPointsValue = this.toNumber(raw.totalPoints ?? raw[3]);
         if (!totalPointsValue) {
-            return null;
+            return result;
         }
         const statsRaw = raw.stats ?? raw[2];
         const horseshoesRaw = raw.horseshoes ?? raw[5] ?? [];
-        return {
+        result = {
             imgCategory: this.toNumber(raw.imgCategory ?? raw[0]),
             imgNumber: this.toNumber(raw.imgNumber ?? raw[1]),
             stats: this.parsePerformanceStats(statsRaw),
@@ -232,6 +238,8 @@ export class SpeedHorsesService extends W3oService {
             extraPackagesBought: this.toNumber(raw.extraPackagesBought ?? raw[4]),
             horseshoes: (horseshoesRaw as any[]).map(shoe => this.parseHorseshoe(shoe)),
         };
+        context.log('->', { result });
+        return result;
     }
 
     private parseHorseshoe(raw: any): SpeedHorsesHorseshoe {
@@ -294,16 +302,18 @@ export class SpeedHorsesService extends W3oService {
     }
 
     private getFoalForgeContract(auth: W3oAuthenticator, parent: W3oContext): EthereumContract {
-        const network = this.getEthereumNetwork(auth);
+        const context = logger.method('getFoalForgeContract', {auth}, parent);
+        const network = auth.session.network as unknown as EthereumNetwork;
         const chainId = network.ethereumSettings.chainId;
         const cached = this.contractCache.get(chainId);
         if (cached) {
+            context.log('Using cached FoalForge contract', { chainId, cached });
             return cached;
         }
         const address = this.contractAddresses[chainId];
         if (!address || address === ZERO_ADDRESS) {
             const error = new Error('FoalForge contract address not configured for chain');
-            parent.error('FoalForge contract address not configured for chain', { chainId });
+            context.error('FoalForge contract address not configured for chain', { chainId });
             throw error;
         }
         const contract = new EthereumContract(address, 'SpeedH_Minter_FoalForge', FOAL_FORGE_ABI, parent);

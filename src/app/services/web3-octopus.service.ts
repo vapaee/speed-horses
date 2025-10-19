@@ -18,7 +18,8 @@ import {
     EthereumChainSupport,
     EthereumTokensService,
     EthereumWalletMetamask,
-    TelosEVMNetwork,
+    // TelosEVMNetwork,     // Mainnet
+    TelosEVMTestnetNetwork,
 } from '@vapaee/w3o-ethereum';
 
 import { SpeedHorsesW3oServices } from '@app/types';
@@ -55,7 +56,8 @@ export class Web3OctopusService implements OnDestroy {
                     new EthereumWalletMetamask(context),
                 ]),
                 networks: [
-                    new TelosEVMNetwork({}, context),
+                    new TelosEVMTestnetNetwork({}, context),
+                    // new TelosEVMNetwork({}, context),
                 ]
             }
             this.octopus.addNetworkSupport(telosEvmSupportSettings, context);

@@ -50,7 +50,7 @@ export class ForgePage implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.buildStats();
 
-        this.sessionSub = this.sessionService.session$.subscribe(session => {
+        this.sessionSub = this.sessionService.session$.subscribe(session => {1
             this.foalSub?.unsubscribe();
             if (!session || session.network.type !== 'ethereum') {
                 return;
