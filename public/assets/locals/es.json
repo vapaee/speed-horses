@@ -23,7 +23,35 @@
                 "NAME": "Potros",
                 "TITLE": "Forjar un nuevo Caballo de Velocidad (NFT)",
                 "STATS": "Estadísticas base",
-                "TOTAL-POINTS": "Puntos totales"
+                "TOTAL-POINTS": "Puntos totales",
+                "NAME-FIELD": "Nombre",
+                "COLOR-FIELD": "Color",
+                "PICTURE-LOCKED": "Color e imagen están bloqueados",
+                "PICTURE-UNLOCKED": "Color e imagen pueden mezclarse",
+                "HORSESHOES-LOCKED": "Las herraduras están bloqueadas",
+                "HORSESHOES-UNLOCKED": "Las herraduras pueden mezclarse",
+                "STATS-LOCKED": "Las estadísticas base están bloqueadas",
+                "STATS-UNLOCKED": "Las estadísticas base pueden mezclarse",
+                "HORSESHOES": "Herraduras",
+                "BUY-MORE": "Comprar más",
+                "SHUFFLE": "Mezclar",
+                "FORGE": "Forjar",
+                "DEFAULT": {
+                    "TITLE": "Nacimiento de un Campeón",
+                    "SUBTITLE": "Adéntrate en la forja donde nacen las leyendas. Combina el poder de cuatro herraduras dotadas e invoca tu primer potro: un alma pura destinada a la grandeza.",
+                    "CTA": "Invocar Potro",
+                    "DIALOG": {
+                        "TITLE": "Invocar Potro",
+                        "MESSAGE": "Crear un nuevo potro cuesta 600 TLOS. ¿Deseas continuar?",
+                        "CONFIRM": "Confirmar",
+                        "CANCEL": "Cancelar"
+                    }
+                },
+                "SUCCESS": {
+                    "TITLE": "¡Tu potro ha llegado!",
+                    "SUBTITLE": "Tu nuevo campeón ya forma parte de tus establos. Revisa sus talentos antes de regresar a la forja.",
+                    "CTA": "Volver a la forja"
+                }
             },
             "TRADING": { "NAME": "Compra Venta" }
         },
@@ -40,6 +68,16 @@
             "RING": { "NAME": "Ring de Pre-Parada" },
             "INVENTORY": { "NAME": "Inventario" }
         }
+    },
+    "PROPERTIES": {
+        "power": "poder",
+        "acceleration": "aceleración",
+        "stamina": "resistencia",
+        "minSpeed": "velocidad mínima",
+        "maxSpeed": "velocidad máxima",
+        "luck": "suerte",
+        "curveBonus": "bonificación en curva",
+        "straightBonus": "bonificación en recta"
     },
     "AUTH": {
         "LOGIN": "Iniciar sesión",

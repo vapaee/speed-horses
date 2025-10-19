@@ -35,7 +35,23 @@
                 "HORSESHOES": "Horseshoes",
                 "BUY-MORE": "Buy more",
                 "SHUFFLE": "Shuffle",
-                "FORGE": "Forge"
+                "FORGE": "Forge",
+                "DEFAULT": {
+                    "TITLE": "Birth of a Champion",
+                    "SUBTITLE": "Step into the forge where legends are born. Combine the power of four gifted horseshoes and summon your very first foal — a pure soul destined for greatness.",
+                    "CTA": "Summon Foal",
+                    "DIALOG": {
+                        "TITLE": "Summon Foal",
+                        "MESSAGE": "Creating a new foal costs 600 TLOS. Do you wish to continue?",
+                        "CONFIRM": "Confirm",
+                        "CANCEL": "Cancel"
+                    }
+                },
+                "SUCCESS": {
+                    "TITLE": "Your Foal Has Arrived!",
+                    "SUBTITLE": "Your newest champion is now part of your stables. Take a moment to review its talents before returning to the forge.",
+                    "CTA": "Back to Forge"
+                }
             },
             "TRADING": { "NAME": "Trading Ground" }
         },

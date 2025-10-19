@@ -1,105 +1,163 @@
 <section class="p-forge">
-    <!-- title -->
-    <div class="p-forge__row">
-        <span class="p-forge__title">{{ 'PAGES.HORSES.FORGE.TITLE' | translate }}</span>
-    </div>
-
-    <!-- image & stats -->
-    <div class="p-forge__row p-forge__row-to-column">
-        <!-- picture -->
-        <div class="p-forge__column p-forge__column--picture">
-            <!-- Name -->
-            <div class="p-forge__name">
-                <span class="p-forge__name-field">{{ 'PAGES.HORSES.FORGE.NAME-FIELD' | translate }}:</span> {{ name }}
-            </div>
-            <!-- Color -->
-            <div class="p-forge__color">
-                <span class="p-forge__color-field">{{ 'PAGES.HORSES.FORGE.COLOR-FIELD' | translate }}:</span> {{ color }}
-            </div>
-            <!-- Image -->
-            <div class="p-forge__picture">
-                <img class="p-forge__picture-image" src="assets/images/under-construction.png" />
-            </div>
-            <!-- lock button -->
-            <div class="p-forge__lock">
-                <app-lock-switch
-                    [(ngModel)]="lock_picture"
-                    lockedText="{{ 'PAGES.HORSES.FORGE.PICTURE-LOCKED' | translate }}"
-                    unlockedText="{{ 'PAGES.HORSES.FORGE.PICTURE-UNLOCKED' | translate }}"
-                ></app-lock-switch>
-            </div>
-        </div>
-
-        <!-- stats -->
-        <div class="p-forge__column p-forge__column--stats">
-            <!-- title & total points -->
-            <div class="p-forge__row p-forge__row--spread">
-                <!-- title -->
-                <span class="p-forge__subtitle">{{ 'PAGES.HORSES.FORGE.STATS' | translate }}</span>
-                <!-- total points -->
-                <span class="p-forge__total-points">
-                    {{ 'PAGES.HORSES.FORGE.TOTAL-POINTS' | translate }}: {{ totalPoints }}
-                </span>
-            </div>
-
-            <!-- stats list -->
-            <div class="p-forge__row p-forge__row--stats">
-                <app-stats class="p-forge__stats" [statspack]="horseStats"></app-stats>
-            </div>
-
-            <!-- buttons -->
-            <div class="p-forge__row p-forge__row--footer">
-                <!-- lock button -->
-                <div class="p-forge__lock">
-                    <app-lock-switch
-                        [(ngModel)]="lock_stats"
-                        lockedText="{{ 'PAGES.HORSES.FORGE.STATS-LOCKED' | translate }}"
-                        unlockedText="{{ 'PAGES.HORSES.FORGE.STATS-UNLOCKED' | translate }}"
-                    ></app-lock-switch>
-                </div>
-                <!-- buy more button -->
-                <div class="p-forge__buy-more">
-                    <button class="p-forge__buy-more-btn" (click)="onBuyExtraPoints()">{{ 'PAGES.HORSES.FORGE.BUY-MORE' | translate }}</button>
+    <ng-container [ngSwitch]="viewState">
+        <div *ngSwitchCase="'default'" class="p-forge__default">
+            <div class="p-forge__card">
+                <img
+                    class="p-forge__card-image"
+                    src="assets/images/section-gold--horses-forge.png"
+                    alt="Forge foal"
+                />
+                <div class="p-forge__card-content">
+                    <h2 class="p-forge__card-title">{{ 'PAGES.HORSES.FORGE.DEFAULT.TITLE' | translate }}</h2>
+                    <p class="p-forge__card-subtitle">
+                        {{ 'PAGES.HORSES.FORGE.DEFAULT.SUBTITLE' | translate }}
+                    </p>
+                    <button class="p-forge__card-button" (click)="onSummonFoal()">
+                        {{ 'PAGES.HORSES.FORGE.DEFAULT.CTA' | translate }}
+                    </button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- horseshoes -->
-    <div class="p-forge__row">
-        <div class="p-forge__column">
-            <!-- title -->
-            <span class="p-forge__subtitle">{{ 'PAGES.HORSES.FORGE.HORSESHOES' | translate }}</span>
-            <!-- horseshoes list -->
-            <div class="p-forge__horseshoes">
-                <app-horseshoe  class="p-forge__horseshoes-shoe" *ngFor="let hs of horseshoes" [statspack]="hs"></app-horseshoe>
+        <div *ngSwitchCase="'current'" class="p-forge__current">
+            <div class="p-forge__row">
+                <span class="p-forge__title">{{ 'PAGES.HORSES.FORGE.TITLE' | translate }}</span>
             </div>
-            <!-- lock button -->
 
-
-            <!-- buttons -->
-            <div class="p-forge__row p-forge__row--footer">
-                <!-- lock button -->
-                <div class="p-forge__lock">
-                    <app-lock-switch
-                        [(ngModel)]="lock_horseshoes"
-                        lockedText="{{ 'PAGES.HORSES.FORGE.HORSESHOES-LOCKED' | translate }}"
-                        unlockedText="{{ 'PAGES.HORSES.FORGE.HORSESHOES-UNLOCKED' | translate }}"
-                    ></app-lock-switch>
-                </div>
-                <!-- buy more button -->
-                <div class="p-forge__row p-forge__row--buttons">
-                    <div class="p-forge__shuffle">
-                        <button class="p-forge__shuffle-btn" (click)="onRandomizeFoal()">{{ 'PAGES.HORSES.FORGE.SHUFFLE' | translate }}</button>
+            <div class="p-forge__row p-forge__row-to-column">
+                <div class="p-forge__column p-forge__column--picture">
+                    <div class="p-forge__name">
+                        <span class="p-forge__name-field">{{ 'PAGES.HORSES.FORGE.NAME-FIELD' | translate }}:</span> {{ name }}
                     </div>
-                    <!-- forge button -->
-                    <div class="p-forge__forge">
-                        <button class="p-forge__forge-btn" (click)="onClaimHorse()">{{ 'PAGES.HORSES.FORGE.FORGE' | translate }}</button>
+                    <div class="p-forge__color">
+                        <span class="p-forge__color-field">{{ 'PAGES.HORSES.FORGE.COLOR-FIELD' | translate }}:</span> {{ color }}
+                    </div>
+                    <div class="p-forge__picture">
+                        <img class="p-forge__picture-image" src="assets/images/under-construction.png" />
+                    </div>
+                    <div class="p-forge__lock">
+                        <app-lock-switch
+                            [(ngModel)]="lock_picture"
+                            lockedText="{{ 'PAGES.HORSES.FORGE.PICTURE-LOCKED' | translate }}"
+                            unlockedText="{{ 'PAGES.HORSES.FORGE.PICTURE-UNLOCKED' | translate }}"
+                        ></app-lock-switch>
+                    </div>
+                </div>
+
+                <div class="p-forge__column p-forge__column--stats" *ngIf="horseStats as stats">
+                    <div class="p-forge__row p-forge__row--spread">
+                        <span class="p-forge__subtitle">{{ 'PAGES.HORSES.FORGE.STATS' | translate }}</span>
+                        <span class="p-forge__total-points">
+                            {{ 'PAGES.HORSES.FORGE.TOTAL-POINTS' | translate }}: {{ stats.total }}
+                        </span>
+                    </div>
+
+                    <div class="p-forge__row p-forge__row--stats">
+                        <app-stats class="p-forge__stats" [statspack]="stats"></app-stats>
+                    </div>
+
+                    <div class="p-forge__row p-forge__row--footer">
+                        <div class="p-forge__lock">
+                            <app-lock-switch
+                                [(ngModel)]="lock_stats"
+                                lockedText="{{ 'PAGES.HORSES.FORGE.STATS-LOCKED' | translate }}"
+                                unlockedText="{{ 'PAGES.HORSES.FORGE.STATS-UNLOCKED' | translate }}"
+                            ></app-lock-switch>
+                        </div>
+                        <div class="p-forge__buy-more">
+                            <button class="p-forge__buy-more-btn" (click)="onBuyExtraPoints()">
+                                {{ 'PAGES.HORSES.FORGE.BUY-MORE' | translate }}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
+            <div class="p-forge__row" *ngIf="horseshoes.length">
+                <div class="p-forge__column">
+                    <span class="p-forge__subtitle">{{ 'PAGES.HORSES.FORGE.HORSESHOES' | translate }}</span>
+                    <div class="p-forge__horseshoes">
+                        <app-horseshoe
+                            class="p-forge__horseshoes-shoe"
+                            *ngFor="let hs of horseshoes"
+                            [statspack]="hs"
+                        ></app-horseshoe>
+                    </div>
+
+                    <div class="p-forge__row p-forge__row--footer">
+                        <div class="p-forge__lock">
+                            <app-lock-switch
+                                [(ngModel)]="lock_horseshoes"
+                                lockedText="{{ 'PAGES.HORSES.FORGE.HORSESHOES-LOCKED' | translate }}"
+                                unlockedText="{{ 'PAGES.HORSES.FORGE.HORSESHOES-UNLOCKED' | translate }}"
+                            ></app-lock-switch>
+                        </div>
+                        <div class="p-forge__row p-forge__row--buttons">
+                            <div class="p-forge__shuffle">
+                                <button class="p-forge__shuffle-btn" (click)="onRandomizeFoal()">
+                                    {{ 'PAGES.HORSES.FORGE.SHUFFLE' | translate }}
+                                </button>
+                            </div>
+                            <div class="p-forge__forge">
+                                <button class="p-forge__forge-btn" (click)="onClaimHorse()">
+                                    {{ 'PAGES.HORSES.FORGE.FORGE' | translate }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div *ngSwitchCase="'success'" class="p-forge__success">
+            <div class="p-forge__card">
+                <img
+                    class="p-forge__card-image"
+                    src="assets/images/section-gold--horses-forge.png"
+                    alt="Foal forged"
+                />
+                <div class="p-forge__card-content">
+                    <h2 class="p-forge__card-title">{{ 'PAGES.HORSES.FORGE.SUCCESS.TITLE' | translate }}</h2>
+                    <p class="p-forge__card-subtitle">
+                        {{ 'PAGES.HORSES.FORGE.SUCCESS.SUBTITLE' | translate }}
+                    </p>
+                    <div class="p-forge__stats-card" *ngIf="claimedStats as stats">
+                        <div class="p-forge__stats-header">
+                            <span class="p-forge__total-points">
+                                {{ 'PAGES.HORSES.FORGE.TOTAL-POINTS' | translate }}: {{ stats.total }}
+                            </span>
+                        </div>
+                        <app-stats class="p-forge__stats" [statspack]="stats"></app-stats>
+                    </div>
+                    <div class="p-forge__horseshoes" *ngIf="claimedHorseshoes.length">
+                        <app-horseshoe
+                            class="p-forge__horseshoes-shoe"
+                            *ngFor="let hs of claimedHorseshoes"
+                            [statspack]="hs"
+                        ></app-horseshoe>
+                    </div>
+                    <button class="p-forge__card-button" (click)="onDismissSuccess()">
+                        {{ 'PAGES.HORSES.FORGE.SUCCESS.CTA' | translate }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </ng-container>
+
+    <div *ngIf="summonConfirmVisible" class="p-forge__dialog-backdrop">
+        <div class="p-forge__dialog">
+            <h3 class="p-forge__dialog-title">{{ 'PAGES.HORSES.FORGE.DEFAULT.DIALOG.TITLE' | translate }}</h3>
+            <p class="p-forge__dialog-message">
+                {{ 'PAGES.HORSES.FORGE.DEFAULT.DIALOG.MESSAGE' | translate }}
+            </p>
+            <div class="p-forge__dialog-actions">
+                <button class="p-forge__dialog-button p-forge__dialog-button--cancel" (click)="onCancelSummon()">
+                    {{ 'PAGES.HORSES.FORGE.DEFAULT.DIALOG.CANCEL' | translate }}
+                </button>
+                <button class="p-forge__dialog-button" (click)="onConfirmSummon()">
+                    {{ 'PAGES.HORSES.FORGE.DEFAULT.DIALOG.CONFIRM' | translate }}
+                </button>
+            </div>
         </div>
     </div>
-
 </section>
