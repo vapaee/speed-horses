@@ -512,10 +512,8 @@ export class SpeedHorsesService extends W3oService {
         }
 
         const network = this.getEthereumNetwork(auth);
-        console.log('fetchCurrentFoal ---- contract.getPendingHorse(address)  ---');
         const contract = this.getFoalForgeContract(auth, context).getReadOnlyContract(network.provider);
         return from(contract.getPendingHorse(address)).pipe(
-            tap(raw => console.log('fetchCurrentFoal ---- raw foal ---', {raw})),
             map((raw: any) => this.parseFoal(raw, context)),
             catchError(error => {
                 context.error('fetchCurrentFoal error', error);

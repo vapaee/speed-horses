@@ -159,7 +159,7 @@ contract SpeedH_Stats_Horse {
     }
 
     /// @notice Generic random visual using the shared library (restricted to controller).
-    function getRandomVisual(uint256 entropy) external view onlySpeedStats returns (uint256, uint256) {
+    function getRandomVisual(uint256 entropy) external view returns (uint256, uint256) {
         return horseVisuals.getRandomVisual(entropy);
     }
 

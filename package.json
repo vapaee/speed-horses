@@ -11,7 +11,9 @@
         "build:contracts": "npm --prefix contracts run build:contracts",
         "deploy:check": "npm --prefix contracts run deploy:check",
         "deploy:testnet": "npm --prefix contracts run deploy:testnet",
-        "deploy:mainnet": "npm --prefix contracts run deploy:mainnet"
+        "deploy:mainnet": "npm --prefix contracts run deploy:mainnet",
+        "test:testnet": "npm --prefix contracts run test:testnet",
+        "test:mainnet": "npm --prefix contracts run test:mainnet"
     },
     "dependencies": {
         "@angular/animations": "^19.1.3",
