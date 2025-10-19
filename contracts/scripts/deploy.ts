@@ -186,7 +186,7 @@ async function main(): Promise<void> {
     await txResult(logFile, 'SpeedH_Minter_IronRedemption.setContractNFTHorseshoe(NFT_Horseshoe)', minterIron.setContractNFTHorseshoe(resolved['SpeedH_NFT_Horseshoe']));
     await txResult(logFile, 'SpeedH_Minter_IronRedemption.setContractHayToken(HayToken)', minterIron.setContractHayToken(resolved['SpeedH_HayToken']));
 
-    await txResult(logFile, 'SpeedH_Minter_FoalForge.setContractStatsHorse(Stats_Horse)', minterFoal.setContractStatsHorse(resolved['SpeedH_Stats_Horse']));
+    await txResult(logFile, 'SpeedH_Minter_FoalForge.setContractStats(Stats)', minterFoal.setContractStats(resolved['SpeedH_Stats']));
     await txResult(logFile, 'SpeedH_Minter_FoalForge.setContractNFTHorse(NFT_Horse)', minterFoal.setContractNFTHorse(resolved['SpeedH_NFT_Horse']));
     await txResult(logFile, 'SpeedH_Minter_FoalForge.setContractNFTHorseshoe(NFT_Horseshoe)', minterFoal.setContractNFTHorseshoe(resolved['SpeedH_NFT_Horseshoe']));
 
