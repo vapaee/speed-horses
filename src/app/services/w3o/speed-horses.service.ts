@@ -19,7 +19,7 @@ import { EthereumTokensService, EthereumNetwork, EthereumTransaction, EthereumCo
 const logger = new W3oContextFactory('SpeedHorsesService');
 
 const FOAL_FORGE_ABI = [
-    'function pendingHorse(address owner) view returns (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) stats, uint256 totalPoints, uint8 extraPackagesBought, (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) bonusStats)[4] horseshoes)',
+    'function getPendingHorse(address owner) view returns (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) stats, uint256 totalPoints, uint8 extraPackagesBought, (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) bonusStats)[4] horseshoes)',
     'function startHorseMint() payable',
     'function randomizeHorse(bool keepImage, bool keepStats, bool keepShoes) payable',
     'function buyExtraPoints() payable',
@@ -200,9 +200,9 @@ export class SpeedHorsesService extends W3oService {
         }
 
         const network = this.getEthereumNetwork(auth);
-        console.log('fetchCurrentFoal ---- contract.pendingHorse(address)  ---');
+        console.log('fetchCurrentFoal ---- contract.getPendingHorse(address)  ---');
         const contract = this.getFoalForgeContract(auth, context).getReadOnlyContract(network.provider);
-        return from(contract.pendingHorse(address)).pipe(
+        return from(contract.getPendingHorse(address)).pipe(
             tap(raw => console.log('fetchCurrentFoal ---- raw foal ---', {raw})),
             map((raw: any) => this.parseFoal(raw, context)),
             catchError(error => {

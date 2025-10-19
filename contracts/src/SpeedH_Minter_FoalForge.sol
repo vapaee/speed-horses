@@ -81,6 +81,23 @@ contract SpeedH_Minter_FoalForge {
 
     mapping(address => HorseBuild) public pendingHorse;
 
+    function getPendingHorse(address owner) external view returns (HorseBuild memory) {
+        HorseBuild storage storedHorse = pendingHorse[owner];
+        HorseBuild memory horse;
+
+        horse.imgCategory = storedHorse.imgCategory;
+        horse.imgNumber = storedHorse.imgNumber;
+        horse.stats = storedHorse.stats;
+        horse.totalPoints = storedHorse.totalPoints;
+        horse.extraPackagesBought = storedHorse.extraPackagesBought;
+
+        for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
+            horse.horseshoes[i] = storedHorse.horseshoes[i];
+        }
+
+        return horse;
+    }
+
     modifier onlyAdmin() {
         require(msg.sender == admin, 'Not admin');
         _;
