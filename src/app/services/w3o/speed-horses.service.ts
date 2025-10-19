@@ -225,7 +225,7 @@ export class SpeedHorsesService extends W3oService {
     }
 
     private parseFoal(raw: any, parent: W3oContext): SpeedHorsesFoal | null {
-        const context = logger.method('parseFoal', { raw }, parent);
+        const context = logger.method('parseFoal', { raw, totalPoints: raw.totalPoints, raw_3: raw[3] }, parent);
         let result: SpeedHorsesFoal | null = null;
         if (!raw) {
             return result;
