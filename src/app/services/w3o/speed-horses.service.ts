@@ -61,7 +61,18 @@ export interface SpeedHorsesFoalData {
 export type SpeedHorsesFoal = SpeedHorsesFoalData | null;
 
 export interface SpeedHorsesServiceConfig {
+    SpeedH_FixtureManager?: Record<string, string>;
+    SpeedH_HayToken?: Record<string, string>;
+    SpeedH_Metadata_Horse?: Record<string, string>;
+    SpeedH_Metadata_Horseshoe?: Record<string, string>;
+    SpeedH_Minter_AnvilAlchemy?: Record<string, string>;
     SpeedH_Minter_FoalForge?: Record<string, string>;
+    SpeedH_Minter_IronRedemption?: Record<string, string>;
+    SpeedH_NFT_Horse?: Record<string, string>;
+    SpeedH_NFT_Horseshoe?: Record<string, string>;
+    SpeedH_Stats_Horse?: Record<string, string>;
+    SpeedH_Stats_Horseshoe?: Record<string, string>;
+    SpeedH_Stats?: Record<string, string>;
 }
 
 export class SpeedHorsesService extends W3oService {
@@ -73,7 +84,7 @@ export class SpeedHorsesService extends W3oService {
     constructor(path: string, config: SpeedHorsesServiceConfig = {}, parent: W3oContext) {
         const context = logger.method('constructor', { path, config }, parent);
         super(path, context);
-        this.contractAddresses = { ...config.SpeedH_Minter_FoalForge };
+        this.contractAddresses = { ...(config.SpeedH_Minter_FoalForge ?? {}) };
     }
 
     get w3oVersion(): string {

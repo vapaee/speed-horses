@@ -1,9 +1,65 @@
 // contracts/scripts/deploy.ts
 import * as fs from 'fs';
+import * as path from 'path';
 import { ethers } from 'hardhat';
 import { appendLog, startLogFile, fmtAddr, logBalance, txResult } from './helpers';
+import { speedHorsesContracts as storedContracts } from '../../src/environments/contracts';
 
-type DeployedContracts = Record<string, string>;
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+const contractsToDeploy = [
+    'SpeedH_FixtureManager',
+    'SpeedH_HayToken',
+    'SpeedH_Metadata_Horse',
+    'SpeedH_Metadata_Horseshoe',
+    'SpeedH_Minter_AnvilAlchemy',
+    'SpeedH_Minter_FoalForge',
+    'SpeedH_Minter_IronRedemption',
+    'SpeedH_NFT_Horse',
+    'SpeedH_NFT_Horseshoe',
+    'SpeedH_Stats_Horse',
+    'SpeedH_Stats_Horseshoe',
+    'SpeedH_Stats'
+] as const;
+
+type ContractName = typeof contractsToDeploy[number];
+type ContractAddresses = Record<ContractName, string>;
+type DeployedContracts = Partial<ContractAddresses>;
+
+const contractsFilePath = path.resolve(__dirname, '../../src/environments/contracts.ts');
+
+function cloneStoredContracts(): Record<string, Record<string, string>> {
+    const clone: Record<string, Record<string, string>> = {};
+    for (const [contractName, networks] of Object.entries(storedContracts)) {
+        clone[contractName] = { ...networks };
+    }
+    return clone;
+}
+
+function formatContractsFile(contracts: Record<string, Record<string, string>>): string {
+    const knownOrder = new Set<string>(contractsToDeploy);
+    const orderedContracts = [
+        ...contractsToDeploy,
+        ...Object.keys(contracts)
+            .filter((name) => !knownOrder.has(name))
+            .sort((a, b) => a.localeCompare(b)),
+    ];
+    const lines: string[] = ['export const speedHorsesContracts = {'];
+    orderedContracts.forEach((contractName, contractIndex) => {
+        const networks = contracts[contractName] ?? {};
+        lines.push(`    ${contractName}: {`);
+        const networkEntries = Object.entries(networks)
+            .sort(([a], [b]) => Number(a) - Number(b));
+        networkEntries.forEach(([chainId, address], networkIndex) => {
+            const trailingComma = networkIndex < networkEntries.length - 1 ? ',' : '';
+            lines.push(`        '${chainId}': '${address}'${trailingComma}`);
+        });
+        const contractTrailingComma = contractIndex < orderedContracts.length - 1 ? ',' : '';
+        lines.push(`    }${contractTrailingComma}`);
+    });
+    lines.push('};');
+    return `${lines.join('\n')}\n`;
+}
 
 function failNoDeployer(): never {
     const tips: string[] = [
@@ -42,102 +98,129 @@ async function main(): Promise<void> {
 
     appendLog(logFile, '\n## Deploy contracts');
     const deployed: DeployedContracts = {};
+    const resolved: ContractAddresses = {} as ContractAddresses;
+    const network = await provider.getNetwork();
+    const chainId = network.chainId.toString();
 
-    const contractsToDeploy = [
-        'SpeedH_FixtureManager',
-        'SpeedH_HayToken',
-        'SpeedH_Metadata_Horse',
-        'SpeedH_Metadata_Horseshoe',
-        'SpeedH_Minter_AnvilAlchemy',
-        'SpeedH_Minter_FoalForge',
-        'SpeedH_Minter_IronRedemption',
-        'SpeedH_NFT_Horse',
-        'SpeedH_NFT_Horseshoe',
-        'SpeedH_Stats_Horse',
-        'SpeedH_Stats_Horseshoe',
-        'SpeedH_Stats'
-    ] as const;
+    const storedContractsClone = cloneStoredContracts();
 
     for (const name of contractsToDeploy) {
+        const storedForContract = storedContractsClone[name] ?? {};
+        const existingAddress = storedForContract[chainId];
+
+        if (existingAddress && existingAddress !== ZERO_ADDRESS) {
+            appendLog(logFile, `\n### Reusing existing \`${name}\``);
+            appendLog(logFile, fmtAddr(name, existingAddress));
+            resolved[name] = existingAddress;
+            continue;
+        }
+
         appendLog(logFile, `\n### Deploy \`${name}\``);
         const factory = await ethers.getContractFactory(name);
         const contract = await factory.deploy();
         await contract.deployed();
         const address = contract.address;
         deployed[name] = address;
+        resolved[name] = address;
         appendLog(logFile, fmtAddr(name, address));
 
         const newBalance = await logBalance(logFile, provider, deployer.address, lastBalance);
         lastBalance = newBalance;
+
+        storedForContract[chainId] = address;
+        storedContractsClone[name] = storedForContract;
+    }
+
+    for (const name of contractsToDeploy) {
+        if (!resolved[name]) {
+            const storedForContract = storedContractsClone[name] ?? {};
+            const address = storedForContract[chainId];
+            if (!address || address === ZERO_ADDRESS) {
+                throw new Error(`Contract address for ${name} on chain ${chainId} is missing. Deploy aborted.`);
+            }
+            resolved[name] = address;
+        }
     }
 
     appendLog(logFile, '\n## Set contract references');
 
-    const stats = await ethers.getContractAt('SpeedH_Stats', deployed['SpeedH_Stats']);
-    const statsHorse = await ethers.getContractAt('SpeedH_Stats_Horse', deployed['SpeedH_Stats_Horse']);
-    const statsHorseshoe = await ethers.getContractAt('SpeedH_Stats_Horseshoe', deployed['SpeedH_Stats_Horseshoe']);
-    const nftHorse = await ethers.getContractAt('SpeedH_NFT_Horse', deployed['SpeedH_NFT_Horse']);
-    const nftHorseshoe = await ethers.getContractAt('SpeedH_NFT_Horseshoe', deployed['SpeedH_NFT_Horseshoe']);
-    const minterAnvil = await ethers.getContractAt('SpeedH_Minter_AnvilAlchemy', deployed['SpeedH_Minter_AnvilAlchemy']);
-    const minterFoal = await ethers.getContractAt('SpeedH_Minter_FoalForge', deployed['SpeedH_Minter_FoalForge']);
-    const minterIron = await ethers.getContractAt('SpeedH_Minter_IronRedemption', deployed['SpeedH_Minter_IronRedemption']);
-    const fixtureManager = await ethers.getContractAt('SpeedH_FixtureManager', deployed['SpeedH_FixtureManager']);
-    const hayToken = await ethers.getContractAt('SpeedH_HayToken', deployed['SpeedH_HayToken']);
+    const stats = await ethers.getContractAt('SpeedH_Stats', resolved['SpeedH_Stats']);
+    const statsHorse = await ethers.getContractAt('SpeedH_Stats_Horse', resolved['SpeedH_Stats_Horse']);
+    const statsHorseshoe = await ethers.getContractAt('SpeedH_Stats_Horseshoe', resolved['SpeedH_Stats_Horseshoe']);
+    const nftHorse = await ethers.getContractAt('SpeedH_NFT_Horse', resolved['SpeedH_NFT_Horse']);
+    const nftHorseshoe = await ethers.getContractAt('SpeedH_NFT_Horseshoe', resolved['SpeedH_NFT_Horseshoe']);
+    const minterAnvil = await ethers.getContractAt('SpeedH_Minter_AnvilAlchemy', resolved['SpeedH_Minter_AnvilAlchemy']);
+    const minterFoal = await ethers.getContractAt('SpeedH_Minter_FoalForge', resolved['SpeedH_Minter_FoalForge']);
+    const minterIron = await ethers.getContractAt('SpeedH_Minter_IronRedemption', resolved['SpeedH_Minter_IronRedemption']);
+    const fixtureManager = await ethers.getContractAt('SpeedH_FixtureManager', resolved['SpeedH_FixtureManager']);
+    const hayToken = await ethers.getContractAt('SpeedH_HayToken', resolved['SpeedH_HayToken']);
 
-    await txResult(logFile, 'SpeedH_Stats.setContractMinter(AnvilAlchemy, true)', stats.setContractMinter(deployed['SpeedH_Minter_AnvilAlchemy'], true));
-    await txResult(logFile, 'SpeedH_Stats.setContractMinter(FoalForge, true)', stats.setContractMinter(deployed['SpeedH_Minter_FoalForge'], true));
-    await txResult(logFile, 'SpeedH_Stats.setContractMinter(IronRedemption, true)', stats.setContractMinter(deployed['SpeedH_Minter_IronRedemption'], true));
+    await txResult(logFile, 'SpeedH_Stats.setContractMinter(AnvilAlchemy, true)', stats.setContractMinter(resolved['SpeedH_Minter_AnvilAlchemy'], true));
+    await txResult(logFile, 'SpeedH_Stats.setContractMinter(FoalForge, true)', stats.setContractMinter(resolved['SpeedH_Minter_FoalForge'], true));
+    await txResult(logFile, 'SpeedH_Stats.setContractMinter(IronRedemption, true)', stats.setContractMinter(resolved['SpeedH_Minter_IronRedemption'], true));
 
-    await txResult(logFile, 'SpeedH_Stats.setContractFixtureManager(FixtureManager)', stats.setContractFixtureManager(deployed['SpeedH_FixtureManager']));
-    await txResult(logFile, 'SpeedH_Stats.setContractHayToken(HayToken)', stats.setContractHayToken(deployed['SpeedH_HayToken']));
-    await txResult(logFile, 'SpeedH_Stats.setContractNFTHorse(NFT_Horse)', stats.setContractNFTHorse(deployed['SpeedH_NFT_Horse']));
-    await txResult(logFile, 'SpeedH_Stats.setContractNFTHorseshoe(NFT_Horseshoe)', stats.setContractNFTHorseshoe(deployed['SpeedH_NFT_Horseshoe']));
-    await txResult(logFile, 'SpeedH_Stats.setContractStatsHorse(Stats_Horse)', stats.setContractStatsHorse(deployed['SpeedH_Stats_Horse']));
-    await txResult(logFile, 'SpeedH_Stats.setContractStatsHorseshoe(Stats_Horseshoe)', stats.setContractStatsHorseshoe(deployed['SpeedH_Stats_Horseshoe']));
+    await txResult(logFile, 'SpeedH_Stats.setContractFixtureManager(FixtureManager)', stats.setContractFixtureManager(resolved['SpeedH_FixtureManager']));
+    await txResult(logFile, 'SpeedH_Stats.setContractHayToken(HayToken)', stats.setContractHayToken(resolved['SpeedH_HayToken']));
+    await txResult(logFile, 'SpeedH_Stats.setContractNFTHorse(NFT_Horse)', stats.setContractNFTHorse(resolved['SpeedH_NFT_Horse']));
+    await txResult(logFile, 'SpeedH_Stats.setContractNFTHorseshoe(NFT_Horseshoe)', stats.setContractNFTHorseshoe(resolved['SpeedH_NFT_Horseshoe']));
+    await txResult(logFile, 'SpeedH_Stats.setContractStatsHorse(Stats_Horse)', stats.setContractStatsHorse(resolved['SpeedH_Stats_Horse']));
+    await txResult(logFile, 'SpeedH_Stats.setContractStatsHorseshoe(Stats_Horseshoe)', stats.setContractStatsHorseshoe(resolved['SpeedH_Stats_Horseshoe']));
 
-    await txResult(logFile, 'SpeedH_Stats.setContractMetadataHorse(Metadata_Horse)', stats.setContractMetadataHorse(deployed['SpeedH_Metadata_Horse']));
-    await txResult(logFile, 'SpeedH_Stats.setContractMetadataHorseshoe(Metadata_Horseshoe)', stats.setContractMetadataHorseshoe(deployed['SpeedH_Metadata_Horseshoe']));
+    await txResult(logFile, 'SpeedH_Stats.setContractMetadataHorse(Metadata_Horse)', stats.setContractMetadataHorse(resolved['SpeedH_Metadata_Horse']));
+    await txResult(logFile, 'SpeedH_Stats.setContractMetadataHorseshoe(Metadata_Horseshoe)', stats.setContractMetadataHorseshoe(resolved['SpeedH_Metadata_Horseshoe']));
 
-    await txResult(logFile, 'SpeedH_Stats_Horseshoe.setContractStats(Stats)', statsHorseshoe.setContractStats(deployed['SpeedH_Stats']));
-    await txResult(logFile, 'SpeedH_Stats_Horse.setContractStats(Stats)', statsHorse.setContractStats(deployed['SpeedH_Stats']));
+    await txResult(logFile, 'SpeedH_Stats_Horseshoe.setContractStats(Stats)', statsHorseshoe.setContractStats(resolved['SpeedH_Stats']));
+    await txResult(logFile, 'SpeedH_Stats_Horse.setContractStats(Stats)', statsHorse.setContractStats(resolved['SpeedH_Stats']));
 
-    await txResult(logFile, 'SpeedH_NFT_Horse.setContractStats(Stats)', nftHorse.setContractStats(deployed['SpeedH_Stats']));
-    await txResult(logFile, 'SpeedH_NFT_Horse.setContractMinter(AnvilAlchemy, true)', nftHorse.setContractMinter(deployed['SpeedH_Minter_AnvilAlchemy'], true));
-    await txResult(logFile, 'SpeedH_NFT_Horse.setContractMinter(FoalForge, true)', nftHorse.setContractMinter(deployed['SpeedH_Minter_FoalForge'], true));
-    await txResult(logFile, 'SpeedH_NFT_Horse.setContractMinter(IronRedemption, true)', nftHorse.setContractMinter(deployed['SpeedH_Minter_IronRedemption'], true));
+    await txResult(logFile, 'SpeedH_NFT_Horse.setContractStats(Stats)', nftHorse.setContractStats(resolved['SpeedH_Stats']));
+    await txResult(logFile, 'SpeedH_NFT_Horse.setContractMinter(AnvilAlchemy, true)', nftHorse.setContractMinter(resolved['SpeedH_Minter_AnvilAlchemy'], true));
+    await txResult(logFile, 'SpeedH_NFT_Horse.setContractMinter(FoalForge, true)', nftHorse.setContractMinter(resolved['SpeedH_Minter_FoalForge'], true));
+    await txResult(logFile, 'SpeedH_NFT_Horse.setContractMinter(IronRedemption, true)', nftHorse.setContractMinter(resolved['SpeedH_Minter_IronRedemption'], true));
 
-    await txResult(logFile, 'SpeedH_NFT_Horseshoe.setContractStats(Stats)', nftHorseshoe.setContractStats(deployed['SpeedH_Stats']));
-    await txResult(logFile, 'SpeedH_NFT_Horseshoe.setContractMinter(AnvilAlchemy, true)', nftHorseshoe.setContractMinter(deployed['SpeedH_Minter_AnvilAlchemy'], true));
-    await txResult(logFile, 'SpeedH_NFT_Horseshoe.setContractMinter(FoalForge, true)', nftHorseshoe.setContractMinter(deployed['SpeedH_Minter_FoalForge'], true));
-    await txResult(logFile, 'SpeedH_NFT_Horseshoe.setContractMinter(IronRedemption, true)', nftHorseshoe.setContractMinter(deployed['SpeedH_Minter_IronRedemption'], true));
+    await txResult(logFile, 'SpeedH_NFT_Horseshoe.setContractStats(Stats)', nftHorseshoe.setContractStats(resolved['SpeedH_Stats']));
+    await txResult(logFile, 'SpeedH_NFT_Horseshoe.setContractMinter(AnvilAlchemy, true)', nftHorseshoe.setContractMinter(resolved['SpeedH_Minter_AnvilAlchemy'], true));
+    await txResult(logFile, 'SpeedH_NFT_Horseshoe.setContractMinter(FoalForge, true)', nftHorseshoe.setContractMinter(resolved['SpeedH_Minter_FoalForge'], true));
+    await txResult(logFile, 'SpeedH_NFT_Horseshoe.setContractMinter(IronRedemption, true)', nftHorseshoe.setContractMinter(resolved['SpeedH_Minter_IronRedemption'], true));
 
-    await txResult(logFile, 'SpeedH_Minter_IronRedemption.setContractStats(Stats)', minterIron.setContractStats(deployed['SpeedH_Stats']));
-    await txResult(logFile, 'SpeedH_Minter_IronRedemption.setContractNFTHorseshoe(NFT_Horseshoe)', minterIron.setContractNFTHorseshoe(deployed['SpeedH_NFT_Horseshoe']));
-    await txResult(logFile, 'SpeedH_Minter_IronRedemption.setContractHayToken(HayToken)', minterIron.setContractHayToken(deployed['SpeedH_HayToken']));
+    await txResult(logFile, 'SpeedH_Minter_IronRedemption.setContractStats(Stats)', minterIron.setContractStats(resolved['SpeedH_Stats']));
+    await txResult(logFile, 'SpeedH_Minter_IronRedemption.setContractNFTHorseshoe(NFT_Horseshoe)', minterIron.setContractNFTHorseshoe(resolved['SpeedH_NFT_Horseshoe']));
+    await txResult(logFile, 'SpeedH_Minter_IronRedemption.setContractHayToken(HayToken)', minterIron.setContractHayToken(resolved['SpeedH_HayToken']));
 
-    await txResult(logFile, 'SpeedH_Minter_FoalForge.setContractStatsHorse(Stats_Horse)', minterFoal.setContractStatsHorse(deployed['SpeedH_Stats_Horse']));
-    await txResult(logFile, 'SpeedH_Minter_FoalForge.setContractNFTHorse(NFT_Horse)', minterFoal.setContractNFTHorse(deployed['SpeedH_NFT_Horse']));
-    await txResult(logFile, 'SpeedH_Minter_FoalForge.setContractNFTHorseshoe(NFT_Horseshoe)', minterFoal.setContractNFTHorseshoe(deployed['SpeedH_NFT_Horseshoe']));
+    await txResult(logFile, 'SpeedH_Minter_FoalForge.setContractStatsHorse(Stats_Horse)', minterFoal.setContractStatsHorse(resolved['SpeedH_Stats_Horse']));
+    await txResult(logFile, 'SpeedH_Minter_FoalForge.setContractNFTHorse(NFT_Horse)', minterFoal.setContractNFTHorse(resolved['SpeedH_NFT_Horse']));
+    await txResult(logFile, 'SpeedH_Minter_FoalForge.setContractNFTHorseshoe(NFT_Horseshoe)', minterFoal.setContractNFTHorseshoe(resolved['SpeedH_NFT_Horseshoe']));
 
-    await txResult(logFile, 'SpeedH_Minter_AnvilAlchemy.setContractStats(Stats)', minterAnvil.setContractStats(deployed['SpeedH_Stats']));
-    await txResult(logFile, 'SpeedH_Minter_AnvilAlchemy.setContractNFTHorseshoe(NFT_Horseshoe)', minterAnvil.setContractNFTHorseshoe(deployed['SpeedH_NFT_Horseshoe']));
-    await txResult(logFile, 'SpeedH_Minter_AnvilAlchemy.setContractHayToken(HayToken)', minterAnvil.setContractHayToken(deployed['SpeedH_HayToken']));
+    await txResult(logFile, 'SpeedH_Minter_AnvilAlchemy.setContractStats(Stats)', minterAnvil.setContractStats(resolved['SpeedH_Stats']));
+    await txResult(logFile, 'SpeedH_Minter_AnvilAlchemy.setContractNFTHorseshoe(NFT_Horseshoe)', minterAnvil.setContractNFTHorseshoe(resolved['SpeedH_NFT_Horseshoe']));
+    await txResult(logFile, 'SpeedH_Minter_AnvilAlchemy.setContractHayToken(HayToken)', minterAnvil.setContractHayToken(resolved['SpeedH_HayToken']));
 
-    await txResult(logFile, 'SpeedH_FixtureManager.setContractStats(Stats)', fixtureManager.setContractStats(deployed['SpeedH_Stats']));
-    await txResult(logFile, 'SpeedH_FixtureManager.setContractHayToken(HayToken)', fixtureManager.setContractHayToken(deployed['SpeedH_HayToken']));
+    await txResult(logFile, 'SpeedH_FixtureManager.setContractStats(Stats)', fixtureManager.setContractStats(resolved['SpeedH_Stats']));
+    await txResult(logFile, 'SpeedH_FixtureManager.setContractHayToken(HayToken)', fixtureManager.setContractHayToken(resolved['SpeedH_HayToken']));
 
     appendLog(logFile, '\n## Final balance');
     await logBalance(logFile, provider, deployer.address, lastBalance);
 
     appendLog(logFile, '\n## Address book');
-    for (const [label, address] of Object.entries(deployed)) {
+    for (const [label, address] of Object.entries(resolved)) {
         appendLog(logFile, `- ${label}: \`${address}\``);
     }
 
-    const network = process.env.NETWORK_NAME || 'unknown';
-    const addressesPath = `./scripts/addresses.${network}.json`;
-    fs.writeFileSync(addressesPath, `${JSON.stringify(deployed, null, 4)}\n`, 'utf8');
+    const networkName = process.env.NETWORK_NAME || 'unknown';
+    const addressesPath = `./scripts/addresses.${networkName}.json`;
+    fs.writeFileSync(addressesPath, `${JSON.stringify(resolved, null, 4)}\n`, 'utf8');
     appendLog(logFile, `\n> Addresses JSON written at: \`${addressesPath}\``);
+
+    for (const name of contractsToDeploy) {
+        const networks = storedContractsClone[name] ?? {};
+        storedContractsClone[name] = {
+            ...networks,
+            [chainId]: resolved[name],
+        };
+    }
+
+    const formattedContracts = formatContractsFile(storedContractsClone);
+    fs.writeFileSync(contractsFilePath, formattedContracts, 'utf8');
+    appendLog(logFile, `> Updated contracts file at: \`${contractsFilePath}\``);
 }
 
 main().catch((error) => {
