@@ -68,7 +68,7 @@ export class Web3OctopusService implements OnDestroy {
                 new EthereumTokensService('ethereum.tokens', context),
                 new SpeedHorsesService(
                     'ethereum.speedhorses',
-                    { foalForgeAddresses: environment.speedHorsesContracts?.foalForge },
+                    { SpeedH_Minter_FoalForge: environment.speedHorsesContracts?.SpeedH_Minter_FoalForge },
                     context
                 ),
             ];

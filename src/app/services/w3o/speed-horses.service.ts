@@ -32,11 +32,6 @@ const BASE_CREATION_COST = parseEther('600');
 const RANDOMIZE_COST = parseEther('100');
 const EXTRA_POINTS_COST = parseEther('200');
 
-const DEFAULT_CONTRACT_ADDRESSES: Record<string, string> = {
-    '40': ZERO_ADDRESS,
-    '41': ZERO_ADDRESS,
-};
-
 export interface SpeedHorsesPerformanceStats {
     power: number;
     acceleration: number;
@@ -66,7 +61,7 @@ export interface SpeedHorsesFoalData {
 export type SpeedHorsesFoal = SpeedHorsesFoalData | null;
 
 export interface SpeedHorsesServiceConfig {
-    foalForgeAddresses?: Record<string, string>;
+    SpeedH_Minter_FoalForge?: Record<string, string>;
 }
 
 export class SpeedHorsesService extends W3oService {
@@ -78,7 +73,7 @@ export class SpeedHorsesService extends W3oService {
     constructor(path: string, config: SpeedHorsesServiceConfig = {}, parent: W3oContext) {
         const context = logger.method('constructor', { path, config }, parent);
         super(path, context);
-        this.contractAddresses = { ...DEFAULT_CONTRACT_ADDRESSES, ...(config.foalForgeAddresses ?? {}) };
+        this.contractAddresses = { ...config.SpeedH_Minter_FoalForge };
     }
 
     get w3oVersion(): string {
