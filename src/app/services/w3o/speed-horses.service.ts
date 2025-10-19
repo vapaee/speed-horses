@@ -9,8 +9,8 @@ import {
     W3oService,
     W3oAuthenticator,
 } from '@vapaee/w3o-core';
-import { BehaviorSubject, Observable, Subject, firstValueFrom, from, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, from, isObservable, of, throwError } from 'rxjs';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { parseEther } from 'ethers';
 import { EthereumTokensService, EthereumNetwork, EthereumTransaction, EthereumContractAbi, EthereumContract } from '@vapaee/w3o-ethereum';
 
@@ -259,30 +259,42 @@ export class SpeedHorsesService extends W3oService {
 
     private executeFoalTransaction(auth: W3oAuthenticator, transaction: EthereumTransaction, parent: W3oContext): Observable<SpeedHorsesFoal> {
         const context = logger.method('executeFoalTransaction', { transaction }, parent);
-        const result$ = new Subject<SpeedHorsesFoal>();
-        auth.session.signTransaction(transaction, context).subscribe({
-            next: (tx: any) => {
-                const waitForConfirmation = typeof tx?.wait === 'function'
-                    ? tx.wait()
-                    : Promise.resolve(undefined);
-                // TODO: tx.wait() devuelve un observable. Por tanto hay que suscribirse a él en lugar de usar .then(). Además, reemplazar Promise.resolve por of()
-                waitForConfirmation
-                    .then(() => firstValueFrom(this.refreshCurrentFoal(auth, context)))
-                    .then(foal => {
-                        result$.next(foal);
-                        result$.complete();
-                    })
-                    .catch(error => {
-                        context.error('executeFoalTransaction confirmation error', error);
-                        result$.error(error);
-                    });
-            },
-            error: (error: unknown) => {
+
+        return auth.session.signTransaction(transaction, context).pipe(
+            catchError(error => {
                 context.error('executeFoalTransaction sign error', error);
-                result$.error(error as Error);
-            },
-        });
-        return result$.asObservable();
+                return throwError(() => error);
+            }),
+            switchMap((tx: any) => {
+                let wait$: Observable<unknown>;
+
+                if (typeof tx?.wait === 'function') {
+                    try {
+                        const waitResult = tx.wait();
+                        if (isObservable(waitResult)) {
+                            wait$ = waitResult;
+                        } else if (waitResult && typeof waitResult.then === 'function') {
+                            wait$ = from(waitResult);
+                        } else {
+                            wait$ = of(waitResult);
+                        }
+                    } catch (error) {
+                        context.error('executeFoalTransaction wait error', error);
+                        return throwError(() => error);
+                    }
+                } else {
+                    wait$ = of(undefined);
+                }
+
+                return wait$.pipe(
+                    switchMap(() => this.refreshCurrentFoal(auth, context)),
+                    catchError(error => {
+                        context.error('executeFoalTransaction confirmation error', error);
+                        return throwError(() => error);
+                    }),
+                );
+            }),
+        );
     }
 
     private refreshCurrentFoal(auth: W3oAuthenticator, parent: W3oContext): Observable<SpeedHorsesFoal> {
