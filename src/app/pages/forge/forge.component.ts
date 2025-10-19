@@ -7,7 +7,7 @@ import { SharedModule } from '@app/shared/shared.module';
 import { StatsPack } from '@app/types';
 import { SessionService } from '@app/services/session-kit.service';
 import { Web3OctopusService } from '@app/services/web3-octopus.service';
-import { SpeedHorsesService } from '@app/services/w3o/speed-horses.service';
+import { SpeedHorsesFoal, SpeedHorsesService } from '@app/services/w3o/speed-horses.service';
 import { TranslateService } from '@ngx-translate/core';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
@@ -32,11 +32,27 @@ export class ForgePage implements OnInit, OnDestroy {
     totalPoints = 60;
     color = "black";
     name = "Speedy Gonzales";
-    horseStats: StatsPack;
-    horseshoes: StatsPack[];
+    horseStats?: StatsPack;
+    horseshoes: StatsPack[] = [];
     lock_horseshoes = false;
     lock_stats = false;
     lock_picture = false;
+    summonConfirmVisible = false;
+    viewState: 'default' | 'current' | 'success' = 'default';
+    private currentFoal: SpeedHorsesFoal = null;
+    private successFoal: SpeedHorsesFoal = null;
+    private pendingClaimFoal: SpeedHorsesFoal = null;
+    private readonly statKeys = [
+        'power',
+        'acceleration',
+        'stamina',
+        'minSpeed',
+        'maxSpeed',
+        'luck',
+        'curveBonus',
+        'straightBonus',
+    ] as const;
+    private statLabels: Record<string, string> = {};
     private readonly logger = new W3oContextFactory('ForgePage');
     private sessionSub?: Subscription;
     private foalSub?: Subscription;
@@ -50,14 +66,24 @@ export class ForgePage implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.buildStats();
 
-        this.sessionSub = this.sessionService.session$.subscribe(session => {1
+        this.sessionSub = this.sessionService.session$.subscribe(session => {
             this.foalSub?.unsubscribe();
             if (!session || session.network.type !== 'ethereum') {
+                this.currentFoal = null;
+                this.successFoal = null;
+                this.updateFoalData(null);
+                this.updateViewState();
                 return;
             }
             const service = this.getSpeedHorsesService();
             this.foalSub = service.getCurrentFoal$(session.authenticator).subscribe(foal => {
                 this.logger.log('[ForgePage] current foal', foal);
+                this.currentFoal = foal;
+                if (foal) {
+                    this.successFoal = null;
+                }
+                this.updateFoalData(foal);
+                this.updateViewState();
             });
         });
 
@@ -74,60 +100,12 @@ export class ForgePage implements OnInit, OnDestroy {
 
     private buildStats(): void {
         // Use translate.instant for static labels of the tab bar
-        const power = this.translate.instant('PROPERTIES.power');
-        const acceleration = this.translate.instant('PROPERTIES.acceleration');
-        const stamina = this.translate.instant('PROPERTIES.stamina');
-        const minSpeed = this.translate.instant('PROPERTIES.minSpeed');
-        const maxSpeed = this.translate.instant('PROPERTIES.maxSpeed');
-        const luck = this.translate.instant('PROPERTIES.luck');
-        const curveBonus = this.translate.instant('PROPERTIES.curveBonus');
-        const straightBonus = this.translate.instant('PROPERTIES.straightBonus');
-
-        this.horseStats = {
-            total: 60,
-            stats: [
-                { field: 'power', display: power, value: 20},
-                { field: 'acceleration', display: acceleration, value: 10},
-                { field: 'stamina', display: stamina, value: 30},
-                { field: 'minSpeed', display: minSpeed, value: 10},
-                { field: 'maxSpeed', display: maxSpeed, value: 20},
-                { field: 'luck', display: luck, value: 60},
-                { field: 'curveBonus', display: curveBonus, value: 50},
-                { field: 'straightBonus', display: straightBonus, value: 40},
-            ]
-        };
-
-        this.horseshoes = [
-            {
-                total: 10,
-                stats: [
-                    { field: 'power', display: power, value: 8},
-                    { field: 'acceleration', display: acceleration, value: 2}
-                ]
-            },
-            {
-                total: 10,
-                stats: [
-                    { field: 'stamina', display: stamina, value: 3},
-                    { field: 'maxSpeed', display: maxSpeed, value: 7},
-                ]
-            },
-            {
-                total: 12,
-                stats: [
-                    { field: 'luck', display: luck, value: 8},
-                    { field: 'curveBonus', display: curveBonus, value: 4}
-                ]
-            },
-            {
-                total: 10,
-                stats: [
-                    { field: 'minSpeed', display: minSpeed, value: 6},
-                    { field: 'straightBonus', display: straightBonus, value: 4}
-                ]
-            },
-        ]
-
+        const labels: Record<string, string> = {};
+        for (const key of this.statKeys) {
+            labels[key] = this.translate.instant(`PROPERTIES.${key}`);
+        }
+        this.statLabels = labels;
+        this.updateFoalData(this.currentFoal);
     }
 
     onRandomizeFoal(): void {
@@ -153,10 +131,44 @@ export class ForgePage implements OnInit, OnDestroy {
     }
 
     onClaimHorse(): void {
+        const currentFoal = this.currentFoal;
         this.withAuth('onClaimHorse', {}, (service, auth, context) => {
+            this.pendingClaimFoal = currentFoal;
             service.claimHorse(auth, context).subscribe({
-                next: foal => console.log('[ForgePage] claimHorse result', foal),
-                error: error => context.error('claimHorse error', error),
+                next: foal => {
+                    console.log('[ForgePage] claimHorse result', foal);
+                    const claimed = this.pendingClaimFoal ?? foal ?? null;
+                    if (claimed) {
+                        this.successFoal = claimed;
+                    }
+                    this.pendingClaimFoal = null;
+                    this.updateViewState();
+                },
+                error: error => {
+                    context.error('claimHorse error', error);
+                    this.pendingClaimFoal = null;
+                },
+            });
+        });
+    }
+
+    onSummonFoal(): void {
+        this.summonConfirmVisible = true;
+    }
+
+    onCancelSummon(): void {
+        this.summonConfirmVisible = false;
+    }
+
+    onConfirmSummon(): void {
+        this.summonConfirmVisible = false;
+        this.withAuth('onSummonFoal', {}, (service, auth, context) => {
+            service.randomizeFoal(auth, false, false, false, context).subscribe({
+                next: foal => {
+                    console.log('[ForgePage] summonFoal result', foal);
+                    this.successFoal = null;
+                },
+                error: error => context.error('summonFoal error', error),
             });
         });
     }
@@ -178,5 +190,76 @@ export class ForgePage implements OnInit, OnDestroy {
 
     private getSpeedHorsesService(): SpeedHorsesService {
         return this.web3o.octopus.services.ethereum.speedhorses;
+    }
+
+    private updateFoalData(foal: SpeedHorsesFoal): void {
+        if (!foal) {
+            this.horseStats = undefined;
+            this.horseshoes = [];
+            return;
+        }
+        this.horseStats = {
+            total: foal.totalPoints,
+            stats: this.buildPerformanceStats(foal.stats),
+        };
+        this.horseshoes = (foal.horseshoes ?? []).map(shoe => ({
+            total: this.calculateTotal(shoe.bonusStats),
+            stats: this.buildPerformanceStats(shoe.bonusStats),
+        }));
+    }
+
+    private buildPerformanceStats(stats: Record<string, number>): { field: string; value: number; display: string }[] {
+        return this.statKeys.map(key => ({
+            field: key,
+            display: this.statLabels[key],
+            value: Number((stats as Record<string, number>)[key] ?? 0),
+        }));
+    }
+
+    private calculateTotal(stats: Record<string, number>): number {
+        return Object.values(stats).reduce((acc, value) => acc + Number(value ?? 0), 0);
+    }
+
+    private updateViewState(): void {
+        if (this.currentFoal) {
+            this.viewState = 'current';
+            return;
+        }
+        if (this.successFoal) {
+            this.viewState = 'success';
+            return;
+        }
+        this.viewState = 'default';
+    }
+
+    get claimedFoal(): SpeedHorsesFoal | null {
+        return this.successFoal;
+    }
+
+    get claimedStats(): StatsPack | undefined {
+        const foal = this.claimedFoal;
+        if (!foal) {
+            return undefined;
+        }
+        return {
+            total: foal.totalPoints,
+            stats: this.buildPerformanceStats(foal.stats),
+        };
+    }
+
+    get claimedHorseshoes(): StatsPack[] {
+        const foal = this.claimedFoal;
+        if (!foal) {
+            return [];
+        }
+        return (foal.horseshoes ?? []).map(shoe => ({
+            total: this.calculateTotal(shoe.bonusStats),
+            stats: this.buildPerformanceStats(shoe.bonusStats),
+        }));
+    }
+
+    onDismissSuccess(): void {
+        this.successFoal = null;
+        this.updateViewState();
     }
 }
