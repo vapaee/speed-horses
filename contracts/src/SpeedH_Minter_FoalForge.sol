@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import { PerformanceStats } from "./SpeedH_StatsStructs.sol";
 
-interface ISpeedH_Stats_Horse {
+interface ISpeedH_Stats {
     function createHorseStats(
         uint256 horseId,
         uint256 imgCategory,
@@ -46,7 +46,7 @@ contract SpeedH_Minter_FoalForge {
     // Contract References
     // ---------------------------------------------------------------------
     address public admin;
-    ISpeedH_Stats_Horse public _contractStatsHorse;
+    ISpeedH_Stats public _contractStats;
     ISpeedH_NFT_Horse public _contractNFTHorse;
     ISpeedH_NFT_Horseshoe public _contractNFTHorseshoe;
 
@@ -112,7 +112,7 @@ contract SpeedH_Minter_FoalForge {
     // ---------------------------------------------------------------------
 
     function startHorseMint() external payable {
-        require(address(_contractStatsHorse) != address(0), 'Horse stats not set');
+        require(address(_contractStats) != address(0), 'Stats not set');
         require(address(_contractNFTHorse) != address(0), 'SpeedH_NFT_Horse not set');
         require(address(_contractNFTHorseshoe) != address(0), 'SpeedH_NFT_Horseshoe not set');
         require(pendingHorse[msg.sender].totalPoints == 0, 'Already minting a horse');
@@ -126,7 +126,7 @@ contract SpeedH_Minter_FoalForge {
     }
 
     function randomizeHorse(bool keepImage, bool keepStats, bool keepShoes) external payable {
-        require(address(_contractStatsHorse) != address(0), 'Horse stats not set');
+        require(address(_contractStats) != address(0), 'Stats not set');
         require(address(_contractNFTHorse) != address(0), 'SpeedH_NFT_Horse not set');
         require(address(_contractNFTHorseshoe) != address(0), 'SpeedH_NFT_Horseshoe not set');
         require(!(keepImage && keepStats && keepShoes), 'Cannot lock everything');
@@ -157,17 +157,17 @@ contract SpeedH_Minter_FoalForge {
         HorseBuild storage build = pendingHorse[msg.sender];
         require(build.totalPoints != 0, 'No horse to claim');
 
-        require(address(_contractStatsHorse) != address(0), 'Horse stats not set');
+        require(address(_contractStats) != address(0), 'Stats not set');
         require(address(_contractNFTHorse) != address(0), 'SpeedH_NFT_Horse not set');
         require(address(_contractNFTHorseshoe) != address(0), 'SpeedH_NFT_Horseshoe not set');
 
         uint256 horseId = _contractNFTHorse.mint(msg.sender);
-        _contractStatsHorse.createHorseStats(horseId, build.imgCategory, build.imgNumber, build.stats);
+        _contractStats.createHorseStats(horseId, build.imgCategory, build.imgNumber, build.stats);
 
         for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
             PendingHorseshoe memory shoe = build.horseshoes[i];
             uint256 horseshoeId = _contractNFTHorseshoe.mint(msg.sender);
-            _contractStatsHorse.registerStarterHorseshoeStats(
+            _contractStats.registerStarterHorseshoeStats(
                 horseId,
                 horseshoeId,
                 shoe.imgCategory,
@@ -252,7 +252,7 @@ contract SpeedH_Minter_FoalForge {
     }
 
     function _randomVisual(uint256 totalPoints) internal view returns (uint256 imgCategory, uint256 imgNumber) {
-        require(address(_contractStatsHorse) != address(0), 'Horse stats not set');
+        require(address(_contractStats) != address(0), 'Stats not set');
         require(address(_contractNFTHorseshoe) != address(0), 'Horseshoe NFT not set');
         uint256 entropy = uint256(
             keccak256(
@@ -265,11 +265,11 @@ contract SpeedH_Minter_FoalForge {
                 )
             )
         );
-        return _contractStatsHorse.getRandomVisual(entropy);
+        return _contractStats.getRandomVisual(entropy);
     }
 
     function _randomHorseshoes() internal view returns (PendingHorseshoe[HORSESHOES_PER_HORSE] memory result) {
-        require(address(_contractStatsHorse) != address(0), 'Horse stats not set');
+        require(address(_contractStats) != address(0), 'Stats not set');
         uint256 baseId = _contractNFTHorseshoe.nextTokenId();
         uint256 horseBaseId = _contractNFTHorse.nextTokenId();
         for (uint256 i = 0; i < HORSESHOES_PER_HORSE; i++) {
@@ -285,7 +285,7 @@ contract SpeedH_Minter_FoalForge {
                     )
                 )
             );
-            (uint256 imgCategory, uint256 imgNumber) = _contractStatsHorse.getRandomHorseshoeVisual(entropy);
+            (uint256 imgCategory, uint256 imgNumber) = _contractStats.getRandomHorseshoeVisual(entropy);
             PerformanceStats memory stats = _randomHorseshoeStats(entropy);
             result[i] = PendingHorseshoe({ imgCategory: imgCategory, imgNumber: imgNumber, bonusStats: stats });
         }
@@ -345,9 +345,9 @@ contract SpeedH_Minter_FoalForge {
     // Admin functions
     // ----------------------------------------------------
 
-    function setContractStatsHorse(address contractStatsHorse) external onlyAdmin {
-        require(contractStatsHorse != address(0), 'Invalid stats address');
-        _contractStatsHorse = ISpeedH_Stats_Horse(contractStatsHorse);
+    function setContractStats(address contractStats) external onlyAdmin {
+        require(contractStats != address(0), 'Invalid stats address');
+        _contractStats = ISpeedH_Stats(contractStats);
     }
 
     function setContractNFTHorse(address contractNFTHorse) external onlyAdmin {

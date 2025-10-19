@@ -154,7 +154,7 @@ async function main(): Promise<void> {
     await assertAddress('SpeedH_Minter_IronRedemption._contractHayToken', () => minterIron._contractHayToken(), resolved.SpeedH_HayToken);
 
     const minterFoal = await ethers.getContractAt('SpeedH_Minter_FoalForge', resolved.SpeedH_Minter_FoalForge);
-    await assertAddress('SpeedH_Minter_FoalForge._contractStatsHorse', () => minterFoal._contractStatsHorse(), resolved.SpeedH_Stats_Horse);
+    await assertAddress('SpeedH_Minter_FoalForge._contractStats', () => minterFoal._contractStats(), resolved.SpeedH_Stats);
     await assertAddress('SpeedH_Minter_FoalForge._contractNFTHorse', () => minterFoal._contractNFTHorse(), resolved.SpeedH_NFT_Horse);
     await assertAddress('SpeedH_Minter_FoalForge._contractNFTHorseshoe', () => minterFoal._contractNFTHorseshoe(), resolved.SpeedH_NFT_Horseshoe);
 
