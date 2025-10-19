@@ -7,7 +7,7 @@ import { SharedModule } from '@app/shared/shared.module';
 import { StatsPack } from '@app/types';
 import { SessionService } from '@app/services/session-kit.service';
 import { Web3OctopusService } from '@app/services/web3-octopus.service';
-import { SpeedHorsesFoal, SpeedHorsesService } from '@app/services/w3o/speed-horses.service';
+import { SpeedHorsesFoal, SpeedHorsesPerformanceStats, SpeedHorsesService } from '@app/services/w3o/speed-horses.service';
 import { TranslateService } from '@ngx-translate/core';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
@@ -42,7 +42,7 @@ export class ForgePage implements OnInit, OnDestroy {
     private currentFoal: SpeedHorsesFoal = null;
     private successFoal: SpeedHorsesFoal = null;
     private pendingClaimFoal: SpeedHorsesFoal = null;
-    private readonly statKeys = [
+    private readonly statKeys: (keyof SpeedHorsesPerformanceStats)[] = [
         'power',
         'acceleration',
         'stamina',
@@ -51,8 +51,8 @@ export class ForgePage implements OnInit, OnDestroy {
         'luck',
         'curveBonus',
         'straightBonus',
-    ] as const;
-    private statLabels: Record<string, string> = {};
+    ];
+    private statLabels: Partial<Record<keyof SpeedHorsesPerformanceStats, string>> = {};
     private readonly logger = new W3oContextFactory('ForgePage');
     private sessionSub?: Subscription;
     private foalSub?: Subscription;
@@ -100,7 +100,7 @@ export class ForgePage implements OnInit, OnDestroy {
 
     private buildStats(): void {
         // Use translate.instant for static labels of the tab bar
-        const labels: Record<string, string> = {};
+        const labels: Partial<Record<keyof SpeedHorsesPerformanceStats, string>> = {};
         for (const key of this.statKeys) {
             labels[key] = this.translate.instant(`PROPERTIES.${key}`);
         }
@@ -208,15 +208,15 @@ export class ForgePage implements OnInit, OnDestroy {
         }));
     }
 
-    private buildPerformanceStats(stats: Record<string, number>): { field: string; value: number; display: string }[] {
+    private buildPerformanceStats(stats: SpeedHorsesPerformanceStats): { field: string; value: number; display: string }[] {
         return this.statKeys.map(key => ({
             field: key,
-            display: this.statLabels[key],
-            value: Number((stats as Record<string, number>)[key] ?? 0),
+            display: this.statLabels[key] ?? key,
+            value: Number(stats[key] ?? 0),
         }));
     }
 
-    private calculateTotal(stats: Record<string, number>): number {
+    private calculateTotal(stats: SpeedHorsesPerformanceStats): number {
         return Object.values(stats).reduce((acc, value) => acc + Number(value ?? 0), 0);
     }
 
