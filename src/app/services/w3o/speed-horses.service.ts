@@ -131,6 +131,190 @@ const BASE_CREATION_COST = parseEther('600');
 const RANDOMIZE_COST = parseEther('100');
 const EXTRA_POINTS_COST = parseEther('200');
 
+// action="estimateGas",
+// data="0x23019e67",
+// reason=null,
+// transaction={ 
+//    "data": "0xdf10eb22",
+//    "from": "0xa30b5e3c8Fee56C135Aecb733cd708cC31A5657a",
+//    "to": "0xbd0641B448241adb16935A1cBa3ffBB936D32b87"
+// },
+// invocation=null,
+// revert=null,
+// code=CALL_EXCEPTION,
+// version=6.15.0
+
+
+/*
+speed-horses.service.ts:231 ERRORS:  0x7bfa4b9f NotAdmin()
+speed-horses.service.ts:231 ERRORS:  0x4245fe6a InvalidStatsAddress()
+speed-horses.service.ts:231 ERRORS:  0xa01f5e19 InvalidHayToken()
+speed-horses.service.ts:231 ERRORS:  0x2d494867 HorseStatsNotSet()
+speed-horses.service.ts:231 ERRORS:  0x710541c3 HayTokenNotSet()
+speed-horses.service.ts:231 ERRORS:  0xaf16090f IncompleteHorseshoes()
+speed-horses.service.ts:231 ERRORS:  0x404383bf HorseshoeWornOut()
+speed-horses.service.ts:231 ERRORS:  0xd1cb4145 HorseAlreadyRegistered()
+speed-horses.service.ts:231 ERRORS:  0x738a10fb FusionNotFound()
+speed-horses.service.ts:231 ERRORS:  0xb5eba9f0 InvalidAdmin()
+speed-horses.service.ts:231 ERRORS:  0xbb739137 InvalidErrorMargin()
+speed-horses.service.ts:231 ERRORS:  0xa14f2d38 InvalidRefundBps()
+speed-horses.service.ts:231 ERRORS:  0xf4d678b8 InsufficientBalance()
+speed-horses.service.ts:231 ERRORS:  0xbbb196a3 HayTransferFailed()
+speed-horses.service.ts:231 ERRORS:  0xc37bc9f7 StatsNotSet()
+speed-horses.service.ts:231 ERRORS:  0x3ffef675 NftNotSet()
+speed-horses.service.ts:231 ERRORS:  0xcd0dee6d IncorrectTlosPayment()
+speed-horses.service.ts:231 ERRORS:  0xfd9f2811 SameParents()
+speed-horses.service.ts:231 ERRORS:  0xfef69c94 InvalidParents()
+speed-horses.service.ts:231 ERRORS:  0xc35265ce ParentsEquipped()
+speed-horses.service.ts:231 ERRORS:  0x140aaf2c FatherNotApproved()
+speed-horses.service.ts:231 ERRORS:  0xf5cb95a6 MotherNotApproved()
+speed-horses.service.ts:231 ERRORS:  0xacf3f60e FusionFinalized()
+speed-horses.service.ts:231 ERRORS:  0xb30184b6 FusionAlreadyProcessed()
+speed-horses.service.ts:231 ERRORS:  0x6a09f224 NotFusionOwner()
+speed-horses.service.ts:231 ERRORS:  0xbfa79c68 HayNotSet()
+speed-horses.service.ts:231 ERRORS:  0xc67e3e6c HayPaymentFailed()
+speed-horses.service.ts:231 ERRORS:  0xff9c7448 PreviewMissing()
+speed-horses.service.ts:231 ERRORS:  0xc32a2424 RepairNotFound()
+speed-horses.service.ts:231 ERRORS:  0xb92e9c7a InvalidPercent()
+speed-horses.service.ts:231 ERRORS:  0xa61eaf53 UnknownHorseshoe()
+speed-horses.service.ts:231 ERRORS:  0xf93c59ba HorseshoeEquipped()
+speed-horses.service.ts:231 ERRORS:  0x1dcbd64c ApprovalMissing()
+speed-horses.service.ts:231 ERRORS:  0x3c347266 RepairFinalized()
+speed-horses.service.ts:231 ERRORS:  0x437cc199 RepairAlreadyProcessed()
+speed-horses.service.ts:231 ERRORS:  0xb05e4ade NotRepairOwner()
+speed-horses.service.ts:231 ERRORS:  0x50a8b861 NotHorseMinter()
+speed-horses.service.ts:231 ERRORS:  0xd8d5894f InvalidMinter()
+speed-horses.service.ts:231 ERRORS:  0xceea21b6 TokenDoesNotExist()
+speed-horses.service.ts:231 ERRORS:  0xd1924e00 HorseStillResting()
+speed-horses.service.ts:231 ERRORS:  0x32948259 HorseRegisteredForRacing()
+speed-horses.service.ts:231 ERRORS:  0x8c56836d NotFixtureManager()
+speed-horses.service.ts:231 ERRORS:  0xd92e233d ZeroAddress()
+speed-horses.service.ts:231 ERRORS:  0x960d8bf9 HorseModuleNotSet()
+speed-horses.service.ts:231 ERRORS:  0xa7c3fd69 HorseshoeModuleNotSet()
+speed-horses.service.ts:231 ERRORS:  0x746feca3 HorseTokenNotSet()
+speed-horses.service.ts:231 ERRORS:  0xff21653b TokensNotConfigured()
+speed-horses.service.ts:231 ERRORS:  0x10053c99 NothingToAssign()
+speed-horses.service.ts:231 ERRORS:  0x30f978b8 NotHorseOwner()
+speed-horses.service.ts:231 ERRORS:  0xdf7e698a NotHorseshoeOwner()
+speed-horses.service.ts:231 ERRORS:  0x2e53a303 AlreadyEquipped()
+speed-horses.service.ts:231 ERRORS:  0xbca4cf23 HorseshoeInUse()
+speed-horses.service.ts:231 ERRORS:  0x53f83c73 HorseshoeNotUseful()
+speed-horses.service.ts:231 ERRORS:  0x848084dd SlotsFull()
+speed-horses.service.ts:231 ERRORS:  0x6e378ef7 MismatchedOwner()
+speed-horses.service.ts:231 ERRORS:  0xe0926a1c NotEquipped()
+speed-horses.service.ts:231 ERRORS:  0x7cc0e99f HorseRegistered()
+speed-horses.service.ts:231 ERRORS:  0x2c5211c6 InvalidAmount()
+speed-horses.service.ts:231 ERRORS:  0xba45dca4 NoHorseshoesEquipped()
+speed-horses.service.ts:231 ERRORS:  0xfa1b1d38 HorseMetadataNotSet()
+speed-horses.service.ts:231 ERRORS:  0x1c7ab172 HorseshoeMetadataNotSet()
+speed-horses.service.ts:231 ERRORS:  0x30cd7471 NotOwner()
+speed-horses.service.ts:231 ERRORS:  0x23019e67 NotController()
+speed-horses.service.ts:231 ERRORS:  0x6d5769be InvalidController()
+speed-horses.service.ts:231 ERRORS:  0x49e27cff InvalidOwner()
+speed-horses.service.ts:231 ERRORS:  0x0782b0c0 HorseAlreadyExists()
+speed-horses.service.ts:231 ERRORS:  0xd848afdb InvalidImage()
+speed-horses.service.ts:231 ERRORS:  0x3a0c4e6d HorseNotFound()
+speed-horses.service.ts:231 ERRORS:  0x303e7a07 InsufficientPoints()
+speed-horses.service.ts:231 ERRORS:  0x0716f3ca HorseshoeAlreadyExists()
+speed-horses.service.ts:231 ERRORS:  0x7a8f6411 InvalidDurability()
+speed-horses.service.ts:231 ERRORS:  0xecff7d7c HorseshoeNotFound()
+speed-horses.service.ts:231 ERRORS:  0x97ead703 InsufficientDurability()
+speed-horses.service.ts:231 ERRORS:  0xe2277121 NoCategories()
+speed-horses.service.ts:231 ERRORS:  0xc1b1ccaf CategoriesEmpty()
+speed-horses.service.ts:231 ERRORS:  0x3df99dee InvalidSelection()
+
+*/
+
+
+// Genera selectores de tus custom errors
+import { keccak256, toUtf8Bytes } from 'ethers';
+
+const errorSigs = [
+    'NotAdmin()',
+    'InvalidStatsAddress()',
+    'InvalidHayToken()',
+    'HorseStatsNotSet()',
+    'HayTokenNotSet()',
+    'IncompleteHorseshoes()',
+    'HorseshoeWornOut()',
+    'HorseAlreadyRegistered()',
+    'FusionNotFound()',
+    'InvalidAdmin()',
+    'InvalidErrorMargin()',
+    'InvalidRefundBps()',
+    'InsufficientBalance()',
+    'HayTransferFailed()',
+    'StatsNotSet()',
+    'NftNotSet()',
+    'IncorrectTlosPayment()',
+    'SameParents()',
+    'InvalidParents()',
+    'ParentsEquipped()',
+    'FatherNotApproved()',
+    'MotherNotApproved()',
+    'FusionFinalized()',
+    'FusionAlreadyProcessed()',
+    'NotFusionOwner()',
+    'HayNotSet()',
+    'HayPaymentFailed()',
+    'PreviewMissing()',
+    'RepairNotFound()',
+    'InvalidPercent()',
+    'UnknownHorseshoe()',
+    'HorseshoeEquipped()',
+    'ApprovalMissing()',
+    'RepairFinalized()',
+    'RepairAlreadyProcessed()',
+    'NotRepairOwner()',
+    'NotHorseMinter()',
+    'InvalidMinter()',
+    'TokenDoesNotExist()',
+    'HorseStillResting()',
+    'HorseRegisteredForRacing()',
+    'NotFixtureManager()',
+    'ZeroAddress()',
+    'HorseModuleNotSet()',
+    'HorseshoeModuleNotSet()',
+    'HorseTokenNotSet()',
+    'TokensNotConfigured()',
+    'NothingToAssign()',
+    'NotHorseOwner()',
+    'NotHorseshoeOwner()',
+    'AlreadyEquipped()',
+    'HorseshoeInUse()',
+    'HorseshoeNotUseful()',
+    'SlotsFull()',
+    'MismatchedOwner()',
+    'NotEquipped()',
+    'HorseRegistered()',
+    'InvalidAmount()',
+    'NoHorseshoesEquipped()',
+    'HorseMetadataNotSet()',
+    'HorseshoeMetadataNotSet()',
+    'NotOwner()',
+    'NotController()',
+    'InvalidController()',
+    'InvalidOwner()',
+    'HorseAlreadyExists()',
+    'InvalidImage()',
+    'HorseNotFound()',
+    'InsufficientPoints()',
+    'HorseshoeAlreadyExists()',
+    'InvalidDurability()',
+    'HorseshoeNotFound()',
+    'InsufficientDurability()',
+    'NoCategories()',
+    'CategoriesEmpty()',
+    'InvalidSelection()',
+];
+
+for (const sig of errorSigs) {
+    const selector = keccak256(toUtf8Bytes(sig)).slice(0, 10);
+    console.log('ERRORS: ', selector, sig);
+}
+
+
+
 export interface SpeedHorsesPerformanceStats {
     power: number;
     acceleration: number;
@@ -268,14 +452,18 @@ export class SpeedHorsesService extends W3oService {
             switchMap((tx: any) => {
                 let wait$: Observable<unknown>;
 
+                // try to wait for transaction confirmation
                 if (typeof tx?.wait === 'function') {
                     try {
                         const waitResult = tx.wait();
                         if (isObservable(waitResult)) {
+                            // Observable
                             wait$ = waitResult;
                         } else if (waitResult && typeof waitResult.then === 'function') {
+                            // Promiseish
                             wait$ = from(waitResult);
                         } else {
+                            // We don't know
                             wait$ = of(waitResult);
                         }
                     } catch (error) {
@@ -283,6 +471,7 @@ export class SpeedHorsesService extends W3oService {
                         return throwError(() => error);
                     }
                 } else {
+                    // no wait function
                     wait$ = of(undefined);
                 }
 
