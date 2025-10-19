@@ -2,6 +2,7 @@
 import { ethers } from 'hardhat';
 import { speedHorsesContracts } from '../../src/environments/contracts';
 
+// --- Constants shared across the script ---
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 const contractNames = [
@@ -22,6 +23,7 @@ const contractNames = [
 type ContractName = typeof contractNames[number];
 type ContractAddressBook = Record<ContractName, string>;
 
+// --- Utility helpers for formatting and assertions ---
 const toChecksum = (address: string): string => ethers.utils.getAddress(address);
 
 const success = (message: string): void => {
@@ -52,7 +54,20 @@ const assertBoolTrue = async (label: string, getter: () => Promise<boolean>): Pr
     success(`${label} → true`);
 };
 
+const assertString = async (
+    label: string,
+    getter: () => Promise<string>,
+    expected: string
+): Promise<void> => {
+    const value = await getter();
+    if (value !== expected) {
+        fail(label, expected, value);
+    }
+    success(`${label} → ${value}`);
+};
+
 async function main(): Promise<void> {
+    // --- Identify the active network ---
     const provider = ethers.provider;
     const network = await provider.getNetwork();
     const chainId = network.chainId.toString();
@@ -61,6 +76,7 @@ async function main(): Promise<void> {
     console.log('--- Speed Horses deployment check ---');
     console.log(`Network: ${networkName} (chainId: ${chainId})`);
 
+    // --- Retrieve the stored deployment addresses for this network ---
     const addresses: Partial<ContractAddressBook> = {};
 
     for (const name of contractNames) {
@@ -76,6 +92,7 @@ async function main(): Promise<void> {
 
     const resolved = addresses as ContractAddressBook;
 
+    // --- Validate references in the core stats contract ---
     console.log('\nVerifying SpeedH_Stats references...');
     const stats = await ethers.getContractAt('SpeedH_Stats', resolved.SpeedH_Stats);
     await assertBoolTrue('SpeedH_Stats.isHorseMinter(AnvilAlchemy)', () =>
@@ -96,12 +113,14 @@ async function main(): Promise<void> {
     await assertAddress('SpeedH_Stats._contractMetadataHorse', () => stats._contractMetadataHorse(), resolved.SpeedH_Metadata_Horse);
     await assertAddress('SpeedH_Stats._contractMetadataHorseshoe', () => stats._contractMetadataHorseshoe(), resolved.SpeedH_Metadata_Horseshoe);
 
+    // --- Validate references in stats module contracts ---
     console.log('\nVerifying module contracts...');
     const statsHorse = await ethers.getContractAt('SpeedH_Stats_Horse', resolved.SpeedH_Stats_Horse);
     await assertAddress('SpeedH_Stats_Horse._contractStats', () => statsHorse._contractStats(), resolved.SpeedH_Stats);
     const statsHorseshoe = await ethers.getContractAt('SpeedH_Stats_Horseshoe', resolved.SpeedH_Stats_Horseshoe);
     await assertAddress('SpeedH_Stats_Horseshoe._contractStats', () => statsHorseshoe._contractStats(), resolved.SpeedH_Stats);
 
+    // --- Validate references in NFT contracts ---
     console.log('\nVerifying NFT contracts...');
     const nftHorse = await ethers.getContractAt('SpeedH_NFT_Horse', resolved.SpeedH_NFT_Horse);
     await assertAddress('SpeedH_NFT_Horse._contractStats', () => nftHorse._contractStats(), resolved.SpeedH_Stats);
@@ -127,6 +146,7 @@ async function main(): Promise<void> {
         nftHorseshoe.isHorseMinter(resolved.SpeedH_Minter_IronRedemption)
     );
 
+    // --- Validate references in minter contracts ---
     console.log('\nVerifying minter contracts...');
     const minterIron = await ethers.getContractAt('SpeedH_Minter_IronRedemption', resolved.SpeedH_Minter_IronRedemption);
     await assertAddress('SpeedH_Minter_IronRedemption._contractStats', () => minterIron._contractStats(), resolved.SpeedH_Stats);
@@ -143,12 +163,35 @@ async function main(): Promise<void> {
     await assertAddress('SpeedH_Minter_AnvilAlchemy._contractNFTHorseshoe', () => minterAnvil._contractNFTHorseshoe(), resolved.SpeedH_NFT_Horseshoe);
     await assertAddress('SpeedH_Minter_AnvilAlchemy._contractHayToken', () => minterAnvil._contractHayToken(), resolved.SpeedH_HayToken);
 
+    // --- Validate references in the fixture manager ---
     console.log('\nVerifying fixture manager...');
     const fixtureManager = await ethers.getContractAt('SpeedH_FixtureManager', resolved.SpeedH_FixtureManager);
     await assertAddress('SpeedH_FixtureManager._contractStats', () => fixtureManager._contractStats(), resolved.SpeedH_Stats);
     await assertAddress('SpeedH_FixtureManager._contractHayToken', () => fixtureManager._contractHayToken(), resolved.SpeedH_HayToken);
 
-    console.log('\nAll contract references match the expected deployment addresses.');
+    // --- Validate the version strings exposed by each contract ---
+    console.log('\nVerifying contract version strings...');
+    const versionExpectations: Record<ContractName, string> = {
+        SpeedH_FixtureManager: 'SpeedH_FixtureManager-v1.0.0',
+        SpeedH_HayToken: 'SpeedH_HayToken-v1.0.0',
+        SpeedH_Metadata_Horse: 'SpeedH_Metadata_Horse-v1.0.0',
+        SpeedH_Metadata_Horseshoe: 'SpeedH_Metadata_Horseshoe-v1.0.0',
+        SpeedH_Minter_AnvilAlchemy: 'SpeedH_Minter_AnvilAlchemy-v1.0.0',
+        SpeedH_Minter_FoalForge: 'SpeedH_Minter_FoalForge-v1.0.0',
+        SpeedH_Minter_IronRedemption: 'SpeedH_Minter_IronRedemption-v1.0.0',
+        SpeedH_NFT_Horse: 'SpeedH_NFT_Horse-v1.0.0',
+        SpeedH_NFT_Horseshoe: 'SpeedH_NFT_Horseshoe-v1.0.0',
+        SpeedH_Stats_Horse: 'SpeedH_Stats_Horse-v1.0.0',
+        SpeedH_Stats_Horseshoe: 'SpeedH_Stats_Horseshoe-v1.0.0',
+        SpeedH_Stats: 'SpeedH_Stats-v1.0.0',
+    };
+
+    for (const name of contractNames) {
+        const contract = await ethers.getContractAt(name, resolved[name]);
+        await assertString(`${name}.version`, () => contract.version(), versionExpectations[name]);
+    }
+
+    console.log('\nAll contract references and version strings match the expected deployment configuration.');
 }
 
 main().catch((error) => {
