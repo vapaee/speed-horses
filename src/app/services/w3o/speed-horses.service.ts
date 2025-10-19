@@ -18,13 +18,112 @@ import { EthereumTokensService, EthereumNetwork, EthereumTransaction, EthereumCo
 
 const logger = new W3oContextFactory('SpeedHorsesService');
 
-const FOAL_FORGE_ABI = [
-    'function getPendingHorse(address owner) view returns (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) stats, uint256 totalPoints, uint8 extraPackagesBought, (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) bonusStats)[4] horseshoes)',
-    'function startHorseMint() payable',
-    'function randomizeHorse(bool keepImage, bool keepStats, bool keepShoes) payable',
-    'function buyExtraPoints() payable',
-    'function claimHorse()'
-] as unknown as EthereumContractAbi;
+// TODO: remove one of the two definitions below
+// const FOAL_FORGE_ABI = [
+//     'function getPendingHorse(address owner) view returns (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) stats, uint256 totalPoints, uint8 extraPackagesBought, (uint256 imgCategory, uint256 imgNumber, (uint256 power, uint256 acceleration, uint256 stamina, uint256 minSpeed, uint256 maxSpeed, uint256 luck, uint256 curveBonus, uint256 straightBonus) bonusStats)[4] horseshoes)',
+//     'function startHorseMint() payable',
+//     'function randomizeHorse(bool keepImage, bool keepStats, bool keepShoes) payable',
+//     'function buyExtraPoints() payable',
+//     'function claimHorse()'
+// ] as unknown as EthereumContractAbi;
+
+/**
+ * Structured ABI for the Foal Forge contract
+ * - Replaces string-based fragments with explicit ABI items
+ * - Tuples are represented with `type: 'tuple'` and `components`
+ * - Fixed-size tuple array `[4]` is represented as `type: 'tuple[4]'`
+ */
+export const FOAL_FORGE_ABI: EthereumContractAbi = [
+    {
+        type: 'function',
+        name: 'getPendingHorse',
+        stateMutability: 'view',
+        inputs: [
+            { name: 'owner', type: 'address' }
+        ],
+        outputs: [
+            // uint256 imgCategory
+            { name: 'imgCategory', type: 'uint256' },
+            // uint256 imgNumber
+            { name: 'imgNumber', type: 'uint256' },
+            // (PerformanceStats) stats
+            {
+                name: 'stats',
+                type: 'tuple',
+                components: [
+                    { name: 'power', type: 'uint256' },
+                    { name: 'acceleration', type: 'uint256' },
+                    { name: 'stamina', type: 'uint256' },
+                    { name: 'minSpeed', type: 'uint256' },
+                    { name: 'maxSpeed', type: 'uint256' },
+                    { name: 'luck', type: 'uint256' },
+                    { name: 'curveBonus', type: 'uint256' },
+                    { name: 'straightBonus', type: 'uint256' }
+                ]
+            },
+            // uint256 totalPoints
+            { name: 'totalPoints', type: 'uint256' },
+            // uint8 extraPackagesBought
+            { name: 'extraPackagesBought', type: 'uint8' },
+            // (Horseshoe tuple)[4] horseshoes
+            {
+                name: 'horseshoes',
+                type: 'tuple[4]',
+                components: [
+                    { name: 'imgCategory', type: 'uint256' },
+                    { name: 'imgNumber', type: 'uint256' },
+                    {
+                        name: 'bonusStats',
+                        type: 'tuple',
+                        components: [
+                            { name: 'power', type: 'uint256' },
+                            { name: 'acceleration', type: 'uint256' },
+                            { name: 'stamina', type: 'uint256' },
+                            { name: 'minSpeed', type: 'uint256' },
+                            { name: 'maxSpeed', type: 'uint256' },
+                            { name: 'luck', type: 'uint256' },
+                            { name: 'curveBonus', type: 'uint256' },
+                            { name: 'straightBonus', type: 'uint256' }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        type: 'function',
+        name: 'startHorseMint',
+        stateMutability: 'payable',
+        inputs: [],
+        outputs: []
+    },
+    {
+        type: 'function',
+        name: 'randomizeHorse',
+        stateMutability: 'payable',
+        inputs: [
+            { name: 'keepImage', type: 'bool' },
+            { name: 'keepStats', type: 'bool' },
+            { name: 'keepShoes', type: 'bool' }
+        ],
+        outputs: []
+    },
+    {
+        type: 'function',
+        name: 'buyExtraPoints',
+        stateMutability: 'payable',
+        inputs: [],
+        outputs: []
+    },
+    {
+        type: 'function',
+        name: 'claimHorse',
+        stateMutability: 'nonpayable',
+        inputs: [],
+        outputs: []
+    }
+] as const;
+
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -166,6 +265,7 @@ export class SpeedHorsesService extends W3oService {
                 const waitForConfirmation = typeof tx?.wait === 'function'
                     ? tx.wait()
                     : Promise.resolve(undefined);
+                // TODO: tx.wait() devuelve un observable. Por tanto hay que suscribirse a él en lugar de usar .then(). Además, reemplazar Promise.resolve por of()
                 waitForConfirmation
                     .then(() => firstValueFrom(this.refreshCurrentFoal(auth, context)))
                     .then(foal => {
