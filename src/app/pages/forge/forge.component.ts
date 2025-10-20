@@ -42,6 +42,7 @@ export class ForgePage implements OnInit, OnDestroy {
     lock_picture = false;
     summonConfirmVisible = false;
     claimConfirmVisible = false;
+    buyExtraPointsConfirmVisible = false;
     viewState: 'default' | 'current' | 'success' = 'default';
     public currentFoal: SpeedHorsesFoal = null;
     private successFoal: SpeedHorsesFoal = null;
@@ -134,6 +135,15 @@ export class ForgePage implements OnInit, OnDestroy {
     }
 
     onBuyExtraPoints(): void {
+        this.buyExtraPointsConfirmVisible = true;
+    }
+
+    onCancelBuyExtraPoints(): void {
+        this.buyExtraPointsConfirmVisible = false;
+    }
+
+    onConfirmBuyExtraPoints(): void {
+        this.buyExtraPointsConfirmVisible = false;
         this.withAuth('onBuyExtraPoints', {}, (service, auth, context) => {
             service.buyExtraPoints(auth, context).subscribe({
                 next: foal => console.log('[ForgePage] buyExtraPoints result', foal),

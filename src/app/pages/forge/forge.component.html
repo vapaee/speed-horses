@@ -165,4 +165,13 @@
         (cancel)="onCancelClaim()"
         (confirm)="onConfirmClaim()"
     ></app-confirm-dialog>
+    <app-confirm-dialog
+        [(nodel)]="buyExtraPointsConfirmVisible"
+        [title]="'PAGES.HORSES.FORGE.BUY-MORE-DIALOG.TITLE' | translate"
+        [message]="'PAGES.HORSES.FORGE.BUY-MORE-DIALOG.MESSAGE' | translate"
+        [cancelText]="'PAGES.HORSES.FORGE.BUY-MORE-DIALOG.CANCEL' | translate"
+        [confirmText]="'PAGES.HORSES.FORGE.BUY-MORE-DIALOG.CONFIRM' | translate"
+        (cancel)="onCancelBuyExtraPoints()"
+        (confirm)="onConfirmBuyExtraPoints()"
+    ></app-confirm-dialog>
 </section>

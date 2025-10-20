@@ -34,6 +34,12 @@
                 "STATS-UNLOCKED": "Base stats can be shuffled",
                 "HORSESHOES": "Horseshoes",
                 "BUY-MORE": "Buy more",
+                "BUY-MORE-DIALOG": {
+                    "TITLE": "Buy Extra Points",
+                    "MESSAGE": "Spend 100 TLOS to add 10 extra stat points to your foal. Do you want to continue?",
+                    "CONFIRM": "Buy points",
+                    "CANCEL": "Cancel"
+                },
                 "SHUFFLE": "Shuffle",
                 "FORGE": "Forge",
                 "CLAIM": {
