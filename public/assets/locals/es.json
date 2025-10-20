@@ -34,6 +34,12 @@
                 "STATS-UNLOCKED": "Las estadísticas base pueden mezclarse",
                 "HORSESHOES": "Herraduras",
                 "BUY-MORE": "Comprar más",
+                "BUY-MORE-DIALOG": {
+                    "TITLE": "Comprar puntos extra",
+                    "MESSAGE": "Paga 100 TLOS para añadir 10 puntos adicionales a las estadísticas de tu potro. ¿Deseas continuar?",
+                    "CONFIRM": "Comprar puntos",
+                    "CANCEL": "Cancelar"
+                },
                 "SHUFFLE": "Mezclar",
                 "FORGE": "Forjar",
                 "CLAIM": {
