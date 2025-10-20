@@ -1,0 +1,14 @@
+<div *ngIf="nodel" class="confirm-dialog__backdrop" (click)="onBackdropClick()">
+    <div class="confirm-dialog__panel" (click)="onDialogClick($event)">
+        <h3 *ngIf="title" class="confirm-dialog__title">{{ title }}</h3>
+        <p class="confirm-dialog__message">{{ message }}</p>
+        <div class="confirm-dialog__actions">
+            <button class="confirm-dialog__button confirm-dialog__button--cancel" (click)="onCancelClick()">
+                {{ cancelText }}
+            </button>
+            <button class="confirm-dialog__button" (click)="onConfirmClick()">
+                {{ confirmText }}
+            </button>
+        </div>
+    </div>
+</div>

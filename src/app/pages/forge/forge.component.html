@@ -147,20 +147,13 @@
         </div>
     </ng-container>
 
-    <div *ngIf="summonConfirmVisible" class="p-forge__dialog-backdrop">
-        <div class="p-forge__dialog">
-            <h3 class="p-forge__dialog-title">{{ 'PAGES.HORSES.FORGE.DEFAULT.DIALOG.TITLE' | translate }}</h3>
-            <p class="p-forge__dialog-message">
-                {{ 'PAGES.HORSES.FORGE.DEFAULT.DIALOG.MESSAGE' | translate }}
-            </p>
-            <div class="p-forge__dialog-actions">
-                <button class="p-forge__dialog-button p-forge__dialog-button--cancel" (click)="onCancelSummon()">
-                    {{ 'PAGES.HORSES.FORGE.DEFAULT.DIALOG.CANCEL' | translate }}
-                </button>
-                <button class="p-forge__dialog-button" (click)="onConfirmSummon()">
-                    {{ 'PAGES.HORSES.FORGE.DEFAULT.DIALOG.CONFIRM' | translate }}
-                </button>
-            </div>
-        </div>
-    </div>
+    <app-confirm-dialog
+        [(nodel)]="summonConfirmVisible"
+        [title]="'PAGES.HORSES.FORGE.DEFAULT.DIALOG.TITLE' | translate"
+        [message]="'PAGES.HORSES.FORGE.DEFAULT.DIALOG.MESSAGE' | translate"
+        [cancelText]="'PAGES.HORSES.FORGE.DEFAULT.DIALOG.CANCEL' | translate"
+        [confirmText]="'PAGES.HORSES.FORGE.DEFAULT.DIALOG.CONFIRM' | translate"
+        (cancel)="onCancelSummon()"
+        (confirm)="onConfirmSummon()"
+    ></app-confirm-dialog>
 </section>
