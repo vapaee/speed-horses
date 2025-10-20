@@ -36,6 +36,14 @@
                 "BUY-MORE": "Comprar más",
                 "SHUFFLE": "Mezclar",
                 "FORGE": "Forjar",
+                "CLAIM": {
+                    "DIALOG": {
+                        "TITLE": "Reclamar campeón",
+                        "MESSAGE": "La fragua se enfría y el polvo se asienta... ¿Estás listo para darle vida a tu creación?",
+                        "CONFIRM": "Reclamar campeón",
+                        "CANCEL": "Aún no"
+                    }
+                },
                 "DEFAULT": {
                     "TITLE": "Nacimiento de un Campeón",
                     "SUBTITLE": "Adéntrate en la forja donde nacen las leyendas. Combina el poder de cuatro herraduras dotadas e invoca tu primer potro: un alma pura destinada a la grandeza.",

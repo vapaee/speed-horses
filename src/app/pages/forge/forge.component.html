@@ -156,4 +156,13 @@
         (cancel)="onCancelSummon()"
         (confirm)="onConfirmSummon()"
     ></app-confirm-dialog>
+    <app-confirm-dialog
+        [(nodel)]="claimConfirmVisible"
+        [title]="'PAGES.HORSES.FORGE.CLAIM.DIALOG.TITLE' | translate"
+        [message]="'PAGES.HORSES.FORGE.CLAIM.DIALOG.MESSAGE' | translate"
+        [cancelText]="'PAGES.HORSES.FORGE.CLAIM.DIALOG.CANCEL' | translate"
+        [confirmText]="'PAGES.HORSES.FORGE.CLAIM.DIALOG.CONFIRM' | translate"
+        (cancel)="onCancelClaim()"
+        (confirm)="onConfirmClaim()"
+    ></app-confirm-dialog>
 </section>

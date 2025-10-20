@@ -41,6 +41,7 @@ export class ForgePage implements OnInit, OnDestroy {
     lock_stats = false;
     lock_picture = false;
     summonConfirmVisible = false;
+    claimConfirmVisible = false;
     viewState: 'default' | 'current' | 'success' = 'default';
     public currentFoal: SpeedHorsesFoal = null;
     private successFoal: SpeedHorsesFoal = null;
@@ -142,6 +143,15 @@ export class ForgePage implements OnInit, OnDestroy {
     }
 
     onClaimHorse(): void {
+        this.claimConfirmVisible = true;
+    }
+
+    onCancelClaim(): void {
+        this.claimConfirmVisible = false;
+    }
+
+    onConfirmClaim(): void {
+        this.claimConfirmVisible = false;
         const currentFoal = this.currentFoal;
         this.withAuth('onClaimHorse', {}, (service, auth, context) => {
             this.pendingClaimFoal = currentFoal;

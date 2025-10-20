@@ -36,6 +36,14 @@
                 "BUY-MORE": "Buy more",
                 "SHUFFLE": "Shuffle",
                 "FORGE": "Forge",
+                "CLAIM": {
+                    "DIALOG": {
+                        "TITLE": "Claim Champion",
+                        "MESSAGE": "The forge cools and the dust settles... Are you ready to bring your creation to life?",
+                        "CONFIRM": "Claim Champion",
+                        "CANCEL": "Not Yet"
+                    }
+                },
                 "DEFAULT": {
                     "TITLE": "Birth of a Champion",
                     "SUBTITLE": "Step into the forge where legends are born. Combine the power of four gifted horseshoes and summon your very first foal — a pure soul destined for greatness.",
