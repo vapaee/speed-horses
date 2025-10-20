@@ -55,7 +55,7 @@ contract SpeedH_Minter_FoalForge {
     // ---------------------------------------------------------------------
     uint256 public constant BASE_CREATION_COST = 600 ether; // in TLOS
     uint256 public constant RANDOMIZE_COST = 100 ether;     // in TLOS
-    uint256 public constant EXTRA_POINTS_COST = 200 ether;  // in TLOS
+    uint256 public constant EXTRA_POINTS_COST = 100 ether;  // in TLOS
     uint256 public constant MAX_EXTRA_PACKAGES = 4;
     uint256 public constant BASE_INITIAL_POINTS = 60;
     uint256 public constant EXTRA_POINTS_PER_PACKAGE = 10;
