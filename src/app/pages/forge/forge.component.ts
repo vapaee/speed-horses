@@ -13,6 +13,7 @@ import { ToggleButtonModule } from 'primeng/togglebutton';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { Subscription } from 'rxjs';
 import { W3oAuthenticator, W3oContext, W3oContextFactory } from '@vapaee/w3o-core';
+import { getHorseImageUrl } from '@app/shared/util';
 
 @Component({
     standalone: true,
@@ -39,7 +40,7 @@ export class ForgePage implements OnInit, OnDestroy {
     lock_picture = false;
     summonConfirmVisible = false;
     viewState: 'default' | 'current' | 'success' = 'default';
-    private currentFoal: SpeedHorsesFoal = null;
+    public currentFoal: SpeedHorsesFoal = null;
     private successFoal: SpeedHorsesFoal = null;
     private pendingClaimFoal: SpeedHorsesFoal = null;
     private readonly statKeys: (keyof SpeedHorsesPerformanceStats)[] = [
@@ -62,6 +63,14 @@ export class ForgePage implements OnInit, OnDestroy {
         private sessionService: SessionService,
         private web3o: Web3OctopusService,
     ){}
+
+    getHorseImageUrl(): string {
+        const foal = this.currentFoal ?? this.successFoal;
+        if (!foal) {
+            return '';
+        }
+        return getHorseImageUrl(foal.imgCategory, foal.imgNumber);
+    }
 
     ngOnInit(): void {
         this.buildStats();

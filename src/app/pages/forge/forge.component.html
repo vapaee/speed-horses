@@ -33,7 +33,10 @@
                         <span class="p-forge__color-field">{{ 'PAGES.HORSES.FORGE.COLOR-FIELD' | translate }}:</span> {{ color }}
                     </div>
                     <div class="p-forge__picture">
-                        <img class="p-forge__picture-image" src="assets/images/under-construction.png" />
+                        <img
+                            [src]="getHorseImageUrl()"
+                            class="p-forge__picture-image"
+                        />
                     </div>
                     <div class="p-forge__lock">
                         <app-lock-switch
