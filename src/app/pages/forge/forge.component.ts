@@ -192,18 +192,23 @@ export class ForgePage implements OnInit, OnDestroy {
         return this.web3o.octopus.services.ethereum.speedhorses;
     }
 
+    private getHighestStatValue(stats: SpeedHorsesPerformanceStats): number {
+        return Math.max(...this.statKeys.map(key => Number(stats[key] ?? 0)));
+    }
+
     private updateFoalData(foal: SpeedHorsesFoal): void {
         if (!foal) {
             this.horseStats = undefined;
             this.horseshoes = [];
             return;
         }
+        this.totalPoints = foal.totalPoints;
         this.horseStats = {
-            total: foal.totalPoints,
+            total: this.getHighestStatValue(foal.stats),
             stats: this.buildPerformanceStats(foal.stats),
         };
         this.horseshoes = (foal.horseshoes ?? []).map(shoe => ({
-            total: this.calculateTotal(shoe.bonusStats),
+            total: this.getHighestStatValue(shoe.bonusStats),
             stats: this.buildPerformanceStats(shoe.bonusStats),
         }));
     }

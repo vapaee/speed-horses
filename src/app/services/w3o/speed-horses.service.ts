@@ -341,7 +341,7 @@ export interface SpeedHorsesFoalData {
     horseshoes: SpeedHorsesHorseshoe[];
 }
 
-export type SpeedHorsesFoal = SpeedHorsesFoalData | null;
+export type SpeedHorsesFoal = SpeedHorsesFoalData;
 
 export interface SpeedHorsesServiceConfig {
     SpeedH_FixtureManager?: Record<string, string>;
@@ -621,7 +621,6 @@ export class SpeedHorsesService extends W3oService {
             context.error('FoalForge contract address not configured for chain', { chainId });
             throw error;
         }
-        console.log('--------------------', {address}, '--------------------');
         const contract = new EthereumContract(address, 'SpeedH_Minter_FoalForge', FOAL_FORGE_ABI, parent);
         this.contractCache.set(chainId, contract);
         return contract;
