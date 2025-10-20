@@ -1,0 +1,59 @@
+@use 'mixin' as *;
+
+:host {
+    display: contents;
+}
+
+.confirm-dialog {
+    &__backdrop {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    &__panel {
+        background: #1d1d1d;
+        border-radius: 16px;
+        padding: 32px;
+        max-width: 420px;
+        width: calc(100% - 32px);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    &__title {
+        @include tabs-content-subtitle;
+        margin: 0;
+    }
+
+    &__message {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.75);
+        line-height: 1.5;
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    &__button {
+        @include button-1;
+        min-width: 120px;
+
+        &--cancel {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    }
+}

@@ -3,6 +3,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HorseshoeComponent } from '@app/components/horseshoe/horseshoe.component';
 import { LockSwitchComponent } from '@app/components/lock-switch/lock-switch.component';
 import { StatsComponent } from '@app/components/stats/stats.component';
+import { ConfirmDialogComponent } from '@app/components/confirm-dialog/confirm-dialog.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { StatsPack } from '@app/types';
 import { SessionService } from '@app/services/session-kit.service';
@@ -24,7 +25,8 @@ import { getHorseImageUrl } from '@app/shared/util';
         HorseshoeComponent,
         ToggleButtonModule,
         ToggleSwitchModule,
-        LockSwitchComponent
+        LockSwitchComponent,
+        ConfirmDialogComponent
     ],
     templateUrl: './forge.component.html',
     styleUrls: ['./forge.component.scss']
